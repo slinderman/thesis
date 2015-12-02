@@ -1,0 +1,12 @@
+.logged
+.DS_Store
+*.aux
+*.bbl
+*.blg
+*.log
+*.lof
+*.out
+*.toc
+*.fls
+*.fdb_latexmk
+*#*

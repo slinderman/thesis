@@ -159,7 +159,7 @@
 	\Huge \textcolor{SchoolColor}{\thetitle} \normalsize \\
 	\vspace{100pt}
 	\textsc{a dissertation presented \\ by\\
-	\theauthor\\ to\\ The Department of \@department\\
+	\theauthor\\ to\\ The \@department\\
 	\vspace{12pt}
 	in partial fulfillment of the requirements\\
 	for the degree of\\ \@degree\\
@@ -186,7 +186,7 @@
 	\pagenumbering{roman}
 	\setcounter{page}{3}
 	\pagestyle{fancy}
-	\lhead{Thesis advisor: Professor \@advisor} \rhead{\@author}
+	\lhead{Thesis advisors: Professors \@advisor} \rhead{\@author}
 	\renewcommand{\headrulewidth}{0.0pt}
 	\vspace*{35pt}
 	\begin{center}
