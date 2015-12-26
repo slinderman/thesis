@@ -104,6 +104,7 @@
      \endlist}
 
 % Some definitions.
+\def\maintitle#1{\gdef\@maintitle{#1}}
 \def\degreeyear#1{\gdef\@degreeyear{#1}}
 \def\degreemonth#1{\gdef\@degreemonth{#1}}
 \def\degree#1{\gdef\@degree{#1}}
@@ -156,7 +157,7 @@
 	\vspace*{\fill}
 	\vspace{100pt}
 	\begin{center}
-	\Huge \textcolor{SchoolColor}{\thetitle} \normalsize \\
+	\Huge \textcolor{SchoolColor}{\@maintitle} \normalsize \\
 	\vspace{100pt}
 	\textsc{a dissertation presented \\ by\\
 	\theauthor\\ to\\ The \@department\\
@@ -174,7 +175,7 @@
 	\newpage
 	\thispagestyle{empty}
 	\vspace*{\fill}
-	\scshape \noindent \small \copyright \small 2014\hspace{3pt}-- \theauthor \\
+	\scshape \noindent \small \copyright \small 2016\hspace{3pt}-- \theauthor \\
 	\noindent all rights reserved.
 	\vspace*{\fill}
 	\newpage

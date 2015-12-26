@@ -1,2 +1,40 @@
 % the abstract
+Point processes are probability distributions over sets of discrete events, 
+like the timestamps of user activity on a social network, the locations of 
+stars in the night sky, or the spatiotemporal pattern of spiking activity 
+in the human brain. With applications across a host of scientific domains, 
+point processes are a fundamental tool for modeling complex phenomena. 
+Our aim in this thesis is to provide a collection of tools for discovering 
+simplifying structure underlying point process data. 
+
+We focus on the Poisson process and its generalizations, the linear and 
+nonlinear Hawkes processes. These processes are
+characterized by a non-negative rate function that specifies the likelihood 
+of events in space or time. Often, our scientific objective is to provide a 
+simple description, or model, of the rate function. The description may take the form 
+of a parametric relationship between the instantaneous rate and a set of 
+measurable covariates, like the time of day or the number of preceding events. 
+Alternatively, we may characterize the rate function in terms of a latent and 
+typically lower dimensional state.  These models enable us to predict unseen events, 
+and provide insight into the underlying processes that gave rise to our data.
+
+As both the size of our data and the richness of our models grow, the need for 
+scalable inference algorithms becomes paramount. To address 
+this challenge, we develop a variety of data augmentation schemes to 
+enable efficient Bayesian inference of the rate function and its parameters.
+Our schemes are amenable to Markov Chain Monte Carlo inference methods as 
+well as variational approaches. 
+
+Our emphasis throughout will be on applications to computational 
+neuroscience, where modern recording technologies enable us to measure the 
+simultaneous activity of large populations of neurons, and our goal is to 
+understand the computations and algorithms those populations implement. 
+In the first six chapters, we will develop a suite of Bayesian methods 
+that may shed light on the structure of neural spike train recordings and 
+provide a bottom-up approach to understanding the brain.  
+In closing, we will consider Bayesian 
+inference as a candidate for a top-down theory of neural computation, and 
+discuss potential implementations and testable ramifications of these hypotheses.
+
+
 

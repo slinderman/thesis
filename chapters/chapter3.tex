@@ -3,5 +3,24 @@
 % \qauthor{Quoteauthor Lastname}
 % \end{savequote}
 
-\chapter{Nonlinear Hawkes Processes with Latent Network Structure}
+\chapter{Nonlinear Interaction Networks}
 
+Hawkes process inference relied on an augmentation strategy 
+made possible by the linear form and excitatory nature 
+ of the interactions. In neural settings, these assumptions 
+of the Hawkes process are not as realistic. Instead, we turn to 
+the nonlinear Hawkes process, which allows for both excitatory 
+and inhibitory interactions by introducing a nonlinearity 
+into the model. This corresponds to the popular generalized 
+linear model that is widely used in computational neuroscience. 
+We develop a novel approach that leverages the 
+\polyagamma augmentation to enable efficient, fully-conjugate 
+inference. Again, we combine the nonlinear Hawkes process with 
+prior distributions on the network of interactions, and we focus 
+on a discrete time approximation. This is part of ongoing work 
+with Ryan and Jonathan Pillow at Princeton, and it has grown out 
+of a Cosyne abstract \cite{linderman2015cosyne}. I also have an 
+unpublished draft in which I extend the abstract and apply it 
+to a variety of neural datasets, and show how the network models 
+recover interesting latent features like neural types and locations.
+I will submit a journal version of this paper as soon as possible.
