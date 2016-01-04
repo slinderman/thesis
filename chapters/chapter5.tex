@@ -1,9 +1,17 @@
  
-\chapter{Latent State Space Models for Point Processes}
+\chapter{Nonparametric Hidden Markov Models for Neural Data}
 
-\section{Switching Linear Dynamical Systems}
-
-\section{Bayesian Inference with MCMC}
-
-\section{Variational Inference}
+In joint work with Zhe Chen, Matt Johnson, and Matthew Wilson, I have been 
+developing nonparametric hierarchical Dirichlet process hidden Markov models 
+(HDP-HMMs) for neural spike train recordings and applying them to hippocampal 
+data recorded in the Wilson lab. The advantage of these nonparametric methods 
+is that the number of states is inferred in a data-driven way, allowing the 
+complexity of the model to grow with that of the data. However, inference 
+becomes more challenging. In this work, we have conducted a thorough empirical 
+study that compares parametric and nonparametric methods, as well as a 
+variety of inference algorithms and approaches to setting the hyperparameters 
+(which can have a large effect on the subsequent inferences). A preliminary 
+version of this work is on the arXiv \cite{linderman2014nonparametric}, and 
+we are submitting final revisions to the Journal of Neuroscience Methods 
+this week. 
 

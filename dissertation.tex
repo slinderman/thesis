@@ -3,6 +3,9 @@
 
 \documentclass{Dissertate}
 
+\usepackage{natbib}
+\usepackage{macros}
+
 \begin{document}
 
 % the front matter
@@ -29,6 +32,7 @@
 \include{chapters/chapter4}
 \include{chapters/chapter5}
 \include{chapters/chapter6}
+\include{chapters/chapter7}
 \include{chapters/conclusion}
 \begin{appendices}
     \include{chapters/appendixA}
@@ -40,7 +44,8 @@
 \clearpage
 \bibliography{references}
 \addcontentsline{toc}{chapter}{References}
-\bibliographystyle{apalike2}
+%\bibliographystyle{apalike2}
+\bibliographystyle{unsrtnat}
 
 \include{endmatter/colophon}
 

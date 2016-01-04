@@ -1,0 +1,64 @@
+\chapter{Bayesian Computation in Neural Circuits}
+
+The final chapter will take a different view on Bayesian computation.
+Rather than using probabilistic models and Bayesian inference to 
+discover structure in neural recordings, we will consider the 
+hypothesis that the neural circuits under study are actually 
+implementing Bayesian computations. This ``Bayesian brain'' hypothesis 
+is by no means novel --- it has been the subject of much recent 
+research and debate in the computational neuroscience community. 
+Under this hypothesis, the brain uses a probabilistic model 
+of the world, and implements Bayesian inference algorithms to 
+infer latent or missing variables under noisy observations. 
+The probabilistic model is learned through experience, supervised 
+training, or evolution, though the mechanisms of learning are 
+less thoroughly explored. 
+
+I think the starting point is a background of cognitive and neural 
+evidence for and against these hypotheses, which will lead naturally 
+into open questions. While the work for this chapter is not yet 
+complete, I think there are two avenues that I could pursue. 
+
+First, I have been working with Ishita Dasgupta and Sam Gershman 
+on an idea for data-driven ``proposal'' mechanisms that use 
+the observed inputs to instantiate hypotheses about the latent 
+variables. These hypotheses are then simulated in order to 
+evaluate their consistency with the observed data, and weighted 
+accordingly. This is an example of importance sampling, but 
+with an intelligent proposal. The proposal is, in turn, learned 
+through experience using stochastic gradient descent.  We 
+have implemented a number of simulations to show that this 
+works in theory, at least on a variety of toy problems. 
+For this thesis, it would be interesting to tie the 
+results of these simulations to real-world cognitive science 
+experiments. Predictions about neuronal implementations 
+will be necessarily speculative, but we can make some high 
+level arguments about layered implementations (e.g. that the 
+proposal may be carried by long range feed-forward connections, 
+whereas the local recurrent connections likely implement the simulation
+and weighting code). This could lead to some qualitative 
+predictions about the effects of lesions. Finally, it may be possible 
+to quantify the effect of a proposal network in terms of the 
+variance of the importance sampling estimator. 
+
+A second potential direction is to consider the effect of 
+limited connectivity on the convergence of a Gibbs sampling 
+algorithm. Many Bayesian theories of neural computation 
+postulate that the brain is running a Markov chain to sample 
+from the posterior distribution over latent variable states. 
+Hypothesized implementations assume that neurons represent 
+single variables, and that the neurons are fully 
+connected so that they may update their states given the states 
+of all others. In practice, neural connectivity is sparse, 
+and neural representations are likely distributed. Perhaps we 
+can quantify the effects of sparsity and distributed 
+representation size in a simple, jointly Gaussian model. 
+In this setting, we can derive analytical forms for the 
+updates and compare the stationary distribution of the 
+approximate model to the true posterior. When the representation 
+is not distributed (one neuron per variable) and the 
+neurons are fully connected, the model reduces to Gibbs sampling 
+with exact updates. As the degree of connectivity goes 
+to zero, presumably the representations need to become more 
+distributed in order to approximate the true posterior. 
+

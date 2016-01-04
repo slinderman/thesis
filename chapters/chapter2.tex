@@ -5,6 +5,24 @@
 
 \chapter{Hawkes Processes with Latent Network Structure}
 
+This chapter will draw on two papers, my 2014 ICML paper \cite{linderman2014discovering}, 
+which shows how to do Gibbs sampling in a continuous time model,
+and my arXiv preprint \cite{linderman2015scalable}, which shows 
+how to do Gibbs sampling and stochastic variational inference in 
+a discrete time approximation.  Both papers focus on
+adding prior distributions on the network of interactions, and 
+showing that the latent variables of the network models can be 
+meaningful, and that they can aid in prediction of future 
+activity. 
+
+Hawkes processes are a particularly nice starting point 
+because they capture a salient type of structure --- excitatory 
+interactions between nodes --- while retaining some 
+analytical tractability due to the linear form of the 
+interactions. In addition to deriving inference algorithms, I 
+will also show how we can tailor our prior distributions to 
+maintain stability of the network. 
+
 \section{Model}
 
 \subsection{Augmentation with Parent Variables}
