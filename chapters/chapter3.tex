@@ -27,12 +27,429 @@ to a variety of neural datasets, and show how the network models
 recover interesting latent features like neural types and locations.
 I will submit a journal version of this paper as soon as possible.
 
-\section{Model}
+\section{Abstract} 
+We develop a novel method for the unsupervised discovery of interpretable latent structure underlying neural recordings. 
+Rather than directly clustering or factorizing measured activity, we propose a generative model that links latent clusters and features of neurons to measured activity via an intermediate functional network. 
+Thus, latent structure is defined in terms of how neurons interact with one another rather than how they behave. 
+To discover the most appropriate structural form, we propose a fully-Bayesian inference algorithm that enables efficient inference and principled model comparison. 
+We demonstrate the efficacy of this approach on synthetic data and simultaneously recorded multi-neuronal spike trains.
 
-\section{MAP Inference}
 
-\section{P\'{o}lya-gamma Augmentation}
+\section{Introduction}
+As our neural recording capabilities are rapidly expanded, the need for automated methods of exploring large-scale multineuronal recordings becomes ever more pressing. 
+Though our recordings may be incomprehensibly large, capturing the activity of hundreds of thousands of neurons for hours or days at a time, the underlying neural population often exhibits some simplifying structure. 
+For example, we commonly find low-dimensional continuous embeddings of neural populations using tools like principal components analysis (PCA), or distinct classes of neurons with clustering algorithms like k-means. 
+These simplified representations serve a number of roles: 
+they reduce data to a interpretable set of features and types; 
+they denoise data by capturing shared structure and throwing away noise; 
+they may confirm that hypothesized structure exist, for example, that spatially localized cells are functionally similar as well; 
+and, most importantly, they suggest novel hypotheses about how neural populations should be understood.
 
-\section{Bayesian Inference with MCMC}
+\TODO{Discuss some recent successes of unsupervised structure discovery methods and emphasize some examples of continuous and discrete representations}
 
-\section{Variational Inference}
+Unfortunately, most common approaches do not take advantage of the important temporal dependencies in neural recordings. 
+The generative assumptions underlying PCA assert that each neuron's activity can be represented as a linear combination of a small number of bases. 
+It says nothing about the relationship between activity in one time bin and the next.
+Similarly, na\"ive clustering methods implicitly assume that time bins are conditionally independent given the latent cluster assignment. 
+We propose a generative model where latent structure is reflected in an patterns of functional connectivity among neurons.  This functional network parameterizes an autoregressive model that gives rise to temporally structured activity.
+  
+Figure~\ref{fig:fig1} illustrates the steps of the proposed generative model. 
+We assume that neuron~$n$ has some latent feature~$z_n$ that may be continuous or discrete. 
+In Figure~\ref{fig:fig1}, each neuron belongs to one of four classes, so~$z_n$ is discrete and is one of~$\{\textit{red}, \textit{blue}, \textit{green}, \textit{yellow}\}$. 
+These latent class assignments affect the probability of a functional connection from one neuron to another. 
+In this case, \textit{red} neurons sparsely connect to \textit{blue} neurons, \textit{blue} to \textit{green}, and \textit{green} to \textit{yellow}.
+These connections are aggregated into the functional network,~$\bW$, shown in Figure~\ref{fig:fig1}.
+Finally, this network parameterizes an autoregressive model for neural activity.
+In this case, the \textit{activation} of the~$n$-th neuron,~$\psi_n(t)$, depends on the number of spikes that connected neurons fired in the preceeding time bins. 
+%This might give rise to the roughly periodic activity shown in Figure~\ref{fig:fig1}.
+
+This generative approach formalizes many of the intuitive hypotheses that systems neuroscientists already employ. 
+Neural circuits are commonly described with simplified block diagrams that show how one subpopulation of neurons drives another. 
+In other cases, neurons are described by continuous features, such as ``place fields'' that describe the spatial location in which hippocampal place cells fire.
+Since our movement is continuous, neurons with similar place fields are functionally correlated.
+Our approach begins with high-level hypotheses like, ``neurons have latent types that determine functional connectivity.''
+These hypotheses are instantiated as generative models which are then fit to the data using probabilistic inference techniques and compared on the basis of how well they explain the measured activity.
+
+We show how a host of high-level hypotheses can be formalized as generative models using random network models. 
+We then develop a flexible Bayesian inference algorithm for discovering the latent parameters of this model from the measured activity. 
+Finally, we derive a principled method for comparing these models on the basis of their \textit{marginal likelihood}, that is, the probability they assign to the data. 
+We demonstrate the efficacy of this approach on both synthetic and real-world datasets. 
+
+% \begin{figure}[t]
+%   \centering
+%   \begin{subfigure}[b]{.3\textwidth}
+%     \centering
+%     \includegraphics[width=\textwidth]{clustered_neurons}
+%     \caption{}
+%     \label{fig:fig1_z}
+%   \end{subfigure}
+%   \begin{subfigure}[b]{.3\textwidth}
+%     \centering
+%     \includegraphics[width=\textwidth]{clustered_network}
+%     \caption{}
+%     \label{fig:fig1_W}
+%   \end{subfigure}
+%   \begin{subfigure}[b]{.3\textwidth}
+%     \centering
+%     \includegraphics[width=\textwidth]{clustered_rates}
+%     \caption{}
+%     \label{fig:fig1_psi}
+%   \end{subfigure}
+%   \caption{Illustrative example of a generative model relating latent
+%     structure to multineuronal spike trains via a functional
+%     network. (a) Here, neurons have a latent class (\textit{red},
+%     \textit{blue}, \textit{yellow}, or \textit{green}). 
+%     (b) These classes govern the probability of functional
+%     interactions for each pair of neurons. (c) The network
+%     parameterizes an autoregressive model for the activation of the
+%     neurons, which, in this example, give rise to the stochastic spike
+%     trains we observe.}
+% \label{fig:fig1}
+% \end{figure}
+
+
+\begin{figure}[t]
+  \centering
+  \begin{subfigure}[b]{\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/ch3/figure1.png}
+  \end{subfigure}
+  \caption{Overview of model.}
+  \label{fig:fig1}
+\end{figure}
+
+\section{Results}
+
+\subsection{Retinal Ganglion Cells}
+
+\subsection{Hippocampal Place Cells}
+
+\subsection{Calcium Fluorescence}
+
+\section{Methods}
+Our primary contribution is a novel framework for latent structure discovery.
+This framework consists of a probabilistic model relating structure to observed signals, an efficient Bayesian inference algorithm capable of fitting this model, and a model selection algorithm that enables principled comparison of structural forms.
+
+\subsection{Probabilistic Model}
+A probabilistic model specifies a joint probability distribution over measured signals and the latent variables we wish to infer. 
+In our model, the measured signal from neuron~$n$ in the~${t\text{-th}}$ time bin is denoted~$s_n[t]$, and the latent variables include the neuron's activation,~$\psi_n[t]$, the functional network defined by a binary adjacency matrix,~$\bA$, and a weight matrix,~$\bW$, the neuron's latent variables of interest,~$z_n$, and a set of model parameters,~$\theta$. 
+Let~$\bs$,~$\bpsi$, and~$\bz$ denote the collection of all neurons' signals, activations, and latent variables, respectively.
+We factorize the joint probability distribution into the product of four pieces, which will be discussed in turn:
+\begin{align}
+p(\bs, \bpsi, \bA, \bW, \bz, \theta) 
+%&= p(\theta) \, p(\bz \given \theta) \, p(\bA, \bW \given \bz, \theta) \, p(\bs, \bpsi \given \bA, \bW) \\
+&= 
+\underbrace{p(\theta) \, p(\bz \given \theta)}_\text{structure} \, 
+\overbrace{p(\bA, \bW \given \bz, \theta)}^\text{network} \, 
+\prod_{t=1}^T \bigg[ 
+\underbrace{p \bigg( \bpsi[t] \, \bigg| \, \bs[1], \ldots, \bs[t-1], \bA, \bW \bigg)}_\text{activation} \, 
+\overbrace{p \bigg(\bs[t] \, \bigg| \, \bpsi[t] \bigg)}^\text{observation} \bigg].
+\end{align}
+
+% The probabilistic model can be further decomposed into four components: 
+% \begin{enumerate*}[label=\itshape\alph*\upshape)]
+% \item a model of interpretable latent structure,
+% \item a network model that defines the probability of a functional interaction network given the latent structure; 
+% \item an autoregressive activation model that relates activation at time~$t$ to the preceding activity of functionally connected neurons; and
+% \item an observation model that provides a distribution over measured activity given the instantaneous activation.
+% \end{enumerate*}
+
+\paragraph{Latent structure models}
+The first piece is a model of interpretable latent structure. 
+The space of such structures is infinitely diverse, yet many structures can be composed of a few simple building blocks.
+Consider discrete structures, where each neuron has a latent type drawn from a categorical distribution,~$z_n \sim \distCategorical(z_n \given \bpi)$. 
+In Figure~\ref{fig:fig1}(a), we have four classes identified by the four primary colors.
+Some neural populations may be better characterized by having a spectrum of types, which may be formalized by a real-valued feature drawn from a Gaussian distribution,~$z_n \sim \distNormal(z_n \given \bmu, \bSigma)$. 
+Figure~\ref{fig:fig1}(b) illustrates a one dimensional feature space.
+When the relationship between two neurons is a function of the distance between their features, we think of these features as locations in some real or abstract space. 
+The full power of this approach is realized when features are combined, as in the final example of Figure~\ref{fig:fig1} where neurons have both a type and location. 
+This can capture, for example, cells in visual cortex that have a particular type of tuning curve centered at a specific location. 
+%Other possibilities that are not shown but could be formulated in a similar manner include hierarchies and admixtures of types and features. 
+
+\paragraph{Network models}
+These latent structures affect the observed signal by way of a network. 
+This network captures the functional relationships between neurons in an intuitive manner.
+For example, suppose~${z_n \in \{1, 2\}}$ denotes a neuron's discrete type. 
+A stochastic block model, one type of network model, can reflect hypotheses like, ``Neurons of type 1 are likely to excite neurons of type 2, but not vice versa.''  
+This could be encoded by a network model with different mean weights for each ordered pair of classes:~$\mu_{1,1}$,~$\mu_{1,2}$,~$\mu_{2,1}$, and~$\mu_{2,2}$.
+The weight of the connection from neuron~$i$ to neuron~$j$ is then drawn from a normal distribution with the mean for the neurons' respective classes,~$W_{i,j} \sim \distNormal(W_{i,j} \given \mu_{z_i, z_j}, \sigma^2)$. 
+
+Similarly, the latent classes may determine the probability of interaction between two cells. In this case, we have parameters,~$\rho_{1,1}$,~$\rho_{1,2}$,~$\rho_{2,1}$, and~$\rho_{2,2}$, that specify the probability of connection for each ordered pair of classes.
+Then, we have~$A_{i,j} \sim \distBernoulli(A_{i,j} \given \rho_{z_i, z_j})$.
+
+Next, suppose~$z_n \in \reals^2$ denotes the latent location of the neuron, and that nearby cells are more likely to interact. 
+This hypothesis is encoded by the following \emph{latent distance model},~${A_{i,j} \sim \distBernoulli(A_{i,j} \given \sigma(||z_i - z_j||))}$, where~$\sigma(x)=(1+e^{-x})^{-1}$ is the logistic function, which maps~$\reals \to [0,1]$.
+Hence, the probability of connection is a function of the distance between the cells.
+
+%Finally, consider a network model where the weights are a function of continuous latent features. 
+% Instead of depending upon the distance between features, it may be more natural to think of the inner product between features as a measure of similarity.
+% For example, let~$W_{i,j} \sim \distNormal(W_{i,j} \given z_i^\trans z_j, \sigma^2)$. 
+% Then, in expectation, neurons with orthogonal features have zero weight, neurons with parallel feature vectors have positive weights, and neurons with opposite feature vectors have negative weights. 
+
+In all of these cases, the network factorizes into a simple form,
+\begin{align}
+p(\bA, \bW \given \bz, \theta) &\equiv 
+\prod_{m=1}^N \prod_{n=1}^N \distBernoulli \big(A_{m,n} \given \rho_{m,n} \big) \,
+\distNormal \big(W_{m,n} \given \mu_{m,n}\, \sigma_{m,n}^2 \big),
+\end{align}
+where~$\rho_{m,n}$,~$\mu_{m,n}$, and~$\sigma_{m,n}^2$ are connection probabilities, means, and variances, respectively, that depend implicitly on the parameters,~$\theta$, and the pair of latent variables~$z_m$ and~$z_n$.
+
+\paragraph{Autoregressive activation model}
+The activation is a time-varying signal that intuitively represents the intensity of a neuron's activity. 
+If the observed activity is a spike train, then the activation is related to the firing rate.
+Importantly, the instantaneous activation depends upon the neuron's preceding activity as well as the activity of upstream neurons. 
+These dependencies are captured by the functional network.
+
+We formalize this with an autoregressive model of activation,
+\begin{align}
+\psi_{n}[t] &\sim \distNormal\left( b_n + \sum_{m=1}^N A_{m,n} \cdot W_{m,n} \cdot \phi(\bs_m[1:t-1]), \, \sigma_\psi^2 \right).
+\end{align}
+In this formulation,~$\phi(\cdot)$ is a fixed (potentially nonlinear) function that maps a vector of previous spiking activity to a scalar value. For example,~$\phi$ could count the number of spikes in the preceding time bin or compute a weighted average of spikes over some preceding time window. Here, the activation at time~$t$ depends upon only a single function of the preceding activity, but this could easily be extended to have weights for~$B$ different functions by defining~$\bW_{m,n} \in \reals^B$.
+This is developed formally in the appendix.
+
+\begin{comment}
+The Gaussian distribution allows the activation to deviate from that predicted by the preceding signal. 
+If the signal history captures most of the variance in the activation, then the variance of this distribution,~$\sigma_\psi^2$, will be small, and can often be neglected.
+Indeed, in the experiments in this paper, we fixed~$\sigma_\psi^2$ to zero and forced the activation to be a deterministic function of the preceding signal. Then, the joint probability distribution can be simplified to,
+\begin{align}
+p(\bs, \bA, \bW, \bz, \theta) 
+%&= 
+%p(\theta) \, p(\bz \given \theta) \, 
+%p(\bA, \bW \given \bz, \theta) \, 
+%\prod_{n=1}^N \prod_{t=1}^T 
+%p \bigg( s_n[t] \, \bigg| \, \psi_{n}[t] \bigg)
+%\\
+&\equiv p(\theta) \, p(\bz \given \theta) \, 
+p(\bA, \bW \given \bz, \theta) \, 
+\prod_{n=1}^N \prod_{t=1}^T 
+p \bigg( s_n[t] \, \bigg| \, b_n + \sum_{m=1}^N A_{m,n} \cdot W_{m,n} \cdot \phi(\bs_m[1:t-1]) \bigg).
+\end{align}
+\end{comment}
+
+
+\paragraph{Observation models}
+The observation model describes the statistical relationship betwen activation and signal. 
+Here again, we have great flexibility in how we define this model.
+If our signal is naturally continuous, like a time-varying calcium fluorescence, then it is natural to posit a model with Guassian noise,~${s_n[t] \sim \distNormal(s_n[t] \given \psi_n[t], \sigma_s^2)}$. 
+If we are modeling spike trains, then our signal will take the form of discrete spike counts in each time bin.
+When these counts are binary, we use~${s_n[t] \sim \distBernoulli(s_n[t] \given \sigma(\psi_n[t]))}$.
+With larger time bins, the counts will be non-negative integers that are more aptly modeled by a Poisson distribution or negative binomial distribution. 
+In this work, we use the negative binomial distibution since, as we will show, it is amenable to efficient Bayesian inference via data augmentation. 
+Specifically, for non-negative integer spike counts, we let~${s_n[t] \sim \mathrm{NB}(s_{n}[t] \given \xi, \sigma(\psi_n[t]))}$,
+where~$\xi$ is the scale parameter and~$\sigma(\psi_n[t])$ is an instantaneous probability. 
+This is equivalent to saying that the spike counts arise from a two step process: 
+first the instantaneous firing rate is drawn from a gamma distribution,~$\lambda_n[t] \sim \distGamma(\xi, e^{\psi_{n}[t]})$, then the spike count is drawn from,~$s_{n}[t]\sim \distPoisson(\lambda_n[t])$.
+
+\subsection{Bayesian Inference}
+Inference is the process of evaluating the posterior distribution over latent variables given the observed signal, which is related to the joint distribution by Bayes' rule:
+\begin{align}
+p(\theta, \bz, \bA, \bW, \bpsi \given \bs) &= \frac{p(\theta, \bz, \bA, \bW, \bpsi, \bs) }{p(\bs)}.
+\end{align}
+The denominator on the right hand side is known as the \emph{marginal likelihood} of the signal, and will play a crucial role in model selection. 
+
+It is computationally intractable to compute this posterior exactly and it has no simple closed form solution, so we must instead resort to approximate methods. 
+We use Markov chain Monte Carlo (MCMC) methods to collect samples from this posterior distribution.
+With these samples, we can compute unbiased expectations with respect to the posterior distribution.
+For example, we can compute the expected probability that two neurons belong to the same class, the expected weight of a functional connection between two neurons, or the expected predictive likelihood of heldout test data.
+
+Our Markov chain is defined by transition operators that sample one latent variable at a time while holding the other variables constant. First, we update the parameters,~$\theta$, by sampling them from their conditional distribution given the structural variables and the functional network. Then, we update the structural variables given the parameters and the network. Letting the superscript~$(i)$ denote the sample from the~$i$-th iteration of our algorithm, these two steps can be written as,
+\begin{align}
+\theta^{(i+1)} &\sim p(\theta \given \bz^{(i)}, \bA^{(i)}, \bW^{(i)}, \psi^{(i)}, \bs) 
+\propto p(\theta) \, p(\bz^{(i)} \given \theta) \, p(\bA^{(i)}, \bW^{(i)} \given \bz^{(i)}, \theta),\\
+\bz^{(i+1)} &\sim p(\bz \given \theta^{(i+1)}, \bA^{(i)}, \bW^{(i)}, \bs) 
+\propto p(\bz \given \theta^{(i+1)}) \, p(\bA^{(i)}, \bW^{(i)} \given \bz, \theta^{(i+1)}).
+\end{align}
+We design the structure and network models such that these two steps are straightforward. Full details are given in the appendix.
+
+\paragraph{Network updates} Updating the network is more challenging since there are~$N^2$ entries in both~$\bA$ and~$\bW$. 
+Fortunately, it can be shown that the activation and observation models factorize into a product of terms for each time bin and each neuron.
+Thus, when the network model factorizes into a product over terms for each entry in~$\bA$ and~$\bW$ (as do all of the models used in this paper), then the joint probability factorizes into terms for each neuron. 
+Those terms depend solely on the connections incident to the neuron, i.e. the~$n$-th term depends only on the~$n$-th column of~$\bA$ and~$\bW$, which we denote by~$\bA_{:,n}$ and~$\bW_{:,n}$, respectively.
+We can leverage this fact by updating the columns of these matrices in parallel, thereby reducing our computation to linear in the number of neurons,~$N$.
+
+Consider updating the weights~$\bW_{:,n}$ given a particular set of connections,~$\bA_{:,n}$. The conditional distribution is propotional to the product of two terms,~$p(\bW_{:,n} \given \bz, \theta)$, and,~$p(\bpsi_{:,n} \given \bA_{:,n}, \bW_{:,n})$. In our model, both of these terms are Gaussian so the conditional distribution will be Gaussian as well. The former term can be written as,~$\distNormal(\bW_{:,n} \given \bmu_{:,n}, \bSigma_{:,n})$, where~$\bmu_{:,n} = \left[\mu_{1,n}, \ldots, \mu_{N,n} \right]^\trans$, and~$\bSigma_{:,n} = \diag(\left[\sigma_{1,n}^2, \ldots, \sigma_{N,n}^2 \right])$. Let~$\bPhi \in \reals^{T \times N}$ denote a matrix where~$\Phi_{t,m}=\phi(\bs_m[1:t-1])$, and let~$\bLambda_\psi = \sigma_\psi^{-2} \bI$ denote the~$T \times T$ activation precision matrix. The latter term can then be written as~$\distNormal(\bpsi_{:,n} \given \bPhi (\bW_{:,n} \odot \bA_{:,n}), \bLambda^{-1})$. Then, to update the weights, we sample from the conditional distribution,
+\begin{align}
+p(\bW_{:,n} \given \theta, \bz, \bA_{:,n}, \bpsi_{:,n}) &= \distNormal \left( \bW_{:,n} \given \widehat{\bmu}_{:,n}, \widehat{\bSigma}_{:,n} \right),
+\end{align}
+where
+\begin{align}
+\widehat{\bSigma}_{:,n} &= \left( \bSigma_{:,n}^{-1} + (\bPhi^\trans \bLambda \bPhi) \odot \bA_{:,n} \bA_{:,n}^\trans \right)^{-1}, \\
+\widehat{\bmu}_{:,n} &= \widehat{\bSigma}_{:,n}
+\left( \bSigma_{:,n}^{-1} \bmu_{:,n} + (\bPhi^\trans \bLambda \bpsi_{:,n}) \odot \bA_{:,n} \right).
+\end{align}
+
+The na\"ive method of resampling the binary adjacency matrix given a fixed set of weights is doomed to fail because the presence or absence of a connection is highly correlated with the weights. Fortunately, since the weights have a Gaussian conditional distribution, we can integrate over possible weights in order to reason about the conditional probability of a connection independent of the connection's weight. That is, we can sample~$\bA_{:,n}$ from its conditional distribution after marginalizing out~$\bW_{:,n}$. This marginal is,
+\begin{align}
+p(\bA_{:,n} \given \bpsi, \theta, \bz) 
+&= \int p(\bA_{:,n}, \bW_{:,n} \given \bpsi, \theta, \bz) \, \mathrm{d} \bW_{:,n} \\
+&\propto p(\bA_{:,n} \given \theta, \bz) \int \distNormal(\bpsi_{:,n} \given \bPhi (\bW_{:,n} \odot \bA_{:,n}), \bLambda^{-1}) \, \distNormal(\bW_{:,n} \given \bmu_{:,n}, \bSigma_{:,n}) \, \mathrm{d} \bW_{:,n} \\
+&= p(\bA_{:,n} \given \theta, \bz)  \,
+\frac{
+|\bSigma_{:,n}|^{-\frac{1}{2}}
+\exp \big\{-\frac{1}{2} {\bmu}_{:,n}^\trans {\bSigma}_{:,n}^{-1} {\bmu}_{:,n} \big\}
+}
+{
+|\widehat{\bSigma}_{:,n}|^{-\frac{1}{2}}
+\exp \big\{-\frac{1}{2} \widehat{\bmu}_{:,n}^\trans \widehat{\bSigma}_{:,n}^{-1} \widehat{\bmu}_{:,n} \big\} 
+}.
+\end{align}
+Note that~$\widehat{\bmu}_{:,n}$ and~$\widehat{\bSigma}_{:,n}$ are functions of~$\bA_{:,n}$. 
+
+Sampling this conditional distribution directly would require enumerating and evaluating all~$2^N$ possible values of~$\bA_{:,n}$, which is intractable for even small~$N$. However, we can perform Gibbs updates of~$A_{m,n}$ given the state of other incoming connections,~$\bA_{\neg m,n}$, where~$\neg m$ denotes ``all entries except the~$m$-th entry.'' To implement this algorithm, precompute~$\bPhi^\trans \bLambda \bPhi$ and~$\bPhi^\trans \bLambda \bpsi_{:,n}$, and then iterate over the entries in~$\bA_{:,n}$. For each entry, flip its state, update~$\widehat{\bmu}_{:,n}$ and~$\widehat{\bSigma}_{:,n}$, then compute the updated conditional probability of~$\bA_{:,n}$, and sample a new value of~$A_{m,n}$ from the conditional distribution. Once all entries of~$\bA_{:,n}$ have been updated, sample~$\bW_{:,n}$ from its full conditional distribution given above.
+
+\paragraph{Activation updates}
+The only variable left to be updated is the activation,~$\bpsi$. The conditional distribution over~$\bpsi_{:,n}$ is proportional to the product of~$\distNormal(\bpsi_{:,n} \given \bPhi (\bW_{:,n} \odot \bA_{:,n}), \bLambda^{-1})$ and~$\prod_{t=1}^T p(s_{n}[t] \given \psi_{n}[t])$. When the observation model is Gaussian, the latter term can be written as a joint Gaussian,~$\distNormal(\bs_{:,n} \given \bpsi_{:,n}, \bOmega^{-1})$, where~$\bOmega = \sigma_s^{-1} \bI$ is the observation precision matrix. In this case, the conditional distribution on~$\bpsi_{:,n}$ is,
+\begin{align}
+p(\bpsi_{:,n} \given \theta, \bz, \bA_{:,n}, \bW_{:,n}, \bs) &= 
+\distNormal(\bpsi_{:,n} \given \widehat{\bmu}_{\psi_n}, \widehat{\bSigma}_{\psi_n}),
+\end{align}
+where
+\begin{align}
+\widehat{\bSigma}_{\psi_n} &= \left( \bLambda + \bOmega \right)^{-1}
+\\
+\widehat{\bmu}_{\psi_n} &= \bSigma_{\psi_{n}} \left(\bLambda \bPhi (\bA_{:,n} \odot \bW_{:,n}) + \bOmega \bs_{:,n} \right).
+\end{align}
+
+
+In general, however, the observation model will not be Gaussian, and hence will not yield simple closed form updates for~$\bpsi$. We show how even nonconjugate Bernoulli and negative binomial observation models can be rendered conjugate by introducing a set of auxiliary P\'{o}lya-gamma variables.
+
+The integral identity at the heart of the P\'{o}lya-gamma augmentation scheme \cite{polson2013bayesian} is
+\begin{equation}
+\label{eq:pg_identity}
+\frac{(e^{\psi})^a}{(1+e^{\psi})^b} = 2^{-b} e^{\kappa \psi} \int_{0}^{\infty} e^{-\omega \psi^2 /2} p(\omega \given b, 0) \, \mathrm{d}\omega,
+\end{equation}
+where~${\kappa=a-b/2}$ and~$p(\omega\given b, 0)$ is the density of the P\'{o}lya-gamma
+distribution~${\distPolyaGamma(b, 0)}$, which does not depend on $\psi$.
+% Notice that for fixed $\omega$ the right-hand side is log-quadratic in $\psi$,
+% while the left-hand side resembles a logistic link function common in many
+% likelihood functions of interest.
+% This structure, along with the fact that P\'{o}lya-gamma variates can be simulated
+% efficiently \cite{}, leads to the augmentation scheme \cite{}.
+Consider a likelihood function of the form
+\begin{equation}
+  \label{eq:logit_likelihood}
+  p(s \given \psi) = c(s) \frac{(e^\psi)^{a(s)}}{(1+e^\psi)^{b(s)}}
+\end{equation}
+for some functions $a$, $b$, and $c$.
+For example, the Bernoulli distribution has this form with,~$a(s)=s$,~$b(s)=1$, and~$c(s)=1$. Thus,~$\kappa(s)=s-\frac{1}{2}$. Likewise, the negative binomial distribution with parameter~$\xi$ we have,~$a(s)=s$,~$b(s)=s+\xi$, and~$c(s)={s + \xi -1 \choose s}$, yielding~$\kappa(s)=\frac{s-\xi}{2}$.
+
+Using~\eqref{eq:pg_identity} along with a prior~$p(\psi)$, we can write the joint density of $(\psi, s)$ as
+\begin{equation}
+  \label{eq:pg_joint}
+  p(\psi, s) = p(\psi) \, c(s) \frac{(e^\psi)^{a(s)}}{(1+e^\psi)^{b(s)}} = \int_0^\infty
+  p(\psi) \, c(s) \, 2^{-b(s)} e^{\kappa(s) \psi} e^{-\omega \psi^2/2} p(\omega \given b(s), 0) \; \mathrm{d}\omega.
+\end{equation}
+The integrand of~\eqref{eq:pg_joint} defines a joint density on $(\psi, s,
+\omega)$ which admits $p(\psi, s)$ as a marginal density.
+Conditioned on these auxiliary variables $\omega$, we have that the likelihood as a function of~$\psi$ is,
+\begin{equation}
+  p(s \given \psi, \omega) \propto e^{\kappa(s) \psi} e^{- \omega \psi^2/2} 
+\propto \distNormal \left(\frac{\kappa(s)}{\omega} \, \bigg| \, \psi, \, \omega^{-1} \right).
+\end{equation}
+In summary, if we have a Bernoulli or negative binomial observation model, we can introduce a set of P\'{o}lya-gamma auxiliary variables,~$\omega_n[t]$, for each spike count~$s_n[t]$. Conditioned on the auxiliary variables, the likelihood is rendered conjugate to a Gaussian prior on~$\psi$. Specifically, let~$\bOmega = \diag([\omega_{n}[1], \ldots, \omega_n[t]])$. Then the conditional distribution for~$\bpsi_{:,n}$ is 
+$\distNormal(\bpsi_{:,n} \given \widehat{\bmu}_{\psi_n}, \widehat{\bSigma}_{\psi_n})$
+where
+\begin{align}
+\widehat{\bSigma}_{\psi_n} &= \left( \bLambda + \bOmega \right)^{-1},
+\\
+\widehat{\bmu}_{\psi_n} &= \bSigma_{\psi_{n}} \left(\bLambda \bPhi (\bA_{:,n} \odot \bW_{:,n}) + \kappa(\bs_{:,n}) \right).
+\end{align}
+
+
+Finally, we need to update the auxiliary variables by sampling them from their conditional distribution. 
+By the exponential tilting property of the P\'{o}lya-gamma
+distribution, ${p(\omega \given \psi, s) = \distPolyaGamma(b(s), \psi)}$.
+Efficient sampling algorithms for sampling from the P\'{o}lya-gamma distribution, and 
+these samples can be collected in parallel for each neuron and time bin. 
+
+\paragraph{Deterministic activation}
+In many cases, there is no need for Gaussian noise in the activation, and we may let the activation be deterministically defined to be~$\bpsi_{:,n} = \bPhi(\bA_{:,n} \odot \bW_{:,n})$. The network updates remain the same, but the conditional mean and variance of the weights become,
+\begin{align}
+\widehat{\bSigma}_{:,n} &= \left( \bSigma_{:,n}^{-1} + (\bPhi^\trans \bOmega \bPhi) \odot \bA_{:,n} \bA_{:,n}^\trans \right)^{-1}, \\
+\widehat{\bmu}_{:,n} &= \widehat{\bSigma}_{:,n}
+\left( \bSigma_{:,n}^{-1} \bmu_{:,n} + (\bPhi^\trans  \kappa(\bs_{:,n})) \odot \bA_{:,n} \right).
+\end{align}
+The auxiliary variables are sampled from their P\'{o}lya-gamma conditional distribution with the deterministic activation.
+
+\subsection{Model Selection}
+
+
+\section{Discussion}
+
+\subsection{Related Work}
+\begin{itemize}
+\item Simple clustering and dimensionality reduction of spike train matrices
+\item Network models
+\item Generalized linear models
+\item Bayesian inference (go through Liam's work)
+\item Polya-gamma augmentation
+\end{itemize}
+
+
+\section{Synthetic Experiments}
+
+\section{Detailed Methods}
+
+\subsection{Network models}
+A random network model defines a joint probability distribution over interpretable latent variables associated with each neuron and the networks they give rise to. 
+We denote the latent variable associated with neuron~$n$ by~$z_n$.  
+A network is defined by a pair of arrays. 
+The binary adjacency matrix~$\bA \in \{0,1\}^{N\times N}$ specifies the presence or absence of connections. 
+If~$A_{i,j}=1$ then there exists a directed connection from neuron~$i$ to neuron~$j$.
+The real-valued array~$\bW \in \reals^{N \times N \times B}$ has entries~$\bW_{i,j} \in \reals^B$ that specify the strength of the connection along~$B$ dimensions.
+These meaning of these dimensions will be made precise in the discussion of the autoregressive activation model.
+For now, the weight~$W_{i,j,b}$ can be thought of as the strength of the connection from neuron~$i$ to neuron~$j$ at time lag~$b$.
+Finally, the network model may also have a set of global parameters,~$\theta$. 
+We assume that together these define a probability distribution over networks that factorizes as,
+\begin{align}
+p(\theta, \{z_n\}_{n=1}^N, \bA, \bW) &= 
+p(\theta) \, 
+\left[ \prod_{n=1}^N p(z_n \given \theta) \right]  
+\left[ \prod_{i=1}^N \prod_{j=1}^N p(A_{i,j} \given z_{i}, z_{j}, \theta) \, 
+p(\bW_{i,j} \given z_{i}, z_{j}, \theta) \right].
+\end{align}
+
+Trivially, an \emph{empty} network model corresponds to the case where no connections are present and~${A_{i,j} \equiv 0}$. 
+This will correspond to the null hypothesis that the population consists of entirely independent neurons. 
+The activity of one neuron will have no effect on the activity of others. 
+Alternatively, we may define the \emph{complete} network wherein all connections are present, or~${A_{i,j} \equiv 1}$ and the weights are Gaussian distributed,
+~${p(\bW_{i,j} \given \theta) = \distNormal(\bW_{i,j} \given \bmu, \bSigma)}$. 
+As we will see, this special case recovers the standard GLM with~$L_2$ regularization. 
+
+% Sparse model
+The simplest nontrivial model we consider will be called the \emph{sparse model}.
+It lacks any structure --- that is, there are no latent variables,~$z_n$. 
+Instead, we have only global variables~$\theta = \{\rho, \bmu, \bSigma \}$, where~${\rho \in [0,1]}$, ${\bmu \in \reals^B}$, and~${\bSigma \in \reals^{B \times B}}$. 
+Given these global parameters, each connection in the binary adjacency matrix is a conditionally independent Bernoulli random variable,
+${p(A_{i,j} \given \theta) = \distBernoulli(A_{i,j} \given \rho)}$.
+Likewise, each weight is a conditionally independent Gaussian variable,
+${p(\bW_{i,j} \given \theta) = \distNormal(\bW_{i,j} \given \bmu, \bSigma)}$.
+Though this sparse model may be of independent interest in applications focused on recovering functional connectivity, our aim in this work is to discover meaningful latent structure. 
+Thus, we explore a variety of ways in which this model may be extended.
+
+% Stochastic Block Models
+First, consider a model in which neurons are assigned to one of~$C$~classes,~$z_n \in \{1, \ldots, C\}$. 
+These class affiliations may influence the probability of connection according to the following \emph{stochastic block model} (SBM) \cite{Nowicki-2001}. 
+Let~$\theta = \{\bR\}$ where~${\bR \in [0,1]^{C \times C}}$ denotes a matrix of connection probabilities for each pair of classes. 
+That is, the probability of connection from a neuron of class~$c$ to a neuron of class~$d$ is given by~$R_{c,d}$.
+Combined with the latent neuron class assignments, this yields
+${p(A_{i,j} \given z_i, z_j, \theta) = \distBernoulli(A_{i,j} \given R_{z_i, z_j})}$.
+Alternatively (or simultaneously), these classes may govern the distribution over connection weights. 
+Let~${\bM \in \reals^{C \times C \times B}}$ denote an array of mean vectors and~
+${\bV \in \reals^{C \times C \times B \times B}}$ denote an array of covariance matrices. 
+Then we may have,
+${p(\bW_{i,j} \given z_i, z_j, \theta) = \distNormal(\bW_{i,j} \given \bM_{z_i, z_j}, \bV_{z_i,z_j})}$.
+
+% Latent distance models
+In some settings, a continuous latent feature space is a more natural representation of latent structure. 
+For example, hippocampal place cells are naturally characterized by the real-valued spatial location in which they are most active. 
+Intuitively, neurons with neighboring place fields should be functionally correlated whereas the activity of neurons with nonoverlapping place fields should be anticorrelated.
+This is naturally captured by a model of the following form.
+Let~$z_n \in \reals^D$ denote the \emph{location} of the neuron in~$D$-dimensional space. 
+Then, let~${d_{i,j} = ||z_i - z_j||_2}$ denote the distance between the two neurons' locations.
+We allow the probability of connection to depend on these distance as,
+${p(A_{i,j} \given z_i, z_j, \theta) = \distBernoulli(A_{i,j} \given \sigma(d_0 + d_{i,j}))}$,
+where~${\sigma(x)=(1+e^{-x})^{-1}}$ is the logistic function.
+Alternatively, the weights may depend on distance via,
+${p(\bW_{i,j} \given z_i, z_j, \theta) = \distNormal(\bW_{i,j} \given \bmu_0 + d_{i,j}, \bSigma)}$.
+We refer to this as a \emph{latent distance model}.

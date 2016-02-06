@@ -38,7 +38,1466 @@
 
 @article{linderman2016cosyne,
   title={Bayesian Latent State Space Models of Neural Activity},
-  author={Linderman, Scott W and Tucker, Aaron, and Johnson, Matthew J},
+  author={Linderman, Scott W and Tucker, Aaron and Johnson, Matthew J},
   journal={Submitted to Computational and Systems Neuroscience (Cosyne) Abstracts},
   year={2016}
+}
+
+
+% Chapter 2 (Hawkes)
+@inproceedings{Gomez-2010,
+  title={Inferring networks of diffusion and influence},
+  author={Gomez-Rodriguez, Manuel and Leskovec, Jure and Krause, Andreas},
+  booktitle={Proceedings of the 16th ACM SIGKDD International Conference on Knowledge Discovery and Data Mining},
+  pages={1019--1028},
+  year={2010},
+  organization={ACM}
+}
+
+@book{Block-1993,
+  title={Street gang crime in {C}hicago},
+  author={Block, Carolyn R and Block, Richard},
+  year={1993},
+  publisher={US Department of Justice, Office of Justice Programs, National Institute of Justice}
+}
+
+@unpublished{ICPSR,
+author={Block, Carolyn R and Block, Richard and Illinois Criminal Justice Information Authority},
+title={Homicides in {C}hicago, 1965-1995},
+note={ICPSR06399-v5. Ann Arbor, MI: Inter-university Consortium for Political and Social Research [distributor]},
+doi={10.3886/ICPSR06399.v5},
+year={2005},
+month={July},
+day={6}
+}
+
+@article{Brillinger-1988,
+    abstract = {{Suppose that a neuron is firing spontaneously or that it is firing under the influence of other neurons. Suppose that the data available are the firing times of the neurons present. An  h integrate several inputs and fireh model is developed and studied empirically. For the model a neuron's firing occurs when an internal state variable crosses a random threshold. This conceptual model leads to maximum likelihood estimates of internal quantities, such as the postsynaptic potentials of the measured influencing neurons, the membrane potential, the absolute threshold and also estimates of derived quantities such as the strength-duration curve and the recovery process of the threshold. The model's validity is examined via an estimate of the conditional firing probability. The approach appears useful for estimating biologically meaningful parameters, for examining hypotheses re these parameters, for understanding the connections present in neural networks and for aiding description and classification of neurons and synapses. Analyses are presented for a number of data sets collected for the sea hare,Aplysia californica, by J. P. Segundo. Both excitatory and inhibitory examples are provided. The computations were carried out via the Glim statistical package. An example of a Glim program realizing the work is presented in the Appendix.}},
+    author = {Brillinger, D.},
+    citeulike-article-id = {4563527},
+    citeulike-linkout-0 = {http://dx.doi.org/10.1007/BF00318010},
+    citeulike-linkout-1 = {http://www.springerlink.com/content/l13271322u302x57},
+    day = {7},
+    doi = {10.1007/BF00318010},
+    journal = {Biological Cybernetics},
+    keywords = {correlations},
+    month = aug,
+    number = {3},
+    pages = {189--200},
+    posted-at = {2011-02-26 08:14:22},
+    priority = {2},
+    title = {{Maximum likelihood analysis of spike trains of interacting nerve cells}},
+    _url = {http://dx.doi.org/10.1007/BF00318010},
+    volume = {59},
+    year = {1988}
+}
+
+@book{Daley-1988,
+  title={An introduction to the theory of point processes.},
+  author={Daley, Daryl J and Vere-Jones, David},
+  year={1988},
+  publisher={Springer-Verlag, New York}
+}
+
+@article{Simma-Thesis,
+author = {Simma, Aleksandr},
+file = {::},
+institution = {University of California, Berkeley},
+journal = {Thesis},
+title = {{Modeling Events in Time Using Cascades Of Poisson Processes}},
+year = {2010}
+}
+
+@article{Simma-2010, 
+title={Modeling Events with Cascades of {P}oisson Processes}, 
+journal={Proceedings of the 26th Conference on Uncertainty in Artificial Intelligence (UAI)},
+publisher={AUAI Press},
+editor={P. Gr\"unwald and P. Spirtes},
+author={Simma, Aleksandr and Jordan, Michael I}, 
+year={2010}
+}
+
+@inproceedings{Zhou-2013,
+  title={Learning Social Infectivity in Sparse Low-rank Networks Using Multi-dimensional {H}awkes Processes},
+  booktitle={Proceedings of the International Conference on Artificial Intelligence and Statistics},
+  volume={16},
+  year={2013},
+  author={Zhou, Ke and Zha, Hongyuan and Song, Le}
+}
+
+Zhou, Ke, Hongyuan Zha, and Le Song. "Learning Social Infectivity in Sparse Low-rank Networks Using Multi-dimensional Hawkes Processes."
+
+@article{Musmeci-1992,
+author = {Musmeci, F. and Vere-Jones, D.},
+number = {1},
+pages = {1--11},
+title = {A Space-Time Clustering Model For Historical Earthquakes},
+volume = {44},
+year = {1992},
+journal = "Annals of the institute of statistical mathematics",
+}
+
+@article{Moller-1998,
+  title={Log {G}aussian {C}ox processes},
+  author={M{\o}ller, Jesper and Syversveen, Anne Randi and Waagepetersen, Rasmus Plenge},
+  journal={Scandinavian Journal of Statistics},
+  volume={25},
+  number={3},
+  pages={451--482},
+  year={1998},
+  publisher={Wiley Online Library}
+}
+
+@article{Hawkes-1971, 
+title={Spectra of some self-exciting and mutually exciting point processes}, 
+volume={58}, 
+_url={http://biomet.oxfordjournals.org/cgi/content/abstract/58/1/83}, 
+number={1}, 
+journal={Biometrika}, 
+author={Hawkes, Alan G}, 
+year={1971}, 
+pages={83}}
+
+
+@article{Truccolo-2005,
+author = {Truccolo, Wilson and Eden, Uri T. and Fellows, Matthew R. and Donoghue, John P. and Brown, Emery N.}, 
+title = {A Point Process Framework for Relating Neural Spiking Activity to Spiking History, Neural Ensemble, and Extrinsic Covariate Effects}, 
+volume = {93}, 
+number = {2}, 
+pages = {1074-1089}, 
+year = {2005}, 
+doi = {10.1152/jn.00697.2004}, 
+abstract ={Multiple factors simultaneously affect the spiking activity of individual neurons. Determining the effects and relative importance of these factors is a challenging problem in neurophysiology. We propose a statistical framework based on the point process likelihood function to relate a neuron's spiking probability to three typical covariates: the neuron's own spiking history, concurrent ensemble activity, and extrinsic covariates such as stimuli or behavior. The framework uses parametric models of the conditional intensity function to define a neuron's spiking probability in terms of the covariates. The discrete time likelihood function for point processes is used to carry out model fitting and model analysis. We show that, by modeling the logarithm of the conditional intensity function as a linear combination of functions of the covariates, the discrete time point process likelihood function is readily analyzed in the generalized linear model (GLM) framework. We illustrate our approach for both GLM and non-GLM likelihood functions using simulated data and multivariate single-unit activity data simultaneously recorded from the motor cortex of a monkey performing a visuomotor pursuit-tracking task. The point process framework provides a flexible, computationally efficient approach for maximum likelihood estimation, goodness-of-fit assessment, residual analysis, model selection, and neural decoding. The framework thus allows for the formulation and analysis of point process models of neural spiking activity that readily capture the simultaneous effects of multiple covariates and enables the assessment of their relative importance.}, 
+_url = {http://jn.physiology.org/content/93/2/1074.abstract}, 
+eprint = {http://jn.physiology.org/content/93/2/1074.full.pdf+html}, 
+journal = {Journal of Neurophysiology} 
+}
+
+@article{Okatan-2005,
+ author = {Okatan, Murat and Wilson, Matthew A. and Brown, Emery N.},
+ title = {Analyzing Functional Connectivity Using a Network Likelihood Model of Ensemble Neural Spiking Activity},
+ journal = {Neural Comput.},
+ issue_date = {September 2005},
+ volume = {17},
+ number = {9},
+ month = sep,
+ year = {2005},
+ issn = {0899-7667},
+ pages = {1927--1961},
+ numpages = {35},
+ _url = {http://dx.doi.org/10.1162/0899766054322973},
+ doi = {10.1162/0899766054322973},
+ acmid = {1118032},
+ publisher = {MIT Press},
+ address = {Cambridge, MA, USA},
+} 
+
+@article{Paninski-2004,
+    abstract = {{doi: 10.1088/0954-898X\_15\_4\_002 Recent work has examined the estimation of models of stimulus-driven neural activity in which some linear filtering process is followed by a nonlinear, probabilistic spiking stage. We analyze the estimation of one such model for which this nonlinear step is implemented by a known parametric function; the assumption that this function is known speeds the estimation process considerably. We investigate the shape of the likelihood function for this type of model, give a simple condition on the nonlinearity ensuring that no non-global local maxima exist in the likelihood\leading, in turn, to efficient algorithms for the computation of the maximum likelihood estimator\and discuss the implications for the form of the allowed nonlinearities. Finally, we note some interesting connections between the likelihood-based estimators and the classical spike-triggered average estimator, discuss some useful extensions of the basic model structure, and provide two novel applications to physiological data.}},
+    author = {Paninski, Liam},
+    citeulike-article-id = {7790484},
+    citeulike-linkout-0 = {http://dx.doi.org/10.1088/0954-898X\_15\_4\_002},
+    citeulike-linkout-1 = {http://www.informahealthcare.com/doi/abs/10.1088/0954-898X\_15\_4\_002},
+    day = {1},
+    _doi = {10.1088/0954-898X\_15\_4\_002},
+    journal = {Network: Computation in Neural Systems},
+    month = jan,
+    number = {4},
+    pages = {243--262},
+    posted-at = {2010-09-06 11:10:57},
+    priority = {2},
+    publisher = {Informa Clin Med},
+    title = {{Maximum likelihood estimation of cascade point-process neural encoding models}},
+    _url = {http://dx.doi.org/10.1088/0954-898X\_15\_4\_002},
+    volume = {15},
+    year = {2004}
+}
+
+@article{Truccolo-2003,
+    abstract = {{Multiple factors simultaneously affect the spiking activity of individual neurons. Determining the effects and relative importance of these factors is a challenging problem in neurophysiology. We propose a statistical framework based on the point process likelihood function to relate a neuron's spiking probability to three typical covariates: the neuron's own spiking history, concurrent ensemble activity, and extrinsic covariates such as stimuli or behavior. The framework uses parametric models of the conditional intensity function to define a neuron's spiking probability in terms of the covariates. The discrete time likelihood function for point processes is used to carry out model fitting and model analysis. We show that, by modeling the logarithm of the conditional intensity function as a linear combination of functions of the covariates, the discrete time point process likelihood function is readily analyzed in the generalized linear model (GLM) framework. We illustrate our approach for both GLM and non-GLM likelihood functions using simulated data and multivariate single-unit activity data simultaneously recorded from the motor cortex of a monkey performing a visuomotor pursuit-tracking task. The point process framework provides a flexible, computationally efficient approach for maximum likelihood estimation, goodness-of-fit assessment, residual analysis, model selection, and neural decoding. The framework thus allows for the formulation and analysis of point process models of neural spiking activity that readily capture the simultaneous effects of multiple covariates and enables the assessment of their relative importance.}},
+    address = {Neuroscience Department, Brown University, Providence, RI, USA. Wilson\_Truccolo@Brown.edu},
+    author = {Truccolo, Wilson and Eden, Uri T. and Fellows, Matthew R. and Donoghue, John P. and Brown, Emery N.},
+    citeulike-article-id = {99888},
+    citeulike-linkout-0 = {http://dx.doi.org/10.1152/jn.00697.2004},
+    citeulike-linkout-1 = {http://jn.physiology.org/content/93/2/1074.abstract},
+    citeulike-linkout-2 = {http://jn.physiology.org/content/93/2/1074.full.pdf},
+    citeulike-linkout-3 = {http://jn.physiology.org/cgi/content/abstract/93/2/1074},
+    citeulike-linkout-4 = {http://view.ncbi.nlm.nih.gov/pubmed/15356183},
+    citeulike-linkout-5 = {http://www.hubmed.org/display.cgi?uids=15356183},
+    day = {01},
+    _doi = {10.1152/jn.00697.2004},
+    issn = {1522-1598},
+    journal = {Journal of Neurophysiology},
+    keywords = {glm, logit, mle, modeldiagnostics, pointprocess, refractoryperiod},
+    month = feb,
+    number = {2},
+    pages = {1074--1089},
+    pmid = {15356183},
+    posted-at = {2005-02-21 04:03:36},
+    priority = {5},
+    publisher = {American Physiological Society},
+    title = {A Point Process Framework for Relating Neural Spiking Activity to Spiking History, Neural Ensemble, and Extrinsic Covariate Effects},
+    _url = {http://dx.doi.org/10.1152/jn.00697.2004},
+    volume = {93},
+    year = {2005}
+}
+
+@article{Liben-2007,
+  title={The link-prediction problem for social networks},
+  author={Liben-Nowell, David and Kleinberg, Jon},
+  journal={Journal of the American society for information science and technology},
+  volume={58},
+  number={7},
+  pages={1019--1031},
+  year={2007},
+  publisher={Wiley Online Library}
+}
+
+@article{Hoff-2002,
+  title={Latent space approaches to social network analysis},
+  author={Hoff, Peter D and Raftery, Adrian E and Handcock, Mark S},
+  journal={Journal of the american Statistical association},
+  volume={97},
+  number={460},
+  pages={1090--1098},
+  year={2002},
+  publisher={Taylor \& Francis}
+}
+
+@article{Goldenberg-2010,
+  title={A survey of statistical network models},
+  author={Goldenberg, Anna and Zheng, Alice X and Fienberg, Stephen E and Airoldi, Edoardo M},
+  journal={Foundations and Trends in Machine Learning},
+  volume={2},
+  number={2},
+  pages={129--233},
+  year={2010},
+  publisher={Now Publishers Inc.}
+}
+
+@article{Hoff-2008, 
+title={Modeling homophily and stochastic equivalence in symmetric relational data}, 
+volume={20}, 
+journal={Advances in Neural Information Processing Systems 20}, 
+publisher={MIT Press}, 
+author={Hoff, Peter D}, 
+editor={Platt, J C and Koller, D and Singer, Y and Roweis, S}, 
+year={2008}, 
+pages={1--8}
+}
+
+@article { Murray-2010,
+	title = {Elliptical Slice Sampling},
+	journal = {Journal of Machine Learning Research: Workshop and Conference Proceedings (AISTATS)},
+	volume = {9},
+	year = {2010},
+	_month = {05/2010},
+	pages = {541-548},
+	abstract = {Many probabilistic models introduce strong dependencies between variables using a latent multivariate Gaussian distribution or a Gaussian process. We present a new Markov chain Monte Carlo algorithm for performing inference in models with multivariate Gaussian priors. Its key properties are: 1) it has simple, generic code applicable to many models, 2) it has no free parameters, 3) it works well for a variety of Gaussian process based models. These properties make our method ideal for use while model building, removing the need to spend time deriving and tuning updates for more complex algorithms.},
+	keywords = {gaussian process, highlighted, markov chain monte carlo, slice sampling},
+	_url = {http://hips.seas.harvard.edu/files/w/papers/murray-adams-mackay-2010a.pdf},
+	author = {Iain Murray and Ryan P. Adams and David J.C. MacKay}
+}
+
+@conference {Adams-2009,
+	title = {Tractable Nonparametric {B}ayesian Inference in {P}oisson Processes with {G}aussian Process Intensities},
+	booktitle = {Proceedings of the 26th International Conference on Machine Learning},
+	year = {2009},
+	_month = {06/2009},
+	_address = {Montreal, Canada},
+	abstract = {The inhomogeneous Poisson process is a point process that has varying intensity across its domain (usually time or space). For nonparametric Bayesian modeling, the Gaussian process is a useful way to place a prior distribution on this intensity. The combination of a Poisson process and GP is known as a Gaussian Cox process, or doubly-stochastic Poisson process. Likelihood-based inference in these models requires an intractable integral over an infinite-dimensional random function. In this paper we present the first approach to Gaussian Cox processes in which it is possible to perform inference without introducing approximations or finite-dimensional proxy distributions. We call our method the Sigmoidal Gaussian Cox Process, which uses a generative model for Poisson data to enable tractable inference via Markov chain Monte Carlo. We compare our methods to competing methods on synthetic data and apply it to several real-world data sets.},
+	keywords = {cox process, gaussian cox process, gaussian process, highlighted, point process, poisson process, time series},
+	__url = {http://hips.seas.harvard.edu/files/w/papers/adams-sgcp-icml-2009.pdf},
+	author = {Ryan P. Adams and Iain Murray and David J.C. MacKay}
+}
+
+@article{Aldous-1981, 
+title={Representations for partially exchangeable arrays of random variables}, 
+volume={11}, 
+_url={http://dx.doi.org/10.1016/0047-259X(81)90099-3}, 
+number={4}, 
+journal={Journal of Multivariate Analysis}, 
+publisher={Elsevier}, 
+author={Aldous, David J}, 
+year={1981}, 
+pages={581--598}
+}
+
+
+@article{Hoover-1979,
+author = {Hoover, Douglas N.},
+title= {Relations on probability spaces and arrays of random variables},
+journal ={Technical report, Institute for Advanced Study, Princeton},
+year = {1979}
+}
+
+@article{Kemp-2007, 
+title={Learning Systems of Concepts with an Infinite Relational Model}, 
+volume={21}, 
+_url={http://scholar.google.com/scholar?hl=en&btnG=Search&q=intitle:Learning+Systems+of+Concepts+with+an+Infinite+Relational+Model#0}, 
+number={1}, 
+journal={Cognitive Science}, 
+publisher={Menlo Park, CA; Cambridge, MA; London; AAAI Press; MIT Press; 1999}, 
+author={Kemp, Charles and Tenenbaum, Joshua B and Griffiths, Thomas L}, 
+year={2006}, 
+pages={381}
+}
+
+@book{Kingman-1993,
+    abstract = {{In the theory of random processes there are two that are fundamental, and occur over and over again, often in surprising ways.  There is a real sense in which the deepest results are concerned with their interplay.  One, the Bachelier Wiener model of Brownian motion, has been the subject of many books.  The other, the Poisson process, seems at first sight humbler and less worthy of study in its own right.  Nearly every book mentions it, but most hurry past to more general point processes or Markov chains.    This comparative neglect is ill judged, and stems from a lack of perception of the real importance of the Poisson process.  This distortion partly comes about from a restriction to one dimension, while the theory becomes more natural in more general context.    This book attempts to redress the balance.  It records Kingman's fascination with the beauty and wide applicability of Poisson processes in one or more dimensions.  The mathematical theory is powerful, and a few key results often produce surprising consequences.}},
+    author = {Kingman, John F. C.},
+    day = {11},
+    howpublished = {Hardcover},
+    isbn = {0198536933},
+    keywords = {poisson-process},
+    month = jan,
+    posted-at = {2009-05-22 19:29:24},
+    priority = {2},
+    publisher = {{Oxford University Press}},
+    title = {{Poisson Processes (Oxford Studies in Probability)}},
+    year = {1993}
+}
+
+@article{Lloyd-2012,
+author = {Lloyd, James Robert and Orbanz, Peter and Ghahramani, Zoubin and Roy, Daniel M},
+journal = {Advances in Neural Information Processing Systems},
+file = {:C$\backslash$:/Users/Scott/Dropbox/Harvard/papers/roy orbanz lloyd ghahramani - random function priors for exchangeable arrays with applications to graphs and relational data - nips 2012.pdf:pdf},
+title = {{Random function priors for exchangeable arrays with applications to graphs and relational data}},
+year = {2012}
+}
+
+@article{Silverstein-1994,
+  title={The spectral radii and norms of large dimensional non-central random matrices},
+  author={Silverstein, Jack W},
+  journal={Stochastic Models},
+  volume={10},
+  number={3},
+  pages={525--532},
+  year={1994},
+  publisher={Taylor \& Francis}
+}
+
+@inproceedings{Mohamed-2012,
+  title={Bayesian and {L}1 Approaches for Sparse Unsupervised Learning},
+  author={Mohamed, Shakir and Ghahramani, Zoubin and Heller, Katherine A},
+  booktitle={Proceedings of the 29th International Conference on Machine Learning},
+  pages={751--758},
+  year={2012}
+}
+
+@article{Cho-2013,
+  title = { Latent Point Process Models for Spatial-Temporal Networks },
+  author = {Yoon Sik Cho  and Aram Galstyan and Jeff Brantingham and George Tita},
+  journal = {arXiv:1302.2671},
+  urlpaper = {http://lanl.arxiv.org/abs/1302.2671},
+  year = {2013}
+}
+
+@article{Blundell-2012,
+author = {Blundell, Charles and Heller, Katherine and Beck, Jeffrey},
+journal = {Advances in Neural Information Processing Systems},
+title = {Modelling Reciprocating Relationships with {H}awkes Processes},
+year = {2012}
+}
+
+@article{Perry-2013,
+  title={Point process modelling for directed interaction networks},
+  author={Perry, Patrick O and Wolfe, Patrick J},
+  journal={Journal of the Royal Statistical Society: Series B (Statistical Methodology)},
+  year={2013},
+  publisher={Wiley Online Library}
+}
+
+@article{Papachristos-2009,
+  title={Murder by Structure: Dominance Relations and the Social Structure of Gang Homicide},
+  author={Papachristos, Andrew V},
+  journal={American Journal of Sociology},
+  volume={115},
+  number={1},
+  pages={74--128},
+  year={2009},
+  publisher={JSTOR}
+}
+
+@inproceedings{Cunningham-2008,
+  title={Inferring Neural Firing Rates from Spike Trains Using {G}aussian Processes},
+  author={Cunningham, John P and Yu, Byron M and Sahani, Maneesh and Shenoy, Krishna V},
+  booktitle={Advances in Neural Information Processing Systems},
+  pages={329--336},
+  year={2007}
+}
+
+@book{Murphy-2012,
+  title={Machine learning: a probabilistic perspective},
+  author={Murphy, Kevin P},
+  year={2012},
+  publisher={The MIT Press}
+}
+
+@article{Walgreens-NYT-2009,
+  title={Walgreen Beats Expectations on Higher Pharmacy Sales},
+  author={{Associated Press}},
+  journal={The New York Times},
+  year={2012},
+  month=sep,
+  date=29
+}
+
+@inproceedings{Iwata-2013,
+  title={Discovering latent influence in online social activities via shared cascade {P}oisson processes},
+  author={Iwata, Tomoharu and Shah, Amar and Ghahramani, Zoubin},
+  booktitle={Proceedings of the 19th ACM SIGKDD International Conference on Knowledge Discovery and Data Mining},
+  pages={266--274},
+  year={2013},
+  organization={ACM}
+}
+
+%% Chapter 2b
+
+@article{Guo-2014,
+  title={The Bayesian Echo Chamber: Modeling Influence in Conversations},
+  author={Guo, Fangjian and Blundell, Charles and Wallach, Hanna and Heller, Katherine A},
+  journal={arXiv preprint arXiv:1411.2674},
+  year={2014}
+}
+
+@inproceedings{Du-2013,
+  title={Scalable influence estimation in continuous-time diffusion networks},
+  author={Du, Nan and Song, Le and Gomez-Rodriguez, Manuel and Zha, Hongyuan},
+  booktitle={Advances in Neural Information Processing Systems},
+  pages={3147--3155},
+  year={2013}
+}
+
+@inproceedings{Farajtabar-2014,
+  title={Shaping Social Activity by Incentivizing Users},
+  author={Farajtabar, Mehrdad and Du, Nan and Gomez-Rodriguez, Manuel and Valera, Isabel and Zha, Hongyuan and Song, Le},
+  booktitle={Advances in Neural Information Processing Systems},
+  pages={2474--2482},
+  year={2014}
+}
+
+@inproceedings{Dubois-2013,
+  title={Stochastic blockmodeling of relational event dynamics},
+  author={DuBois, Christopher and Butts, Carter and Smyth, Padhraic},
+  booktitle={Proceedings of the Sixteenth International Conference on Artificial Intelligence and Statistics},
+  pages={238--246},
+  year={2013}
+}
+
+@article{Stetter-2012,
+  title={Model-free reconstruction of excitatory neuronal connectivity from calcium imaging signals},
+  author={Stetter, Olav and Battaglia, Demian and Soriano, Jordi and Geisel, Theo},
+  journal={PLoS computational biology},
+  volume={8},
+  number={8},
+  pages={e1002653},
+  year={2012},
+  publisher={Public Library of Science}
+}
+
+@article{Hoffman-2013,
+  title={Stochastic variational inference},
+  author={Hoffman, Matthew D and Blei, David M and Wang, Chong and Paisley, John},
+  journal={The Journal of Machine Learning Research},
+  volume={14},
+  number={1},
+  pages={1303--1347},
+  year={2013},
+  publisher={JMLR. org}
+}
+
+@inproceedings{Snoek-2012,
+  title={Practical Bayesian optimization of machine learning algorithms},
+  author={Snoek, Jasper and Larochelle, Hugo and Adams, Ryan P},
+  booktitle={Advances in Neural Information Processing Systems},
+  pages={2951--2959},
+  year={2012}
+}
+
+@inproceedings{Linderman-2014,
+  title={Discovering Latent Network Structure in Point Process Data},
+  author={Linderman, Scott and Adams, Ryan},
+  booktitle={Proceedings of The 31st International Conference on Machine Learning},
+  pages={1413--1421},
+  year={2014}
+}
+
+@article{Pillow-2008,
+  title={Spatio-temporal correlations and visual signalling in a complete neuronal population},
+  author={Pillow, Jonathan W and Shlens, Jonathon and Paninski, Liam and Sher, Alexander and Litke, Alan M and Chichilnisky, EJ and Simoncelli, Eero P},
+  journal={Nature},
+  volume={454},
+  number={7207},
+  pages={995--999},
+  year={2008},
+  publisher={Nature Publishing Group}
+}
+
+@article{Nowicki-2001,
+  title={Estimation and prediction for stochastic blockstructures},
+  author={Nowicki, Krzysztof and Snijders, Tom A B},
+  journal={Journal of the American Statistical Association},
+  volume={96},
+  number={455},
+  pages={1077--1087},
+  year={2001},
+  publisher={Taylor \& Francis}
+}
+
+@inproceedings{Lazaro-2011,
+  title={Spike and slab variational inference for multi-task and multiple kernel learning},
+  author={L{\'a}zaro-gredilla, Miguel and Titsias, Michalis K},
+  booktitle={Advances in neural information processing systems},
+  pages={2339--2347},
+  year={2011}
+}
+
+@article{Vogelstein-2010,
+  title={Fast nonnegative deconvolution for spike train inference from population calcium imaging},
+  author={Vogelstein, Joshua T and Packer, Adam M and Machado, Timothy A and Sippy, Tanya and Babadi, Baktash and Yuste, Rafael and Paninski, Liam},
+  journal={Journal of neurophysiology},
+  volume={104},
+  number={6},
+  pages={3691--3704},
+  year={2010},
+  publisher={American Physiological Society}
+}
+
+@inproceedings{Grabska-2013,
+  title={Demixing odors-fast inference in olfaction},
+  author={Grabska-Barwinska, Agnieszka and Beck, Jeff and Pouget, Alexandre and Latham, Peter},
+  booktitle={Advances in Neural Information Processing Systems},
+  pages={1968--1976},
+  year={2013}
+}
+
+
+%% Chapter 3
+@article{Engelhardt2014,
+  title={Bayesian Structured Sparsity from Gaussian Fields},
+  author={Engelhardt, Barbara E and Adams, Ryan P},
+  journal={arXiv preprint arXiv:1407.2235},
+  year={2014}
+}
+
+@article{Hoff2008, 
+title={Modeling homophily and stochastic equivalence in symmetric relational data}, 
+volume={20}, 
+__url={http://scholar.google.com/scholar?hl=en&btnG=Search&q=intitle:Modeling+homophily+and+stochastic+equivalence+in+symmetric+relational+data#0}, 
+journal={Advances in Neural Information Processing Systems 20}, 
+publisher={MIT Press}, 
+author={Hoff, Peter D}, 
+editor={Platt, J C and Koller, D and Singer, Y and Roweis, S}, 
+year={2008}, 
+pages={1--8}
+}
+
+@article{Lloyd2012,
+author = {Lloyd, James Robert and Orbanz, Peter and Ghahramani, Zoubin and Roy, Daniel M.},
+journal = {Advances in Neural Information Processing Systems},
+pages = {1--9},
+title = {{Random function priors for exchangeable arrays with applications to graphs and relational data}},
+__url = {http://eprints.pascal-network.org/archive/00009630/},
+year = {2012}
+}
+
+@article{Mitchell1988,
+author = {Mitchell, T. J. and Beauchamp, J. J. },
+journal = {Journal of the American Statistical Association},
+number = {404},
+pages = {1023----1032},
+title = {{Bayesian Variable Selection in Linear Regression}},
+volume = {83},
+year = {1988}
+}
+
+
+@incollection{Scott2012,
+Author = {James Scott and Jonathan W. Pillow},
+Booktitle = {Advances in Neural Information Processing Systems 25},
+Editor = {F. Pereira and C.J.C. Burges and L. Bottou and K.Q. Weinberger},
+Pages = {1898--1906},
+Title = {Fully Bayesian inference for neural models with negative-binomial spiking},
+Url = {http://papers.nips.cc/paper/4567-fully-bayesian-inference-for-neural-models-with-negative-binomial-spiking.pdf},
+Year = {2012}}
+
+
+@inproceedings{Zhou2012,
+  title={Lognormal and Gamma Mixed Negative Binomial Regression},
+  author={Zhou, Mingyuan and Li, Lingbo and Carin, Lawrence and Dunson, David B},
+  booktitle={Proceedings of the 29th International Conference on Machine Learning},
+  pages={1343--1350},
+  year={2012}
+}
+
+
+%% Chapter 4
+@inproceedings{Stevenson-2011,
+  title={Inferring spike-timing-dependent plasticity from spike train data},
+  author={Stevenson, Ian and Koerding, Konrad},
+  booktitle={Advances in Neural Information Processing Systems},
+  pages={2582--2590},
+  year={2011}
+}
+    
+@article{Ahrends-2013,
+  title={Whole-brain functional imaging at cellular resolution using light-sheet microscopy},
+  author={Ahrens, Misha B and Keller, Philipp J},
+  journal={Nature Methods},
+  year={2013},
+  publisher={Nature Publishing Group}
+}
+
+@article{PyNN,
+  title={{PyNN}: a common interface for neuronal network simulators},
+  author={Davison, Andrew P and Br{\"u}derle, Daniel and Eppler, Jochen and Kremkow, Jens and Muller, Eilif and Pecevski, Dejan and Perrinet, Laurent and Yger, Pierre},
+  journal={Frontiers in Neuroinformatics},
+  volume={2},
+  year={2008},
+  publisher={Frontiers Research Foundation}
+}
+
+@article{Eldawlatly-2010,
+  title={On the use of dynamic {B}ayesian networks in reconstructing functional neuronal networks from spike train ensembles},
+  author={Eldawlatly, Seif and Zhou, Yang and Jin, Rong and Oweiss, Karim G},
+  journal={Neural Computation},
+  volume={22},
+  number={1},
+  pages={158--189},
+  year={2010},
+  publisher={MIT Press}
+}
+ 
+@article{Sjostrom-2001,
+  title={Rate, timing, and cooperativity jointly determine cortical synaptic plasticity},
+  author={Sj{\"o}str{\"o}m, Per Jesper and Turrigiano, Gina G and Nelson, Sacha B},
+  journal={Neuron},
+  volume={32},
+  number={6},
+  pages={1149--1164},
+  year={2001},
+  publisher={Elsevier}
+}
+
+@book{DayanAbbott,
+  title={Theoretical neuroscience: Computational and mathematical modeling of neural systems},
+  author={Dayan, Peter and Abbott, Larry F},
+  year={2001},
+  publisher={Taylor \& Francis}
+}
+
+@article{Song-2000,
+abstract = {Hebbian models of development and learning require both activity-dependent synaptic plasticity and a mechanism that induces competition between different synapses. One form of experimentally observed long-term synaptic plasticity, which we call spike-timing-dependent plasticity (STDP), depends on the relative timing of pre- and postsynaptic action potentials. In modeling studies, we find that this form of synaptic modification can automatically balance synaptic strengths to make postsynaptic firing irregular but more sensitive to presynaptic spike timing. It has been argued that neurons in vivo operate in such a balanced regime. Synapses modifiable by STDP compete for control of the timing of postsynaptic action potentials. Inputs that fire the postsynaptic neuron with short latency or that act in correlated groups are able to compete most successfully and develop strong synapses, while synapses of longer-latency or less-effective inputs are weakened.},
+author = {Song, S and Miller, K D and Abbott, L F},
+_doi = {10.1038/78829},
+file = {:C$\backslash$:/chris/research/neuro/reading/nn0900\_919.pdf:pdf},
+issn = {1097-6256},
+journal = {Nature Neuroscience},
+keywords = {Action Potentials,Action Potentials: physiology,Animals,Brain,Brain: cytology,Brain: physiology,Humans,Learning,Learning: physiology,Models, Neurological,Neuronal Plasticity,Neuronal Plasticity: physiology,Neurons,Neurons: cytology,Neurons: physiology,Reaction Time,Reaction Time: physiology,Synapses,Synapses: physiology,Time Factors},
+month = sep,
+number = {9},
+pages = {919--26},
+pmid = {10966623},
+title = {{Competitive Hebbian learning through spike-timing-dependent synaptic plasticitye.}},
+_url = {http://www.ncbi.nlm.nih.gov/pubmed/10966623},
+volume = {3},
+year = {2000}
+}
+
+@article{Oja-1982,
+  title={Simplified neuron model as a principal component analyzer},
+  author={Oja, Erkki},
+  journal={Journal of Mathematical Biology},
+  volume={15},
+  number={3},
+  pages={267--273},
+  year={1982},
+  publisher={Springer}
+  }
+  
+@article{Andrieu-2010,
+  title={Particle {M}arkov chain {M}onte {C}arlo methods},
+  author={Andrieu, Christophe and Doucet, Arnaud and Holenstein, Roman},
+  journal={Journal of the Royal Statistical Society: Series B (Statistical Methodology)},
+  volume={72},
+  number={3},
+  pages={269--342},
+  year={2010},
+  publisher={Wiley Online Library}
+}
+
+@inproceedings{Lindsten-2012,
+  title={Ancestor Sampling for Particle {G}ibbs.},
+  author={Lindsten, Fredrik and Jordan, Michael I and Sch{\"o}n, Thomas B},
+  booktitle={Advances in Neural Information Processing Systems},
+  pages={2600--2608},
+  year={2012}
+}
+
+@phdthesis{Murphy-2002,
+  title={Dynamic {B}ayesian networks: representation, inference and learning},
+  author={Murphy, Kevin Patrick},
+  year={2002},
+  school={University of California}
+}
+
+@article{West-1985,
+  title={Dynamic generalized linear models and {B}ayesian forecasting},
+  author={West, Mike and Harrison, P Jeff and Migon, Helio S},
+  journal={Journal of the American Statistical Association},
+  volume={80},
+  number={389},
+  pages={73--83},
+  year={1985},
+  publisher={Taylor \& Francis}
+}
+
+@inproceedings{Petreska-2011,
+  title={Dynamical segmentation of single trials from population neural data.},
+  author={Petreska, Biljana and Yu, Byron and Cunningham, John P and Santhanam, Gopal and Ryu, Stephen I and Shenoy, Krishna V and Sahani, Maneesh},
+  booktitle={Neural Information Processing Systems},
+  pages={756--764},
+  year={2011}
+}
+
+@article{Caporale-2008,
+  title={Spike timing-dependent plasticity: a {H}ebbian learning rule},
+  author={Caporale, Natalia and Dan, Yang},
+  journal={Annual Review of Neuroscience},
+  volume={31},
+  pages={25--46},
+  year={2008},
+  publisher={Annual Reviews}
+}
+
+@article{Smith-2003,
+abstract = {A widely used signal processing paradigm is the state-space model. The state-space model is defined by two equations: an observation equation that describes how the hidden state or latent process is observed and a state equation that defines the evolution of the process through time. Inspired by neurophysiology experiments in which neural spiking activity is induced by an implicit (latent) stimulus, we develop an algorithm to estimate a state-space model observed through point process measurements. We represent the latent process modulating the neural spiking activity as a gaussian autoregressive model driven by an external stimulus. Given the latent process, neural spiking activity is characterized as a general point process defined by its conditional intensity function. We develop an approximate expectation-maximization (EM) algorithm to estimate the unobservable state-space process, its parameters, and the parameters of the point process. The EM algorithm combines a point process recursive nonlinear filter algorithm, the fixed interval smoothing algorithm, and the state-space covariance algorithm to compute the complete data log likelihood efficiently. We use a Kolmogorov-Smirnov test based on the time-rescaling theorem to evaluate agreement between the model and point process data. We illustrate the model with two simulated data examples: an ensemble of Poisson neurons driven by a common stimulus and a single neuron whose conditional intensity function is approximated as a local Bernoulli process.},
+author = {Smith, Anne C and Brown, Emery N},
+_doi = {10.1162/089976603765202622},
+file = {:C$\backslash$:/Users/Scott/AppData/Local/Mendeley Ltd./Mendeley Desktop/Downloaded/Smith, Brown - 2003 - Estimating a state-space model from point process observations.pdf:pdf},
+journal = {Neural Computation},
+keywords = {Action Potentials,Action Potentials: physiology,Algorithms,Models, Neurological,Neural Pathways,Neurons,Neurons: physiology},
+month = may,
+number = {5},
+pages = {965--91},
+pmid = {12803953},
+title = {{Estimating a state-space model from point process observations.}},
+__url = {http://www.ncbi.nlm.nih.gov/pubmed/12803953},
+volume = {15},
+year = {2003}
+}
+
+@article{Kralj-2012,
+  title={Optical recording of action potentials in mammalian neurons using a microbial rhodopsin},
+  author={Kralj, Joel M and Douglass, Adam D and Hochbaum, Daniel R and Maclaurin, Dougal and Cohen, Adam E},
+  journal={Nature methods},
+  volume={9},
+  number={1},
+  pages={90--95},
+  year={2012},
+  publisher={Nature Publishing Group}
+}
+
+@article{Hochbaum-2014,
+  title={All-optical electrophysiology in mammalian neurons using engineered microbial rhodopsins},
+  author={Hochbaum, Daniel R and Zhao, Yongxin and Farhi, Samouil L and Klapoetke, Nathan and Werley, Christopher A and Kapoor, Vikrant and Zou, Peng and Kralj, Joel M and Maclaurin, Dougal and Smedemark-Margulies, Niklas and others},
+  journal={Nature methods},
+  year={2014},
+  publisher={Nature Publishing Group}
+}
+
+@article{Gerhard-2013,
+  title={Successful reconstruction of a physiological circuit with known connectivity from spiking activity alone},
+  author={Gerhard, Felipe and Kispersky, Tilman and Gutierrez, Gabrielle J and Marder, Eve and Kramer, Mark and Eden, Uri},
+  journal={PLoS Computational Biology},
+  volume={9},
+  number={7},
+  pages={e1003138},
+  year={2013},
+  publisher={Public Library of Science}
+}
+
+
+@article{Feldman-2012,
+abstract = {In spike-timing-dependent plasticity (STDP), the order and precise temporal interval between presynaptic and postsynaptic spikes determine the sign and magnitude of long-term potentiation (LTP) or depression (LTD). STDP is widely utilized in models of circuit-level plasticity, development, and learning. However, spike timing is just one of several factors (including firing rate, synaptic cooperativity, and depolarization) that govern plasticity induction, and its relative importance varies across synapses and activity regimes. This review summarizes this broader view of plasticity, including the forms and cellular mechanisms for the spike-timing dependence of plasticity, and, the evidence that spike timing is an important determinant of plasticity in vivo.},
+author = {Feldman, Daniel E},
+_doi = {10.1016/j.neuron.2012.08.001},
+file = {:C$\backslash$:/chris/research/neuro/reading/1-s2.0-S0896627312007039-main.pdf:pdf},
+_issn = {1097-4199},
+journal = {Neuron},
+keywords = {Action Potentials,Action Potentials: physiology,Animals,Dendrites,Dendrites: physiology,Humans,Models, Neurological,Neuronal Plasticity,Neuronal Plasticity: physiology,Neurons,Neurons: cytology,Neurons: physiology,Neurotransmitter Agents,Neurotransmitter Agents: metabolism,Synapses,Synapses: physiology,Time Factors},
+mendeley-groups = {Plasticity/learning rules},
+month = aug,
+number = {4},
+pages = {556--71},
+pmid = {22920249},
+title = {{The spike-timing dependence of plasticity.}},
+_url = {http://www.ncbi.nlm.nih.gov/pubmed/22920249},
+volume = {75},
+year = {2012}
+}
+
+@article{Latimer-2014,
+title={Inferring synaptic conductances from spike trains with a point process encoding model},
+author={Latimer, Kenneth and Chichilnisky, E. J. and Rieke, Fred  and Pillow, Jonathan W.},
+journal={Computational and Systems Neuroscience (Cosyne) Abstracts},
+year={2014}
+}
+
+@article{Paninski-2005,
+  title={Asymptotic theory of information-theoretic experimental design},
+  author={Paninski, Liam},
+  journal={Neural Computation},
+  volume={17},
+  number={7},
+  pages={1480--1507},
+  year={2005},
+  publisher={MIT Press}
+}
+
+@article{Packer-2012,
+  title={Two-photon optogenetics of dendritic spines and neural circuits},
+  author={Packer, Adam M and Peterka, Darcy S and Hirtz, Jan J and Prakash, Rohit and Deisseroth, Karl and Yuste, Rafael},
+  journal={Nature methods},
+  volume={9},
+  number={12},
+  pages={1202--1205},
+  year={2012},
+  publisher={Nature Publishing Group}
+}
+
+@inproceedings{Shababo-2013,
+  title={Bayesian Inference and Online Experimental Design for Mapping Neural Microcircuits},
+  author={Shababo, Ben and Paige, Brooks and Pakman, Ari and Paninski, Liam},
+  booktitle={Advances in Neural Information Processing Systems},
+  pages={1304--1312},
+  year={2013}
+}
+
+@article{Morrison-2008,
+  title={Phenomenological models of synaptic plasticity based on spike timing},
+  author={Morrison, Abigail and Diesmann, Markus and Gerstner, Wulfram},
+  journal={Biological cybernetics},
+  volume={98},
+  number={6},
+  pages={459--478},
+  year={2008},
+  publisher={Springer}
+}
+
+@inproceedings{Patterson-2013,
+  title={Stochastic gradient {R}iemannian {L}angevin dynamics on the probability simplex},
+  author={Patterson, Sam and Teh, Yee Whye},
+  booktitle={Advances in Neural Information Processing Systems},
+  pages={3102--3110},
+  year={2013}
+}
+
+
+@article{Vogelstein-2009,
+  title={Spike inference from calcium imaging using sequential {M}onte {C}arlo methods},
+  author={Vogelstein, Joshua T and Watson, Brendon O and Packer, Adam M and Yuste, Rafael and Jedynak, Bruno and Paninski, Liam},
+  journal={Biophysical journal},
+  volume={97},
+  number={2},
+  pages={636--655},
+  year={2009},
+  publisher={Elsevier}
+}
+
+
+%% Chapter 5
+@InProceedings{Beal02, 
+title={The infinite hidden {M}arkov model}, booktitle={Advances in Neural Information Processing Systems 14}, volume={}, number={},
+publisher={MIT Press}, 
+address={Cambridge, MA},
+author={Beal, M. J. and Ghahramani, Z. and Rasmussen, C. E.}, 
+editor={}, year={2002}, pages={577--585}}
+
+
+@article{Beal06,
+  title={Variational Bayesian learning of directed graphical models with hidden variables},
+  author={Beal, Matthew J and Ghahramani, Zoubin},
+  journal={Bayesian Analysis},
+  volume={1},
+  number={4},
+  pages={793--832},
+  year={2006},
+  publisher={International Society for Bayesian Analysis}
+}
+
+@inproceedings{Bryant12,
+  title={Truly nonparametric online variational inference for hierarchical Dirichlet processes},
+  author={Bryant, Michael and Sudderth, Erik B},
+  booktitle={Advances in Neural Information Processing Systems 25},
+  pages={2699--2707},
+  year={2012}
+}
+
+@book{Burkard12,
+  title={Assignment Problems},
+  author={Burkard, Rainer E and Dell'Amico, Mauro and Martello, Silvano},
+  year={2012},
+  publisher={SIAM},
+  address={Philadelphia}
+}
+
+@article{Brown98,
+  title={A Statistical Paradigm for Neural Spike Train Decoding Applied to Position Prediction from Ensemble Firing Patterns of Rat Hippocampal Place Cells},
+  author={ Brown, Emery N and L. M. Frank and D. Tang and M. c. Quirk and M. A. Wilson} ,
+  journal={Journal of Neuroscience},
+  volume={18},
+  number={18},
+  pages={7411--7425},
+  year={1998},
+ 
+}
+
+@article{Buesing12,
+  title={Learning stable, regularised latent models of neural population dynamics},
+  author={ L. Buesing and J. H. Macke and M. Sahani} ,
+  journal={Network: Computation in Neural Systems},
+  volume={23},
+  number={},
+  pages={24-47},
+  year={2012},
+ 
+}
+
+
+
+
+
+
+@article{Chen11,
+  title={Statistical inference for assessing functional connectivity of neuronal ensembles with sparse spiking data},
+  author={Chen, Zhe and Putrino, David F and Ghosh, Soumya and Barbieri, Riccardo and Brown, Emery N},
+  journal={IEEE Transactions on Neural Systems and Rehabilitation Engineering},
+  volume={19},
+  number={2},
+  pages={121--135},
+  year={2011},
+  publisher={IEEE}
+}
+
+@article{Chen12a,
+  title={Uncovering spatial topology represented by rat hippocampal population neuronal codes},
+  author={Chen, Zhe and Kloosterman, Fabian and Brown, Emery N and Wilson, Matthew A},
+  journal={Journal of Computational Neuroscience},
+  volume={33},
+  number={2},
+  pages={227--255},
+  year={2012},
+  publisher={Springer}
+}
+
+
+@inproceedings{Chen12b,
+  title={Transductive neural decoding for unsorted neuronal spikes of rat hippocampus},
+  author={Chen, Zhe and Kloosterman, Fabian and Layton, Stuart and Wilson, Matthew A},
+  booktitle={Proceedings of IEEE Engineering in Medicine and Biology Conference},
+  volume={},
+  pages={1310--1313},
+  year={2012},
+}
+
+@article{Chen13,
+  title={An overview of {B}ayesian methods for neural spike train analysis},
+  author={Chen, Zhe},
+  journal={Computational Intelligence and Neuroscience},
+  volume={2013},
+  pages={251905},
+  year={2013},
+  publisher={Hindawi Publishing Corp.}
+}
+
+@article{Chen14,
+  title={Neural representation of spatial topology in the rodent hippocampus},
+  author={Chen, Zhe and Gomperts, Stephen N and Yamamoto, Jun and Wilson, Matthew A},
+  journal={Neural Computation},
+  volume={26},
+  number={1},
+  pages={1--39},
+  year={2014},
+  publisher={MIT Press}
+}
+
+@article{Chen15,
+  title={ Statistical analysis towards sleep-associated hippocampal ensemble spike activity},
+  author={Chen, Zhe and A. Grosmark and H. Penagos  and G. Buzsaki and Wilson, Matthew A},
+  journal={Manuscript under review},
+  volume={},
+  number={},
+  pages={},
+  year={2015},
+}
+
+@book{Chen15Book,
+  title={ Advanced State Space Methods in Neural and Clinical Data},
+  editor={Chen, Zhe},
+  year={2015},
+  publisher={Cambridge University Press},
+  address={}
+}
+
+
+@article{Cowles96,
+  title={Markov chain {Monte Carlo} convergence diagnostics: a comparative review},
+  author={Cowles, Mary Kathryn and Carlin, Bradley P},
+  journal={Journal of the American Statistical Association},
+  volume={91},
+  pages={883--904},
+  year={1996},
+  publisher={Taylor \& Francis}
+}
+
+@article{Curto08,
+  title={Cell groups reveal structure of stimulus space},
+  author={Curto, Carina and Itskov, Vladimir},
+  journal={PLoS Computational Biology},
+  volume={4},
+  number={10},
+  pages={e1000205},
+  year={2008},
+  publisher={Public Library of Science}
+}
+
+@article{Dabaghian12,
+  title={A topological paradigm for hippocampal spatial map formation using persistent homology},
+  author={Dabaghian, Yu and Memoli, Facundo and Frank, L and Carlsson, Gunnar},
+  journal={PLoS Computational Biology},
+  volume={8},
+  number={8},
+  pages={e1002581},
+  year={2012},
+  publisher={Public Library of Science}
+}
+
+@article{Davidson09,
+  title={Hippocampal replay of extended experience},
+  author={Davidson, Thomas J and Kloosterman, Fabian and Wilson, Matthew A},
+  journal={Neuron},
+  volume={63},
+  number={4},
+  pages={497--507},
+  year={2009},
+  publisher={Elsevier}
+}
+
+@article{Escobar95,
+  title={Bayesian density estimation and inference using mixtures},
+  author={Escobar, Michael D and West, Mike},
+  journal={Journal of the American Statistical Association},
+  volume={90},
+  pages={577--588},
+  year={1995},
+  publisher={Taylor \& Francis}
+}
+
+@incollection{Ewens90,
+  title={Population genetics theory---the past and the future},
+  author={Ewens, Warren John},
+  editor = {Lessard, S.},
+  booktitle={Mathematical and Statistical Developments of Evolutionary Theory},
+  pages={177--227},
+  year={1990},
+  publisher={Springer}
+}
+
+@inproceedings{Fox08,
+  title={An {HDP-HMM} for systems with state persistence},
+  author={Fox, Emily B and Sudderth, Erik B and Jordan, Michael I and Willsky, Alan S},
+  booktitle={Proceedings of the 25th International Conference on Machine learning},
+  pages={312--319},
+  year={2008},
+}
+
+ 
+@article{Fox10,
+  title={Bayesian Nonparametric Methods for Learning {M}arkov Switching Processes},
+  author={E. B. Fox and E. B. Sudderth and M. I. Jordan and A. S. Willsky},
+  journal={IEEE Signal Processing Magazine},
+  year={2010},
+  volume={27},
+  number={},
+  pages={43--54},
+}
+
+@book{Gelman13,
+  title={Bayesian Data Analysis},
+  author={Gelman, Andrew and Carlin, John B and Stern, Hal S and Dunson, David B and Vehtari, Aki and Rubin, Donald B},
+  year={2013},
+  edition={3rd},
+  publisher={CRC press}
+}
+
+
+
+@article{Goris14,
+  title={Partitioning neuronal variability},
+  author={Goris, Robbe LT and Movshon, J Anthony and Simoncelli, Eero P},
+  journal={Nature Neuroscience},
+  year={2014},
+  volume={17},
+  number={},
+  pages={858--865},
+  publisher={Nature Publishing Group}
+}
+
+@article{Gorur10,
+  title={Dirichlet process Gaussian mixture models: Choice of the base distribution},
+  author={G{\"o}r{\"u}r, Dilan and Rasmussen, Carl Edward},
+  journal={Journal of Computer Science and Technology},
+  volume={25},
+  number={4},
+  pages={653--664},
+  year={2010},
+  publisher={Springer}
+}
+
+@article{Hoffman13,
+  title={Stochastic variational inference},
+  author={Hoffman, Matthew D and Blei, David M and Wang, Chong and Paisley, John},
+  journal={Journal of Machine Learning Research},
+  volume={14},
+  number={1},
+  pages={1303--1347},
+  year={2013},
+}
+
+
+
+@book{Hjort10, 
+title={Bayesian Nonparametrics}, publisher={Cambridge University Press}, 
+author={Hjort, N. L. and  Holmes, C. and M\"uller, P. and Walker, S. G.}, year={2010}}
+
+
+@article{Ishwaran01,
+  title={Gibbs sampling methods for stick-breaking priors},
+  author={Ishwaran, Hemant and James, Lancelot F},
+  journal={Journal of the American Statistical Association},
+  volume={96},
+  pages={161--173},
+  year={2001}
+}
+
+@article{Ishwaran02,
+  title={Exact and approximate sum representations for the {D}irichlet process},
+  author={Ishwaran, Hemant and Zarepour, Mahmoud},
+  journal={Canadian Journal of Statistics},
+  volume={30},
+  number={2},
+  pages={269--283},
+  year={2002},
+  publisher={Wiley Online Library}
+}
+
+
+@article{Ji07,
+  title={Coordinated memory replay in the visual cortex and hippocampus during sleep},
+  author={D. Ji and Wilson, Matthew A},
+  journal={Nature Neuroscience},
+  volume={10},
+  number={1},
+  pages={100-107},
+  year={2007},
+}
+
+
+@article{Johnson13,
+  title={Bayesian nonparametric hidden semi-{M}arkov models},
+  author={Johnson, Matthew J and Willsky, Alan S},
+  journal={Journal of Machine Learning Research},
+  volume={14},
+  number={1},
+  pages={673--701},
+  year={2013},
+}
+
+@article{Johnson14,
+  title={Stochastic variational inference for {B}ayesian time series models},
+  author={Matthew J Johnson and  Alan S Willsky},
+  journal={JMLR W\&CP},
+  volume={32},
+  numer={1},
+  pages={1854--1862},
+  year={2014}
+}
+
+
+@PhdThesis{Johnson14b,
+  title={Bayesian time series models and scalable inference},
+  author={Johnson, Matthew J},
+  school={Massachusetts Institute of Technology},
+  month={June},
+  year={2014}
+}
+
+
+@article{Kloosterman14,
+  title={Bayesian decoding using unsorted spikes in the rat hippocampus},
+  author={Kloosterman, Fabian and Layton, Stuart P and Chen, Zhe and Wilson, Matthew A},
+  journal={Journal of Neurophysiology},
+  volume={111},
+  number={1},
+  pages={217--227},
+  year={2014},
+}
+
+@article{Lee02,
+  title={Memory of sequential experience in the hippocampus during slow wave sleep},
+  author={A. K. Lee and Wilson, Matthew A},
+  journal={Neuron},
+  volume={36},
+  number={6},
+  pages={1183-1194},
+  year={2002},
+}
+@article{Louie01,
+  title={Temporally structured replay of awake hippocampal ensemble activity during rapid eye movement sleep},
+  author={K. Louie and Wilson, Matthew A},
+  journal={Neuron},
+  volume={29},
+  number={},
+  pages={145-156},
+  year={2001},
+}
+
+@inproceedings{Liang07,
+  title={The infinite {PCFG} using hierarchical {D}irichlet processes},
+  author={Liang, Percy and Petrov, Slav and Jordan, Michael I and Klein, Dan},
+  booktitle={Proceedings of Empirical Methods in Natural Language Processing (EMNLP)},
+  pages={688--697},
+  year={2007},
+}
+
+@article{Mishchenko11a,
+  title={A Bayesian approach for inferring neuronal connectivity from calcium fluorescent imaging data},
+  author={Mishchenko, Yuriy and Vogelstein, Joshua T and Paninski, Liam},
+  journal={Annals of Applied Statistics},
+  volume={5},
+  pages={1229--1261},
+  year={2011},
+  publisher={Institute of Mathematical Statistics}
+}
+
+@article{Mishchenko11b,
+  title={Efficient methods for sampling spike trains in networks of coupled neurons},
+  author={Mishchenko, Yuriy and Paninski, Liam},
+  journal={Annals of Applied Statistics},
+  volume={5},
+  pages={1893--1919},
+  year={2011},
+  publisher={Institute of Mathematical Statistics}
+}
+
+@article{Neal10,
+    author = {Neal, Radford M.},
+    journal = {Handbook of Markov Chain Monte Carlo},
+    pages = {113--162},
+    title = {{MCMC} using {Hamiltonian} dynamics},
+    volume = {},
+    year = {2010}
+}
+
+@book{OKeefe78,
+  title={The Hippocampus as a Cognitive Map},
+  author={O'Keefe, John and Nadel, Lynn},
+  volume={3},
+  year={1978},
+  publisher={Clarendon Press}
+}
+
+
+@article{Peyrache09,
+  title={Replay of rule-learning related neural patterns in the prefrontal cortex during sleep },
+  author={ A. Peyrache and M. Khamassi and K. Benchenane and S. Wiener and F. Battaglia},
+  journal={Nature Neuroscience},
+  volume={12},
+  number={7},
+  pages={919-926},
+  year={2009},
+}
+
+@article{Gulati14,
+  title={ Reactivation of emergent task-related ensembles during slow-wave sleep after neuroprosthetic learning},
+  author={T. Gulati and D. S. Ramanathan and C. C. Wong and K. Ganguly },
+  journal={Nature Neuroscience},
+  volume={17},
+  number={8},
+  pages={1107-1113},
+  year={2014},
+}
+
+
+@article{Rabiner89,
+  title={A tutorial on hidden {M}arkov models and selected applications in speech recognition},
+  author={Rabiner, Lawrence},
+  journal={Proceedings of the IEEE},
+  volume={77},
+  number={2},
+  pages={257--286},
+  year={1989},
+  publisher={IEEE}
+}
+
+
+@InProceedings{RafteryLewis92, 
+title={How many iterations in the {G}ibbs sampler?},
+booktitle={Bayesian Statistics}, publisher={Oxford University Press}, 
+  author={Raftery, Adrian E and Lewis, Steven},
+editor={Bernardo, J. M. and Berger, J. and Dawid, A. P. and Smith, A. F. M.},
+pages={763--773},
+ year={1992}}
+
+@inproceedings{Rasmussen99,
+  title={The infinite {G}aussian mixture model},
+  author={Rasmussen, Carl Edward},
+  booktitle={Advances in Neural Information Processing Systems 12},
+  publisher={MIT Press}, 
+address={Cambridge, MA},
+  volume={},
+  pages={554--560},
+  year={2000}
+}
+
+
+@inproceedings{Zou12,
+  title={Priors for diversity in generative latent variable models},
+  author={Zou, J. Y. and Adams, R. P.},
+  booktitle={Advances in Neural Information Processing Systems 24},
+  publisher={MIT Press}, 
+address={Cambridge, MA},
+  volume={},
+  pages={},
+  year={2012}
+}
+
+
+
+ 
+@article{Scott02,
+  title={Bayesian methods for hidden {M}arkov models: Recursive computing in the 21st century},
+  author={Scott, Steven L},
+  journal={Journal of the American Statistical Association},
+  volume={97},
+  pages={337--351},
+  number={457},
+  year={2002}
+}
+
+@article{Shalchyan14,
+  title={A non-parametric Bayesian approach for clustering and tracking non-stationarities of neural spikes},
+  author={Shalchyan, Vahid and Farina, Dario},
+  journal={Journal of Neuroscience Methods},
+  volume={223},
+  pages={85--91},
+  year={2014},
+  publisher={Elsevier}
+}
+
+@article{Smith03,
+  title={Estimating a State-Space Model from Point Process Observations},
+  author={A. C. Smith and E. N. Brown},
+  journal={Neural Computation},
+  volume={15},
+  pages={965--991},
+  number={5},
+  year={2003}
+}
+
+@article{Teh06,
+  title={Hierarchical {D}irichlet processes},
+  author={Teh, Yee Whye and Jordan, Michael I and Beal, Matthew J and Blei, David M},
+  journal={Journal of the American Statistical Association},
+  volume={101},
+  pages={1566--1581},
+  year={2006}
+}
+
+
+@InProceedings{Teh10, 
+title={Hierarchical {B}ayesian nonparametric models with applications},
+booktitle={Bayesian Nonparametrics}, publisher={Cambridge University Press}, 
+  author={Teh, Yee Whye and Jordan, Michael I},
+editor={Hjort, N. L. and  Holmes, C. and M\"uller, P. and Walker, S. G.},
+pages={158--207},
+ year={2010}}
+
+
+@inproceedings{van08,
+  title={Beam sampling for the infinite hidden {M}arkov model},
+  author={Van Gael, Jurgen and Saatci, Yunus and Teh, Yee Whye and Ghahramani, Zoubin},
+  booktitle={Proceedings of the 25th International Conference on Machine Learning},
+  pages={1088--1095},
+  year={2008},
+  organization={}
+}
+
+@article{Wood08,
+  title={A nonparametric {B}ayesian alternative to spike sorting},
+  author={Wood, Frank and Black, Michael J},
+  journal={Journal of Neuroscience Methods},
+  volume={173},
+  number={1},
+  pages={1--12},
+  year={2008},
+  publisher={Elsevier}
+}
+
+@article{Yau11,
+  title={Bayesian non-parametric hidden {M}arkov models with applications in genomics},
+  author={Yau, C and Papaspiliopoulos, Omiros and Roberts, Gareth O and Holmes, Christopher},
+  journal={Journal of the Royal Statistical Society: Series B (Statistical Methodology)},
+  volume={73},
+  number={1},
+  pages={37--57},
+  year={2011},
+}
+
+@article{Yu09,
+author = {Yu, B. M. and  Cunningham, J. P. and Santhanam, G. and Ryu, S. I. and Shenoy, K. V.  and Sahani, M.},
+pages = {614--635},
+title = {Gaussian-process factor analysis for low-dimensional single-trial analysis of neural population activity},
+journal = {Journal of Neurophysiology},
+volume={102},
+year = {2009}
+}
+
+
+@inproceedings{Yu09b,
+  title={Gaussian-process factor analysis for low-dimensional single-trial analysis of neural population activity},
+  author={Yu, Byron M and Cunningham, John P and Santhanam, Gopal and Ryu, Stephen I and Shenoy, Krishna V and Sahani, Maneesh},
+  booktitle={Advances in Neural Information Processing Systems},
+  pages={1881--1888},
+  year={2009}
+}
+
+@article{Ferguson73,
+  title={A {B}ayesian analysis of some nonparametric problems},
+  author={Ferguson, Thomas S},
+  journal={The Annals of Statistics},
+  pages={209--230},
+  year={1973}
+}
+
+@article{Sethuraman94,
+  title={A constructive definition of {D}irichlet priors},
+  author={Sethuraman, Jayaram},
+  journal={Statistica Sinica},
+  volume={4},
+  pages={639--650},
+  year={1994}
+}
+
+@article{kuhn1955hungarian,
+  title={The {H}ungarian method for the assignment problem},
+  author={Kuhn, Harold W},
+  journal={Naval research logistics quarterly},
+  volume={2},
+  number={1-2},
+  pages={83--97},
+  year={1955},
+  publisher={Wiley Online Library}
 }

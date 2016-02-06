@@ -1,0 +1,24 @@
+#!/bin/sh
+BASEDIR=$(dirname $0)
+cd $BASEDIR
+cd ..
+
+echo Chapter $1
+
+
+# Build the dissertation.
+xelatex --jobname=$1 singlechapter
+bibtex $1
+xelatex --jobname=$1 singlechapter
+xelatex --jobname=$1 singlechapter
+
+# Hide the log.
+#mv "singlechapter.log" ".singlechapter.logged"
+
+# Move files
+mv $1.pdf chapter_$1.pdf
+mv $1.aux chapter_$1.aux
+mv $1.out chapter_$1.out
+mv $1.log chapter_$1.log
+mv $1.bbl chapter_$1.bbl
+mv $1.blg chapter_$1.blg

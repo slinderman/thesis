@@ -23,15 +23,20 @@
 \RequirePackage{lettrine}
 \RequirePackage{setspace}
 \RequirePackage{verbatim}
+\RequirePackage{subcaption}
 
 % Fonts.
 \RequirePackage{color}
 \usepackage{hyperref}
 \RequirePackage{url}
 \RequirePackage{amssymb}
+\RequirePackage{amsmath}
+%\RequirePackage{gensymb}
+\RequirePackage{macros}
+
 \RequirePackage{mathspec}
-\setmathsfont(Digits,Latin,Greek)[Numbers={Proportional}]{EB Garamond}
-\setmathrm{EB Garamond}
+%\setmathsfont(Digits,Latin,Greek)[Numbers={Proportional}]{EB Garamond}
+%\setmathrm{EB Garamond}
 \widowpenalty=300
 \clubpenalty=300
 \setromanfont[Numbers=OldStyle, Ligatures={Common, TeX}, Scale=1.0]{EB Garamond}
@@ -68,8 +73,11 @@
 
 % References.
 \renewcommand\bibname{References}
-\RequirePackage[super,comma,numbers]{natbib}
-\renewcommand{\bibnumfmt}[1]{[#1]}
+%\RequirePackage[super,comma,numbers]{natbib}
+\RequirePackage{natbib}
+\setcitestyle{authoryear,round,citesep={;},aysep={,},yysep={;}}
+\renewcommand{\cite}[1]{\citep{#1}}
+%\renewcommand{\bibnumfmt}[1]{[#1]}
 \RequirePackage[palatino]{quotchap}
 \renewcommand*{\chapterheadstartvskip}{\vspace*{-0.5\baselineskip}}
 \renewcommand*{\chapterheadendvskip}{\vspace{1.3\baselineskip}}

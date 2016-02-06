@@ -1,0 +1,27 @@
+%!TEX TS-program = xelatex
+%!TEX encoding = UTF-8 Unicode
+
+% Run with xelatex --job-name=CH_NUMBER
+
+\documentclass{Dissertate}
+
+%\usepackage{natbib}
+%\usepackage{macros}
+
+\begin{document}
+
+\doublespacing
+
+% include each chapter...
+\setcounter{chapter}{\jobname}  % start chapter numbering at 0
+\include{chapters/chapter\jobname}
+
+\setstretch{1.2}
+
+% the back matter
+\clearpage
+\bibliography{references}
+%\bibliographystyle{apalike2}
+\bibliographystyle{unsrtnat}
+
+\end{document}
