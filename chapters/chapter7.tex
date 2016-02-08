@@ -14,51 +14,454 @@ The probabilistic model is learned through experience, supervised
 training, or evolution, though the mechanisms of learning are 
 less thoroughly explored. 
 
-I think the starting point is a background of cognitive and neural 
-evidence for and against these hypotheses, which will lead naturally 
-into open questions. While the work for this chapter is not yet 
-complete, I think there are two avenues that I could pursue. 
+\section{Introduction} 
+Consider a simple inference task that may be performed by hippocampal circuits. 
+As a rat navigates an environment, it must constantly update its internal 
+representation of its location. This is inherently a problem of inference: 
+the rat has multiple sources of information to inform its judgment, observations
+of salient environmental features, efferent copies of its motor commands, as
+well as its past estimates of its location. Bayes' rule dictates how this 
+information should be combined in order to compute a posterior distribution 
+over location. By reasoning over the posterior distribution of locations 
+rather than a single point estimate, the rat can take its uncertainty into 
+account and make robust decisions. 
 
-First, I have been working with Ishita Dasgupta and Sam Gershman 
-on an idea for data-driven ``proposal'' mechanisms that use 
-the observed inputs to instantiate hypotheses about the latent 
-variables. These hypotheses are then simulated in order to 
-evaluate their consistency with the observed data, and weighted 
-accordingly. This is an example of importance sampling, but 
-with an intelligent proposal. The proposal is, in turn, learned 
-through experience using stochastic gradient descent.  We 
-have implemented a number of simulations to show that this 
-works in theory, at least on a variety of toy problems. 
-For this thesis, it would be interesting to tie the 
-results of these simulations to real-world cognitive science 
-experiments. Predictions about neuronal implementations 
-will be necessarily speculative, but we can make some high 
-level arguments about layered implementations (e.g. that the 
-proposal may be carried by long range feed-forward connections, 
-whereas the local recurrent connections likely implement the simulation
-and weighting code). This could lead to some qualitative 
-predictions about the effects of lesions. Finally, it may be possible 
-to quantify the effect of a proposal network in terms of the 
-variance of the importance sampling estimator. 
+The ingredients of Bayesian reasoning are threefold. We start with a 
+probabilistic model of the world that specifies the relationships between
+random variables. For example, a conditional distribution over what cues 
+are visible from a particular location. Next, we need an algorithm for 
+drawing inferences about the posterior distribution of latent variables 
+given observations. Finally, we need an algorithm for learning the 
+model parameters from data. 
 
-A second potential direction is to consider the effect of 
-limited connectivity on the convergence of a Gibbs sampling 
-algorithm. Many Bayesian theories of neural computation 
-postulate that the brain is running a Markov chain to sample 
-from the posterior distribution over latent variable states. 
-Hypothesized implementations assume that neurons represent 
-single variables, and that the neurons are fully 
-connected so that they may update their states given the states 
-of all others. In practice, neural connectivity is sparse, 
-and neural representations are likely distributed. Perhaps we 
-can quantify the effects of sparsity and distributed 
-representation size in a simple, jointly Gaussian model. 
-In this setting, we can derive analytical forms for the 
-updates and compare the stationary distribution of the 
-approximate model to the true posterior. When the representation 
-is not distributed (one neuron per variable) and the 
-neurons are fully connected, the model reduces to Gibbs sampling 
-with exact updates. As the degree of connectivity goes 
-to zero, presumably the representations need to become more 
-distributed in order to approximate the true posterior. 
+We begin by hypothesizing a probabilistic model that hippocampus could implement.
+Our first question is how a posterior inference could be computed by hippocampal 
+circuitry that has a limited number of neurons and a sparse set of connections.
+These architectural constraints limit the fidelity with which a circuit can 
+implement a Bayesian inference algorithm. We explore the trade-offs between 
+neural architecture and inferential accuracy. Next, we consider how the 
+parameters of this model could be learned from experience.
 
+\section{Hippocampal Model}
+We propose a simple probabilistic interpretation of hippocampal place cells.
+It is well known that the hippocampus is involved in locomotory navigation.
+Place cells in the hippocampus are selectively active when the rat is 
+in a particular location in the environment. We suggest that this activity 
+encodes a probability distribution over locations, and that the hippocampal 
+circuitry is responsible for computing this probability distribution by 
+combining environmental cues with its past estimates. 
+
+To formalize this hypothesis, we propose that an environment is represented 
+by a set of discrete locations,~${\mcL = \{1, \ldots, L\}}$. These locations 
+need not be the same size in the real-world, so one location may correspond to
+``the corner of the room'' whereas another may correspond to ``this precise 
+spot.'' Indeed, how the rat chooses to divide the real world into discrete 
+locations is an interesting question.
+
+At any point in time, 
+the rat's location is one of these discrete values,~${z_t \in \mcL}$. 
+This location is not known to the rat, it must be inferred. 
+The key information available to the rat is a set of environmental observations,
+which we also take to be discrete~${\mcO = \{1, \ldots, O\}}$. At 
+each instant in time, the rat receives an observation,~${x_t \in \mcO}$. 
+We assume that the rat has learned a probabilistic model that specifies 
+two conditional distributions: the distribution over current locations given 
+previous locations,~${p(z_{t} \given z_{1:t-1})}$, and a distribution over observations 
+for each location,~${p(x_t \given z_{t})}$. Moreover, we assume that this 
+model is \emph{Markovian}, in that the current location only depends 
+on the most recent location,
+\begin{align}
+p(z_t \given z_{1:t-1}) = p(z_t \given z_{t-1}) = A_{z_t, z_{t-1}},
+\end{align}
+where~$A \in [0,1]^{L \times L}$ is a \emph{transition} matrix whose rows sum to one.
+
+
+Inference corresponds to computing the posterior distribution over 
+locations given 
+observations. Since there are only~$L$ different locations, the posterior distribution is a 
+normalized vector,
+\begin{align}
+\bpi_t = \begin{bmatrix} p(z_t=1 \given x_{1:t}), & \ldots, & p(z_t=L \given x_{1:t}) \end{bmatrix}^\trans.
+\end{align}
+Similarly, denote the vector of observation likelihoods for each possible location by,
+\begin{align}
+{\bo_t = \begin{bmatrix} p(x_t \given z_t=1) & \ldots & p(x_t \given z_t=L) \end{bmatrix}^\trans}.
+\end{align}
+Then, 
+\begin{align}
+  \bpi_t 
+  &= \sum_{\ell=1}^L p(z_{t}, z_{t-1} = \ell \given x_{1:t}) \\
+  &= \frac{1}{\mcZ_t} p(x_t \given z_t) \sum_{\ell=1}^L p(z_{t} \given z_{t-1} = \ell) \, p(z_{t-1}=\ell \given x_{1:t-1}) \\
+  &= \frac{1}{\mcZ_t} \bo_t \sum_{\ell=1}^L A_{z_t, \ell} \, \pi_{t-1, \ell} \\
+  \label{eq:inf_calc}
+  &= \frac{1}{\mcZ_t} \bo_t \odot \bA \bpi_{t-1},
+\end{align} 
+where we have used the factorization of the model to simplify the form
+of the summation, and~$\odot$~denotes elementwise
+multiplication. The scaling factor~$\mcZ_t$ ensures the distribution is 
+properly normalized,
+\begin{align}
+\mcZ_t &= \sum_{\ell} \pi_{t,\ell} = \sum_{\ell} \sum_{\ell'} o_{t,\ell} \, A_{\ell, \ell'} \, \pi_{t-1, \ell'}.
+\end{align}
+Thus, the ideal computation only requires linear
+operations and normalization. 
+Our question is how well this computation can be
+approximated within the limitations of neural circuits.
+
+
+\section{Neural implementation} How could these calculations be 
+carried out by hippocampal circuitry? First, we must hypothesize 
+how~$\bpi_t$,~$\bo_t$, and~$\bA$ are instantiated in a circuit. 
+Since place cells fire when the rat is in a particular location, 
+we suggest that the spiking activity of place cells represents~$\bpi_t$.
+This naturally suggests that~$\bA$, which conveys the probability of 
+one location given past locations, should be implemented in the 
+synaptic weights between place cells. Finally,~$\bo_t$, which 
+reflects the likelihood of a location under the environmental observations, 
+is likely represented by synaptic inputs to hippocampus from cortex.
+
+To formalize this, suppose there are~$N$ place cells in
+hippocampus. Each neuron is associated with a particular
+location,~$\ell_n$. Moreover, suppose that there are~$R$ neurons that
+represent each discrete location.  Since we make no assumptions about
+the actual size of a location (in real world coordinates), the density
+of place cells will differ for each discrete location.
+We model the neurons as Poisson units, and we represent the instantaneous 
+state of the population with an array,~${\bS_t \in \naturals^{L \times R}}$,
+where the  spike,
+\begin{align}
+s_{t,\ell,r} &\sim \distPoisson(\lambda_{t, \ell, r}),
+\end{align} denotes the number of action potentials
+emitted by the~$r$-th neuron
+representing location~$\ell$ fired at time~$t$.
+
+While there have been many proposals of how neural activity may encode
+probability distributions, here we assume a simple, direct encoding of
+probability. Let,
+\begin{align}
+  \label{eq:pr_rep}
+  \widehat{\pi}_{t, \ell} &= \frac{M_{t, \ell}}{M_t} &
+  M_{t,\ell} &= \sum_{r=1}^R s_{t,\ell,r}, &
+  M_t &= \sum_{\ell=1}^L M_{t,\ell}.
+\end{align}
+
+How accurately can probabilities be represented and recovered using 
+such an encoding scheme? The accuracy is affected by two sources of error: 
+the finite number of spikes, and the stochasticity of the spike 
+counts. As for the former, the fidelity of this representation 
+is a function of the total number of spikes,~$M_t$. As the number 
+of spikes goes to zero, the number of different distributions that 
+can be represented goes to zero as well. Conversely, as the spike 
+count goes to infinity, we have infinite precision to represent 
+distributions. In effect, representing a probability distribution 
+with a finite number of spikes is equivalent to representing a 
+real number with a finite precision computer. 
+
+The stochasticity of the spike counts means that any instant in 
+time, the probability distribution that is represented by the population will 
+be a random variable.  First, we will show that this representation 
+is unbiased. That is, if the firing rates,~$\lambda_{t, \ell, r}$, 
+are proportional to the probability,~$\pi_{t,\ell}$, then the 
+represented probability,~$\widehat{\pi}_{t, \ell}$, will have the  
+correct expectation.
+
+\begin{lemma}
+\ref{lem:consistency}
+If the firing rates are proportional to a given
+probability distribution then the probability distribution represented by the 
+population will have expectation equal to the given probability distribution.
+That is, if~$\lambda_{t, \ell, r}=\gamma_t \pi_{t,\ell}$, 
+then~$\bbE[\widehat{\pi}_{t,\ell}] = \pi_{t,\ell}$.
+\end{lemma}
+
+\begin{proof}
+  Iterating expectations, we have,
+  \begin{align}
+    \bbE[\widehat{\pi}_{t,\ell}] &=
+    \bbE \left[ \frac{M_{t, \ell}}{M_{t}} \right] 
+    = \bbE_{M_t} \left[
+      \bbE_{M_{t,\ell}} \left[
+        \frac{M_{t,\ell}}{M_t} \, \bigg|\,
+        M_{t}  \right] \right].
+  \end{align}
+  Since the~$s_{t, \ell, r}$ are independent Poisson random variables, their partial
+  sums are as well. Specifically,
+  \begin{align}
+    M_t &\sim \distPoisson \left( \sum_{\ell} \sum_{r} \lambda_{t,\ell,r} \right) \\
+    &= \distPoisson \left(\gamma_t \sum_\ell \sum_r \pi_{t,\ell} \right) \\
+    &= \distPoisson(\gamma_t \, R),
+  \end{align}
+  and
+  \begin{align}
+        M_{t,\ell} = \sum_r s_{t, \ell, r} &\sim \distPoisson \left( \gamma_t \, R \, \pi_{t, \ell} \right).
+  \end{align}
+  Moreover, their conditional distribution is binomial.
+  \begin{align}
+    M_{t,\ell} \given M_t &\sim
+    \distBinomial \left( M_t, \frac{\gamma_t \, R \, \pi_{t,\ell}}{\gamma_t \, R} \right)
+    =\distBinomial(M_t, \pi_{t,\ell}),
+  \end{align}
+  which has expectation~$\pi_{t,\ell} \, M_t$.
+  Plugging this into the iterated expectation above, 
+  \begin{align}
+    \bbE[\widehat{\pi}_{t,\ell}]
+    &= \bbE_{M_t} \left[
+      \bbE_{M_{t,\ell}} \left[
+        \frac{M_{t,\ell}}{M_t} \, \bigg|\,
+        M_t  \right] \right] \\
+    &= \bbE_{M_t} \left[ 
+      \frac{\pi_{t,\ell} M_t}{M_t} \right]\\
+    &= \pi_{t,\ell}.
+  \end{align}
+  Thus, this procedure is unbiased.
+\end{proof}
+
+While this stochastic representation may be correct in expectation, we
+would like to characterize the probability that it is ``close'' to its
+mean. As we hypothesized above, the difference between the true
+probability and that represented by the population should shrink as
+the number of spikes grows. We quantify this with the following
+theorem, which provides an upper bound on the number of spikes
+required to guarantee that the represented probability differs from
+the true probability by more than~$\epsilon$. We measure this
+difference with the total variation distance between the
+distributions,
+\begin{align}
+  \delta_{\mathrm{TV}}(\widehat{\bpi}_t, \bpi_t) &= 
+  \max_{\ell} |\widehat{\pi}_{t,\ell} - \pi_{t,\ell}|.
+\end{align}
+
+\begin{theorem}
+Given that~$\lambda_{t,\ell,r} = \gamma_t \pi_{t,\ell}$, and fixed 
+error level~$\epsilon < 1$ and desired confidence~$\delta < 1$, 
+then if the total number of spikes is at 
+least,
+\begin{align}
+M_t \geq \frac{3}{\epsilon^2} \ln \frac{2L}{\delta},  
+\end{align}
+the conditional probability of error is bounded 
+by~$\Pr(\delta_{\mathrm{TV}}(\widehat{\bpi}_t, \bpi_t) > \epsilon \given M_t) < 1-\delta$.
+\end{theorem}
+
+\begin{proof}
+First, consider the probability that a particular entry differs from its mean by more than~$\epsilon$.
+\begin{align}
+  \Pr(|\widehat{\pi}_\ell - \pi_\ell |  > \epsilon \given M_t) &=
+  \Pr(\widehat{\pi}_\ell - \pi_\ell  > \epsilon \given M_t) + 
+  \Pr(\widehat{\pi}_\ell - \pi_\ell  < -\epsilon \given M_t) \\
+  \nonumber  &= \Pr \left(M_{t, \ell} > M_t \pi_{t, \ell} \left(1+\frac{\epsilon}{\pi_{t, \ell}} \right) \right) \\
+  &\qquad +\Pr \left(M_{t, \ell} < M_t \pi_{t, \ell} \left(1-\frac{\epsilon}{\pi_{t, \ell}} \right) \right) \\
+  \nonumber  &= \Pr \left(M_{t, \ell} > \bbE[M_{t,\ell} \given M_t] \left(1+\frac{\epsilon}{\pi_{t, \ell}} \right) \right) \\
+  &\qquad +\Pr \left(M_{t, \ell} < \bbE[M_{t,\ell} \given M_t] \left(1-\frac{\epsilon}{\pi_{t, \ell}} \right) \right)
+\end{align}
+By
+
+
+\end{proof}
+
+
+\subsection{Neural dynamics that perform inference}
+
+We show how a hippocampal circuit could perform approximate inference using 
+simple neural update rules. 
+
+Plugging Eq.~\ref{eq:pr_rep} into Eq.~\ref{eq:inf_calc}, our update rule should set,
+\begin{align}
+  \label{eq:pop_update}
+  M_{t,\ell} 
+  &\propto o_{t,\ell} \sum_{\ell'=1}^L A_{\ell, \ell'} \, M_{t-1, \ell'}
+  = o_{t, \ell} \sum_{\ell'=1}^L \sum_{r'=1}^R A_{\ell, \ell'} \, s_{t-1, \ell', r'}
+  %&= \frac{1}{\mcZ_t} o_{t,\ell} \sum_{\ell'=1}^L  \sum_{r'=1}^R \frac{A_{\ell, \ell'}}{R} \, s_{t-1,\ell',r'},
+\end{align}
+
+
+It is straightforward to design a stochastic update rule that 
+implements this inference computation in expectation. 
+For each neuron~$(\ell,r)$, in parallel, sample its state according to,
+\begin{align}
+  s_{t,\ell,r} &\sim \distPoisson (\lambda_{t, \ell, r}) \\
+  \label{eq:rates}
+    \lambda_{t, \ell, r} &= 
+    \gamma_t \, o_{t,\ell} \sum_{\ell'=1}^L \sum_{r'=1}^R A_{\ell, \ell'} \cdot s_{t-1,\ell',r'},
+\end{align}
+where~$\gamma_t$ is a tunable gain parameter. In expectation,
+\begin{align}
+  \bbE[M_{t, \ell}] = \sum_{r=1}^R \lambda_{t, \ell, r}
+  = R \, \gamma_t \, o_{t,\ell} \sum_{\ell'=1}^L \sum_{r'=1}^R A_{\ell, \ell'} \cdot s_{t-1,\ell',r'}
+  \propto o_{t,\ell} \sum_{\ell'=1}^L A_{\ell, \ell'} \, M_{t-1, \ell'},
+\end{align}
+as required by Eq.~\ref{eq:pop_update}. As we will show below, the
+expectation of~$\widehat{\pi}_{t,\ell}$, it is also true that,
+\begin{align}
+  \bbE[\widehat{\pi}_{t,\ell}] &= \frac{o_{t,\ell} \sum_{\ell'=1}^L A_{\ell, \ell'} \, M_{t-1, \ell'}}{\sum_{j} o_{t,j} \sum_{\ell'=1}^L A_{j, \ell'} \, M_{t-1, \ell'}}.
+\end{align}
+
+\subsubsection{Sparse Connectivity}
+The rate calculations in Eq.~\ref{eq:rates} assume that the neural circuit
+is completely connected, whereas we know these circuits are actually quite sparse.
+To model this, we introduce a graph,~${G \in \{0,1\}^{LR \times LR}}$.
+If~$G_{(\ell,r),(\ell',r')}=1$, then there exists a directed connection from
+neuron~$(\ell',r')$ to neuron~$(\ell, r)$. Only connected neurons are
+included in the rate equation:
+\begin{align}
+    \lambda_{t, \ell, r} &= 
+    \gamma_t \, o_{t,\ell} \sum_{\ell'=1}^L \sum_{r'=1}^R
+    G_{(\ell,r),(\ell',r')} \cdot A_{\ell, \ell'} \cdot s_{t-1,\ell',r'},
+\end{align}
+
+We start by considering a simple graph model in which each entry in~$G$
+is an independent Bernoulli random variable with probability~$\rho$.
+If a connection exists,
+we assume it has the correct weight,~$A_{\ell, \ell'}$.
+This induces additional randomness
+in the rate function. The expectation is
+still proportional to the desired update.
+\begin{align}
+  \bbE_G[\lambda_{t, \ell, r} \given \bS_{t-1}]
+  &= \rho \, \gamma_t \, o_{t, \ell}
+  \sum_{\ell'} A_{\ell, \ell'} \cdot s_{t-1, \ell', r'}.
+\end{align}
+There is, however, additional variance,
+\begin{align}
+  \Var_G(\lambda_{t, \ell, r} \given \bS_{t-1})
+  &= \rho(1-\rho) \, \gamma_t^2 o_{t,\ell}^2
+  \sum_{\ell'} A_{\ell, \ell'}^2 \cdot s_{t-1, \ell', r'}^2 .
+\end{align}
+We will analyze the effects of this variance on the variance
+of the resulting probability estimates. 
+
+\subsubsection{Normalization}
+To prevent the number of action potentials from shrinking to zero 
+or saturating with all neurons active, we need a mechanism for normalizing the 
+population activity. 
+
+(todo: update/formalize this for Poisson) From an information theoretic perspective, it is best to
+have~${M_t = R}$ neurons active at any time. Since there are~$R$ neurons per location, 
+this means we can represent any probability,~${\widehat{\pi}_{t,\ell}=r/R}$ for~$r \in \{0,\ldots,R\}$.
+With fewer active neurons, we have a coarser discretization; with more, we can 
+only represent probabilities less than one.
+
+If our goal is to set~$M_t=R$, then we should strive for,
+\begin{align}
+  R \approx \mathbb{E}[M_t] &= \gamma_t \sum_{\ell} \sum_{r} o_{t,\ell} \sum_{\ell'=1}^L \sum_{r'=1}^R A_{\ell, \ell'} \cdot s_{t-1,\ell',r'} \\
+  &= R \gamma_t \sum_{\ell} o_{t,\ell} \sum_{\ell'=1}^L \sum_{r'=1}^R A_{\ell, \ell'} \cdot s_{t-1,\ell',r'} \\
+\implies \gamma_t &= \left( \sum_{\ell} o_{t,\ell} \sum_{\ell'=1}^L \sum_{r'=1}^R A_{\ell, \ell'} \cdot s_{t-1,\ell',r'} \right)^{-1}
+\end{align}
+While this cannot be computed in a causal manner, we can impose slower
+temporal dynamics on~$s$ such that~$M_{t} \approx M_{t-1}$,
+and then set~$\gamma_t = R / M_{t-1}$. (todo: more on this later)
+
+\section{Analyzing the Updates}
+There are at least three sources of stochasticity that can affect the
+accuracy of the inferences. The first is that the probability
+distribution is represented by a finite population of stochastic
+neurons. Even if those neurons are driven with firing rate
+proportional to their exact probability, the sampled probability will
+still be a random variable with some variance. Second, the neurons are
+only sparsely connected, so their rates will have additional variance
+due to the subsampled estimates of~$\widehat{\pi}_{t-1,\ell'}$ used in
+the updates. The final source of stochasticity arises because the
+rates are a function of the spike counts in the preceding time bin.
+Thus, the spike counts follow a stochastic process that may or may not
+be stable.
+
+\subsection{Effects of finite~$R$}
+First, consider the effect of this particular representation in
+isolation by assuming that the mean of the neurons is
+exact,~${\lambda_{t, \ell, r} = \pi_{t,\ell}}$. Then we can ask a set
+of questions:
+\begin{enumerate}
+\item[(i)] What is the mean of~$\widehat{\pi}_{t,\ell}$?
+  
+\item[(ii)] What is the variance of~$\widehat{\pi}_{t,\ell}$?
+  \begin{align}
+    \Var[\widehat{\pi}_{t,\ell}] &=
+    \Var\left[ \frac{M_{t, \ell} }{M_t}  \right] \\
+    &= \bbE_{M_t} \left[ \Var_{M_{t,\ell}} \left( \frac{M_{t, \ell} }{M_t} \, \bigg| \, M_t  \right) \right]
+    + \Var_{M_t} \left( \bbE_{M_{t,\ell}} \left[ \frac{M_{t, \ell} }{M_t} \, \bigg| \, M_t \right] \right) \\
+    &= \bbE_{M_t} \left[ \frac{M_{t}}{M_t^2} \, \pi_{t, \ell} (1-\pi_{t, \ell}) \right]
+    + \Var_{M_t} \left( \pi_{t,\ell} \right) \\
+        &= \pi_{t, \ell} (1-\pi_{t, \ell}) \, \bbE_{M_t} \left[ \frac{1}{M_t} \right]
+  \end{align}
+
+  Since~$\Pr(M_t=0)>0$, we have
+  that~$\Var[\widehat{\pi}_{t,\ell}] = \infty$.  This is somewhat
+  misleading since, in practice, the probability of~$M_t=0$ will
+  likely be negligible. We can get an intuitive sense for how the
+  variance behaves by instead looking at a lower bound.  Since~$1/M_t$
+  is a convex function, by Jensen's
+  inequality,~${\bbE[1/M_t] \geq 1/\bbE[M_t]}$.  Thus, we can get a
+  lower bound on the variance,
+  \begin{align}
+    \Var[\widehat{\pi}_{t,\ell}] &\geq  \frac{\pi_{t, \ell} (1-\pi_{t, \ell})}{R}.
+  \end{align}
+
+  Unsurprisingly, the lower bound on the variance of the estimate is
+  inversely proportional to the number of neurons allocated to each
+  location. 
+  \medskip
+
+\item[(iii)] (todo) Get tail bounds on how far~$\widehat{\pi}_{t, \ell}$
+  differs from its mean (the true probability). Formally, show
+  \begin{align}
+    \Pr(|\widehat{\pi}_{t, \ell} - \pi_{t, \ell}| > \epsilon) < 1-\delta(R,\pi_{t, \ell}).
+  \end{align}
+
+
+
+\item[(iv)] (todo) What does this imply about the total variation
+  distance between~$\widehat{\bpi}_t$ and~$\bpi_t$?
+
+\end{enumerate}
+
+\subsection{Effects of limited connectivity}
+
+\subsection{Stability of the stochastic process}
+The dynamics of Eq.~\ref{eq:rates} define a discrete time Hawkes process.
+Written in matrix form, the dynamics are,
+\begin{align}
+  \blambda_t &= (\gamma_t \bo_t \bone^\trans \odot \bG \odot \bA) \bs_{t-1}
+  \; & \;
+  \bs_t &\sim \distPoisson(\blambda_t).
+\end{align}
+The stability of this system is intimately tied to the eigenvalues
+of~${\gamma_t \bo_t \bone^\trans \odot \bG \odot \bA}$.
+(todo: double check for discrete time) In the case where~$\gamma_t$
+and~$\bo_t$ are static, the system will be stable if all eigenvalues lie
+inside the complex unit disk. In fact, unless there is an eigenvalue
+exactly equal to one, the stable system will eventually decay to having
+zero spikes. This actually motivates a baseline firing rate~$b$, such that,
+\begin{align}
+    \blambda_t &= b + (\gamma_t \bo_t \bone^\trans \odot \bG \odot \bA) \bs_{t-1}
+\end{align}
+(todo: does this bias the inferences? probably induces a bias-variance tradeoff!)
+
+Assuming stationarity and static~$\bo_t$ and~$\gamma_t$,
+\begin{align}
+  \blambda_{\textsf{ss}} &= \bbE[\blambda_t] 
+  = b\bone + (\gamma_t \bo_t \bone^\trans \odot \bG \odot \bA) \blambda_{\textsf{ss}}
+\end{align}
+which implies,
+\begin{align}
+  \blambda_{\textsf{ss}} &=
+  b \left( \bI - \gamma \bo \bone^\trans \odot \bG \odot \bA \right)^{-1} \bone
+\end{align}
+
+To start, assume~$\gamma=1$,~$\bo=\bone$,
+and~${\bG = \bone\bone^\trans}$ (fully connected) so that
+${\blambda_{\textsf{ss}} = b \left( \bI - \bA \right)^{-1} \bone}$.
+Under these conditions, the model is receiving uninformative
+observations, so we expect the posterior probability to be determined
+solely by the location dynamics model. How do we reconcile this 
+steady state solution with our intuition from Markov chain 
+theory that the steady state should converge to the principal 
+eigenvector of the transition matrix? If~$\bA$ is a row 
+stochastic transition matrix (all rows sum to one), 
+then by the Perron-Frobenius theorem the maximum eigenvalue is 
+exactly one. Thus,~$\bI - \bA$ will be singular, and its inverse 
+will diverge to infinity. However, in Markov chains,~$b=0$, 
+so this divergence is canceled out and the limit is 
+the principal eigenvector of~$\bA$.
+
+Can we design a system with~$b>0$ and~$\rho(\bA)<1$ that closely 
+approximates this steady state distribution? 

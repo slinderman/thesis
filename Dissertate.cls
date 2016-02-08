@@ -31,6 +31,15 @@
 \RequirePackage{url}
 \RequirePackage{amssymb}
 \RequirePackage{amsmath}
+
+
+% Theorems
+\RequirePackage{amsthm}
+\theoremstyle{plain}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+
+
 %\RequirePackage{gensymb}
 \RequirePackage{macros}
 
