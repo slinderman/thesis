@@ -166,7 +166,7 @@ represented probability,~$\widehat{\pi}_{t, \ell}$, will have the
 correct expectation.
 
 \begin{lemma}
-\ref{lem:consistency}
+\label{lem:consistency}
 If the firing rates are proportional to a given
 probability distribution then the probability distribution represented by the 
 population will have expectation equal to the given probability distribution.
@@ -227,39 +227,89 @@ the true probability by more than~$\epsilon$. We measure this
 difference with the total variation distance between the
 distributions,
 \begin{align}
-  \delta_{\mathrm{TV}}(\widehat{\bpi}_t, \bpi_t) &= 
+  \dtv(\widehat{\bpi}_t, \bpi_t) &= 
   \max_{\ell} |\widehat{\pi}_{t,\ell} - \pi_{t,\ell}|.
 \end{align}
 
 \begin{theorem}
-Given that~$\lambda_{t,\ell,r} = \gamma_t \pi_{t,\ell}$, and fixed 
-error level~$\epsilon < 1$ and desired confidence~$\delta < 1$, 
-then if the total number of spikes is at 
-least,
-\begin{align}
-M_t \geq \frac{3}{\epsilon^2} \ln \frac{2L}{\delta},  
-\end{align}
+Given~$\lambda_{t,\ell,r} = \gamma_t \pi_{t,\ell}$, a fixed 
+error level~$\epsilon < 1$, and a desired confidence~$\delta < 1$, 
+there exists a minimum number of spikes~$M^*$ such that if~$M_t \geq M^*$,
 the conditional probability of error is bounded 
-by~$\Pr(\delta_{\mathrm{TV}}(\widehat{\bpi}_t, \bpi_t) > \epsilon \given M_t) < 1-\delta$.
+by~$\Pr(\dtv(\widehat{\bpi}_t, \bpi_t) > \epsilon \given M_t) < \delta$.
+Furthermore, this minimum number of spikes is at most,
+\begin{align}
+M^* &\leq \frac{3}{\epsilon^2} \ln \frac{2L}{\delta},  
+\end{align}
 \end{theorem}
 
 \begin{proof}
 First, consider the probability that a particular entry differs from its mean by more than~$\epsilon$.
 \begin{align}
-  \Pr(|\widehat{\pi}_\ell - \pi_\ell |  > \epsilon \given M_t) &=
-  \Pr(\widehat{\pi}_\ell - \pi_\ell  > \epsilon \given M_t) + 
+  &\Pr(|\widehat{\pi}_\ell - \pi_\ell |  > \epsilon \given M_t) \\
+  &\qquad= \Pr(\widehat{\pi}_\ell - \pi_\ell  > \epsilon \given M_t) + 
   \Pr(\widehat{\pi}_\ell - \pi_\ell  < -\epsilon \given M_t) \\
-  \nonumber  &= \Pr \left(M_{t, \ell} > M_t \pi_{t, \ell} \left(1+\frac{\epsilon}{\pi_{t, \ell}} \right) \right) \\
-  &\qquad +\Pr \left(M_{t, \ell} < M_t \pi_{t, \ell} \left(1-\frac{\epsilon}{\pi_{t, \ell}} \right) \right) \\
-  \nonumber  &= \Pr \left(M_{t, \ell} > \bbE[M_{t,\ell} \given M_t] \left(1+\frac{\epsilon}{\pi_{t, \ell}} \right) \right) \\
-  &\qquad +\Pr \left(M_{t, \ell} < \bbE[M_{t,\ell} \given M_t] \left(1-\frac{\epsilon}{\pi_{t, \ell}} \right) \right)
+  &\qquad= \Pr \left(M_{t, \ell} > M_t \pi_{t, \ell} \left(1+\frac{\epsilon}{\pi_{t, \ell}} \right) \, \bigg| \, M_t \right) 
+  +\Pr \left(M_{t, \ell} < M_t \pi_{t, \ell} \left(1-\frac{\epsilon}{\pi_{t, \ell}} \right) \, \bigg| \, M_t\right) \\
+  &\qquad= \Pr \left(M_{t, \ell} > \bbE[M_{t,\ell} \given M_t] \left(1+\frac{\epsilon}{\pi_{t, \ell}} \right) \right) 
+   +\Pr \left(M_{t, \ell} < \bbE[M_{t,\ell} \given M_t] \left(1-\frac{\epsilon}{\pi_{t, \ell}} \right) \right)
 \end{align}
-By
+As in Lemma~\ref{lem:consistency}, we have used the fact
+that~$M_{t, \ell} \given M_t \sim \distBinomial(M_t, \pi_{t, \ell})$,
+and hence has expectation~$M_t \pi_{t, \ell}$. 
+The probability of this binomial random variable exceeding its mean 
+by a multiplicative constant is a decreasing function of the 
+number of trials,~$M_t$. This implies that there exists a minimum 
+number of trials~$M^*$ such that for~$M_t \geq M^*$, this probability 
+of error is bounded above by~$\delta$, hence proving the first part 
+of the theorem.
 
+Now suppose~$M_t=M^*$. Since a binomial random variable,~$M_{t,\ell}$, can be seen
+as a sum of independent coin flips, we can use a Chernoff bound to
+upper bound the probability of deviating from the mean by a
+multiplicative factor. We
+have,
+\begin{align}
+  \Pr \left(M_{t, \ell} > \bbE[M_{t,\ell} \given M^*] \left(1+\frac{\epsilon}{\pi_{t, \ell}} \right) \right) 
+  &\leq \exp \left \{- \frac{M^* \epsilon^2}{3 \pi_{t, \ell}} \right \},
+\end{align}
+and
+\begin{align}
+  \Pr \left(M_{t, \ell} < \bbE[M_{t,\ell} \given M^*] \left(1-\frac{\epsilon}{\pi_{t, \ell}} \right) \right) 
+  &\leq \exp \left \{- \frac{M^* \epsilon^2}{2 \pi_{t, \ell}} \right \}.
+\end{align}
+Combining these, and leveraging the fact that~$\pi_{t, \ell} \leq 1$, we get,
+\begin{align}
+  \Pr(|\widehat{\pi}_{t,\ell} - \pi_{t,\ell} |  > \epsilon \given M^*) 
+  & \leq 2 \exp \left \{- \frac{M_t \epsilon^2}{3} \right \}.
+\end{align}
+We bound the maximum deviation of any entry in~$\widehat{\bpi}$ with a union bound,
+\begin{align}
+  \Pr(\dtv(\widehat{\bpi}_t, \bpi_t) > \epsilon \given M^*) 
+  & \leq 2L \exp \left\{-\frac{M^* \epsilon^2}{3} \right\}.
+\end{align}
+Setting this probability equal to~$\delta$ yields the desired bound on~$M^*$,
+\begin{align}
+  M^* &\leq \frac{3}{\epsilon^2} \ln \frac{2L}{\delta}.
+\end{align}
 
 \end{proof}
 
 
+This theorem provides an upper bound on the minimum number of spikes necessary to 
+guarantee that the total variation distance between the true and estimated 
+probability vectors is less than~$\epsilon$ with probability~$1-\delta$. 
+Notably, the relevant quantity is the number of spikes~$M_t$, rather than 
+the number of neurons. Thus, there is some flexibility in how the probability 
+is estimated: a small population of neurons could be measured over many time bins,
+or a large population could be measured over a single time bin. Moreover, the 
+population gain,~$\gamma_t$, could be varied to adjust the number of spikes 
+per time bin. 
+
+
+
+ 
+\begin{comment}
 \subsection{Neural dynamics that perform inference}
 
 We show how a hippocampal circuit could perform approximate inference using 
@@ -365,56 +415,6 @@ rates are a function of the spike counts in the preceding time bin.
 Thus, the spike counts follow a stochastic process that may or may not
 be stable.
 
-\subsection{Effects of finite~$R$}
-First, consider the effect of this particular representation in
-isolation by assuming that the mean of the neurons is
-exact,~${\lambda_{t, \ell, r} = \pi_{t,\ell}}$. Then we can ask a set
-of questions:
-\begin{enumerate}
-\item[(i)] What is the mean of~$\widehat{\pi}_{t,\ell}$?
-  
-\item[(ii)] What is the variance of~$\widehat{\pi}_{t,\ell}$?
-  \begin{align}
-    \Var[\widehat{\pi}_{t,\ell}] &=
-    \Var\left[ \frac{M_{t, \ell} }{M_t}  \right] \\
-    &= \bbE_{M_t} \left[ \Var_{M_{t,\ell}} \left( \frac{M_{t, \ell} }{M_t} \, \bigg| \, M_t  \right) \right]
-    + \Var_{M_t} \left( \bbE_{M_{t,\ell}} \left[ \frac{M_{t, \ell} }{M_t} \, \bigg| \, M_t \right] \right) \\
-    &= \bbE_{M_t} \left[ \frac{M_{t}}{M_t^2} \, \pi_{t, \ell} (1-\pi_{t, \ell}) \right]
-    + \Var_{M_t} \left( \pi_{t,\ell} \right) \\
-        &= \pi_{t, \ell} (1-\pi_{t, \ell}) \, \bbE_{M_t} \left[ \frac{1}{M_t} \right]
-  \end{align}
-
-  Since~$\Pr(M_t=0)>0$, we have
-  that~$\Var[\widehat{\pi}_{t,\ell}] = \infty$.  This is somewhat
-  misleading since, in practice, the probability of~$M_t=0$ will
-  likely be negligible. We can get an intuitive sense for how the
-  variance behaves by instead looking at a lower bound.  Since~$1/M_t$
-  is a convex function, by Jensen's
-  inequality,~${\bbE[1/M_t] \geq 1/\bbE[M_t]}$.  Thus, we can get a
-  lower bound on the variance,
-  \begin{align}
-    \Var[\widehat{\pi}_{t,\ell}] &\geq  \frac{\pi_{t, \ell} (1-\pi_{t, \ell})}{R}.
-  \end{align}
-
-  Unsurprisingly, the lower bound on the variance of the estimate is
-  inversely proportional to the number of neurons allocated to each
-  location. 
-  \medskip
-
-\item[(iii)] (todo) Get tail bounds on how far~$\widehat{\pi}_{t, \ell}$
-  differs from its mean (the true probability). Formally, show
-  \begin{align}
-    \Pr(|\widehat{\pi}_{t, \ell} - \pi_{t, \ell}| > \epsilon) < 1-\delta(R,\pi_{t, \ell}).
-  \end{align}
-
-
-
-\item[(iv)] (todo) What does this imply about the total variation
-  distance between~$\widehat{\bpi}_t$ and~$\bpi_t$?
-
-\end{enumerate}
-
-\subsection{Effects of limited connectivity}
 
 \subsection{Stability of the stochastic process}
 The dynamics of Eq.~\ref{eq:rates} define a discrete time Hawkes process.
@@ -465,3 +465,4 @@ the principal eigenvector of~$\bA$.
 
 Can we design a system with~$b>0$ and~$\rho(\bA)<1$ that closely 
 approximates this steady state distribution? 
+\end{comment}
