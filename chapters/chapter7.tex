@@ -232,14 +232,15 @@ distributions,
 \end{align}
 
 \begin{theorem}
-Given~$\lambda_{t,\ell,r} = \gamma_t \pi_{t,\ell}$, a fixed 
+Given a fixed probability vector~$\bpi_t$,
+firing rates~$\lambda_{t,\ell,r} = \gamma_t \pi_{t,\ell}$, a fixed 
 error level~$\epsilon < 1$, and a desired confidence~$\delta < 1$, 
 there exists a minimum number of spikes~$M^*$ such that if~$M_t \geq M^*$,
 the conditional probability of error is bounded 
 by~$\Pr(\dtv(\widehat{\bpi}_t, \bpi_t) > \epsilon \given M_t) < \delta$.
 Furthermore, this minimum number of spikes is at most,
 \begin{align}
-M^* &\leq \frac{3}{\epsilon^2} \ln \frac{2L}{\delta},  
+M^* &\leq \frac{1}{2\epsilon^2} \ln \frac{2L}{\delta},  
 \end{align}
 \end{theorem}
 
@@ -283,14 +284,20 @@ Combining these, and leveraging the fact that~$\pi_{t, \ell} \leq 1$, we get,
   \Pr(|\widehat{\pi}_{t,\ell} - \pi_{t,\ell} |  > \epsilon \given M^*) 
   & \leq 2 \exp \left \{- \frac{M_t \epsilon^2}{3} \right \}.
 \end{align}
+In fact, we can do even better (c.f. M\&U Exercise 4.13) and show,
+\begin{align}
+  \Pr(|\widehat{\pi}_{t,\ell} - \pi_{t,\ell} |  > \epsilon \given M^*) 
+  &\leq 2 \exp \left \{-2M_t \epsilon^2 \right \}.
+\end{align}
+
 We bound the maximum deviation of any entry in~$\widehat{\bpi}$ with a union bound,
 \begin{align}
   \Pr(\dtv(\widehat{\bpi}_t, \bpi_t) > \epsilon \given M^*) 
-  & \leq 2L \exp \left\{-\frac{M^* \epsilon^2}{3} \right\}.
+  & \leq 2L \exp \left\{-2M^* \epsilon^2 \right\}.
 \end{align}
 Setting this probability equal to~$\delta$ yields the desired bound on~$M^*$,
 \begin{align}
-  M^* &\leq \frac{3}{\epsilon^2} \ln \frac{2L}{\delta}.
+  M^* &\leq \frac{1}{2\epsilon^2} \ln \frac{2L}{\delta}.
 \end{align}
 
 \end{proof}
