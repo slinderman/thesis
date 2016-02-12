@@ -38,6 +38,7 @@
 \theoremstyle{plain}
 \newtheorem{lemma}{Lemma}
 \newtheorem{theorem}{Theorem}
+\newtheorem{corollary}{Corollary}
 
 
 %\RequirePackage{gensymb}

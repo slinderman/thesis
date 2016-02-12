@@ -189,6 +189,7 @@ then~$\bbE[\widehat{\pi}_{t,\ell}] = \pi_{t,\ell}$.
   \begin{align}
     M_t &\sim \distPoisson \left( \sum_{\ell} \sum_{r} \lambda_{t,\ell,r} \right) \\
     &= \distPoisson \left(\gamma_t \sum_\ell \sum_r \pi_{t,\ell} \right) \\
+    \label{eq:M_t_rate}
     &= \distPoisson(\gamma_t \, R),
   \end{align}
   and
@@ -312,6 +313,111 @@ is estimated: a small population of neurons could be measured over many time bin
 or a large population could be measured over a single time bin. Moreover, the 
 population gain,~$\gamma_t$, could be varied to adjust the number of spikes 
 per time bin. 
+
+
+In practice, the number of spikes cannot be set directly. It, is a
+Poisson random variable whose mean, from Equation~\ref{eq:M_t_rate},
+is~$\gamma_t R$: the population gain times the number of neurons per
+outcome. This leads to the following theorem, which specifies a upper bound 
+on the gain and number of neurons required to guarantee that the 
+total variation distance is less than~$\epsilon$ with probability~$1-\delta$.
+
+\begin{theorem}
+  \label{thm:rate_bounds}
+  Given a fixed probability vector~$\bpi_t$, firing
+  rates~$\lambda_{t,\ell,r} = \gamma_t \pi_{t,\ell}$, a fixed error
+  level~$\epsilon < 1$, and a desired confidence~$\delta < 1$, the
+  probability of error is bounded
+  by~$\Pr(\dtv(\widehat{\bpi}_t, \bpi_t) > \epsilon) < \delta$
+  if~$\gamma_t R \geq \lambda^*$, where~$\lambda^*$ is at most,
+  \begin{align}
+    \lambda^* &\leq \frac{1}{1-e^{-2\epsilon^2}} \ln \frac{2L}{\delta}.  
+  \end{align}
+\end{theorem}
+
+\begin{proof}
+  We have, 
+  \begin{align}
+    \Pr(\dtv(\widehat{\bpi}_t, \bpi_t) > \epsilon) 
+    &= \sum_{m=0}^\infty \Pr(M_t=m) \Pr(\dtv(\widehat{\bpi}_t, \bpi_t) > \epsilon \given M_t=m) \\
+    &\leq \sum_{m=0}^\infty  \Pr(M_t=m) \times 2L \exp \left \{-2m\epsilon^2 \right\} \\
+    &= 2L \bbE_{M_t} \left[ \exp \left \{ -2M_t \epsilon^2 \right \} \right] \\
+    &= 2L \exp \left \{\lambda^* (e^{-2\epsilon^2}-1) \right\},
+  \end{align}
+  where the last line follows from moment generating function of~${M_t \sim \distPoisson(\lambda^*)}$.
+  Setting this equal to~$\delta$ and solving for~$\lambda^*$ yields the stated bound.
+\end{proof}
+
+This bound states that for a fixed gain factor, the number of neurons
+required to guarantee that the total variation distance between the
+true and estimated distributions is bounded by~$\epsilon$ could grow
+extremely rapidly as~$\epsilon$ goes to zero.
+
+So far we have considered the estimated probability distribution
+obtained by ``reading out'' the entire population of neurons. What if
+we only observe a fraction of the population, as a neuron in a
+downstream population might? The next corollary shows that as long as
+the observed neurons are randomly chosen in a way that is independent
+of the locations they encode, the previously derived bounds on the required 
+number of observed spikes, or alternatively, the expected number of 
+spikes as a function of the gain and the number of observed neurons, 
+still hold. 
+
+\begin{corollary} 
+  If each of the~$L \times R$ neurons in the population is observed 
+  independently and with probability~$\rho$, then the estimated probability,~$\widehat{\bpi}$, 
+  from the observed subset of neurons (assuming the same 
+  conditions as in Theorem~\ref{thm:rate_bounds}) will be less 
+  than~$\epsilon$ in total variation distance from~$\bpi$ 
+  with confidence~$1-\delta$ if,
+  \begin{align}
+    \rho \gamma_t R \geq \frac{1}{1-e^{-2\epsilon^2}} \ln \frac{2L}{\delta}.
+  \end{align}
+\end{corollary}
+
+\begin{proof}
+  Let~$A_{\ell,r} \in \{0,1\}$ denote whether or not the~$(\ell,r)$-th neuron 
+  is included in the observed subset. The distribution on the total number 
+  of observed spikes is,
+  \begin{align}
+    M_t \given \bA &\sim \distPoisson \left( \sum_\ell \sum_r \lambda_{t,\ell,r} A_{\ell, r} \right) \\
+    &= \distPoisson \left(\gamma_t \sum_\ell \sum_r \pi_{t, \ell} A_{\ell, r} \right),
+  \end{align}
+  and the conditional distribution of the number of observed spikes representing 
+  location~$\ell$ is,
+  \begin{align}
+    M_{t, \ell} \given M_t, \bA 
+    &\sim \distBinomial \left( M_t, 
+      \frac{ \pi_{t, \ell} \sum_r A_{\ell, r}}
+      { \sum_{\ell'} \pi_{t, \ell'}  \sum_r A_{\ell', r}} \right) \\
+    &= \distBinomial \left( M_t,  
+      \frac{ \pi_{t, \ell} N_\ell}
+      { \sum_{\ell'} \pi_{t, \ell'} N_{\ell'}}  \right),
+  \end{align} 
+  where~$N_\ell=\sum_r A_{\ell, r}$ is the number of observed neurons that encode location~$\ell$.
+  Unfortunately, the expected value of~$\widehat{\pi}_{t, \ell}$ is undefined because there 
+  is a nonzero probability that~$N_\ell=0$ for all~$\ell$, which leads to an undefined 
+  fraction below,
+  \begin{align}
+    \bbE[\widehat{\pi}_{t, \ell}] &= \bbE_{\bA}\left[ \bbE_{M_t} \left[ \bbE_{M_{t, \ell}} \left[\frac{M_{t, \ell}}{M_t} \bigg| M_t, \bA \right] \right] \right] \\
+    &= \bbE_{\bA}\left[ \bbE_{M_t} \left[ \frac{ M_t}{M_t} \times 
+      \frac{  \pi_{t, \ell} N_{\ell}}
+      {\sum_{\ell'} \pi_{t, \ell'} N_{\ell'}} \right] \right] \\
+    &= \bbE_{\bA}\left[ \frac{ \pi_{t, \ell} N_{\ell}}
+      {\sum_{\ell'} \pi_{t, \ell'} N_{\ell'}} \right].
+  \end{align}
+  
+  todo: what can we say instead?
+
+\end{proof}
+
+todo: To assess the tightness of these bounds, we simulated a variety of 
+populations representing probability vectors sampled from a symmetric
+Dirichlet prior,~$\bpi \sim \distDirichlet(\bone_L)$, for~$L=10$. For each 
+probability vector, we simulated spike counts for a range of 
+population sizes,~$R$, while keeping the gain fixed at~$\gamma_t=1$.
+We measured the 90-th percentile of the error~$\epsilon$, which 
+corresponds to the value of epsilon at confidence~$1-\delta=0.9$.
 
 
 
