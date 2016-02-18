@@ -142,34 +142,46 @@ neuron~$n$ in the~$t$-th time bin is denoted~$s_{t,n}$, which may
 denote either a discrete spike count or a real-valued signal, like 
 the calcium fluorescence. In either case, this signal is assumed 
 to be stochastically drawn from a distribution parameterized by 
-an underlying, real-valued \emph{activation},~$\psi_{t,n}$. 
-For example, if our signal is a spike train with at most one spike 
-per time bin, then a natural model is,
-\begin{align}
-  p(s_{t,n} \given \psi_{t,n}) &\sim \distBernoulli(s_{t,n} \given \sigma(\psi_{t,n})),
-\end{align}
-where~${\sigma(s)=e^s / (1+e^s)}$ is the logistic function that maps 
-the real line to the interval~${[0,1]}$. If we are modeling real-valued calcium 
-fluorescence, a more natural model is,
-\begin{align}
-  p(s_{t,n} \given \psi_{t,n}, \nu^2) &\sim \distNormal(s_{t,n} \given \psi_{t,n}, \nu^2),
-\end{align}
-where~$\nu^2$ is the variance of the observed signal. In both cases, 
-the activation captures the underlying signal that determines 
-the mean of the observations.
+an underlying, real-valued \emph{activation},~$\psi_{t,n}$,
+and a static parameter,~$\nu_n$. The
+activation is typically related to the expected spike count via
+a logistic transformation,~$\sigma(\psi) = e^\psi \, (1+e^\psi)^{-1}$,
+which has the property~$\sigma(-\psi) = 1-\sigma(\psi)$.
+
+In this work we consider the following three observation models:
+\begin{center}
+\begin{tabular}{c|c|c|c}
+  \textbf{Distribution} & $p(s \given \nu, \psi)$ & $\bbE[s]$ & $\Var(s)$ \\
+  \hline
+  Bernoulli & $\sigma(\psi)^s \, \sigma(-\psi)^{1-s}$ & $\sigma(\psi)$ & $\sigma(\psi) \, \sigma(-\psi)$ \\
+  \hline
+  Binomial & ${\nu \choose s} \, \sigma(\psi)^s \, \sigma(-\psi)^{\nu-s}$ & $\nu \sigma(\psi)$ & $\nu \sigma(\psi) \, \sigma(-\psi)$ \\
+  \hline
+  Negative Binomial & ${\nu + s -1 \choose s} \, \sigma(\psi)^s \, \sigma(-\psi)^{\nu}$ & $\nu e^\psi$ & $\nu e^\psi / \sigma(-\psi)$ \\
+\end{tabular}
+\end{center}
+The Bernoulli distribution is appropriate for binary spike counts,
+whereas the binomial and negative binomial have support
+for~$s\in[0,\nu]$ and~$s \in [0, \infty)$, respectively.
+Notably lacking from this list is the Poisson distribution,
+which does not seem to be amenable to the augmentation schemes
+we will derive below. Nevertheless, both the binomial and negative
+binomial distributions converge to the Poisson under certain
+limits, and they afford the added flexibility of modeling under- and
+over-dispersed spike counts. 
 
 Our goal is to model the temporal dynamics of our observed signal 
 in terms of a network of excitatory and inhibitory interactions. 
 The generalized linear model (GLM) \cite{Paninski-2004, Truccolo-2003, Pillow-2008} 
 achieves this by assuming a linear relationship between the 
-activation at time~$t$ and the activation at times~$[0,t-1]$,
+activation at time~$t$ and the spike counts at times~$[0,t-1]$,
 \begin{align}
   \label{eq:glm_activation}
-  \psi_{t,n} &\equiv b_n  +                 
+  \psi_{t,n} &\triangleq b_n  +                 
                \sum_{k=1}^K \sum_{m=0}^N W_{n,m,k} \, 
-               \left( \sum_{\Delta t=1}^{\Delta t_{\mathsf{max}}} \phi_{k, \Delta t} \cdot s_{t-\Delta t, m} \right),
-             %&= b_n  + \sum_{k=1}^K \sum_{m=0}^N W_{n,m,k} \, \widehat{s}_{t,m,k} \\
-             %&= b_n + \bw_n \widehat{\bs}_t,
+               \left( \sum_{\Delta t=1}^{\Delta t_{\mathsf{max}}} \phi_{k, \Delta t} \cdot s_{t-\Delta t, m} \right) \\
+             &= b_n  + \sum_{k=1}^K \sum_{m=0}^N W_{n,m,k} \, \widehat{s}_{t,m,k} \\
+             &= b_n + \bw_n \widehat{\bs}_t,
 \end{align}
 where~$b_n$ is the baseline activation of neuron~$n$,
 $\bphi_{k,1:\Delta t_{\mathsf{max}}}$ is a basis function 
@@ -178,37 +190,38 @@ offsets~${\Delta t \in [1, \Delta t_{\mathsf{max}}]}$,
 and~$W_{m,n,k}$ captures the influence that
 spikes on neuron~$m$ exert on neuron~$n$ at
 offsets weighted by the~$k$-th basis function.  
-We typically assume that the basis functions and the signal 
-are fixed so that we can precompute the inner sum, which is simply the 
-convolution of the signal with the basis function.
-Then, we can write the activation in a simplified matrix form,
-\begin{align}
-  \bpsi_{t} &\equiv \bb  + \sum_{k=1}^K \sum_{m=0}^N W_{n,m,k} \, \widehat{s}_{t,m,k} \\
-             &= \bb + \bW \, \widehat{\bs}_t,
-\end{align}
-where~$\bb \in \reals^N$,~$\bW \in \reals^{N \times NK}$,
-and~$\widehat{\bs}_t \in \reals^{NK}$.
+Since the basis function and the signal 
+are assumed to be fixed,  can precompute the inner sum, which is simply the 
+convolution of the signal with the basis function, to get~$\widehat{s}_{t,m,k}$.
+This leads to the simplified matrix form.
+% \begin{align}
+%  \bpsi_{t} &\equiv \bb  + \sum_{k=1}^K \sum_{m=0}^N W_{n,m,k} \, \widehat{s}_{t,m,k} \\
+%             &= \bb + \bW \, \widehat{\bs}_t,
+%\end{align}
+%where~$\bb \in \reals^N$,~$\bW \in \reals^{N \times NK}$,
+%and~$\widehat{\bs}_t \in \reals^{NK}$.
 
-Suppose, for example, that there is one basis function ($K=1$)
-defined by,~${\phi_{1,\Delta t} = e^{-\Delta t/\tau}}$.
-Then~$\widehat{s}_{t,m,1}$ is a sum of spikes in the window~$[t-\Delta t_{\mathsf{max}},t-1]$,
-weighted by an exponential function with time constant~$\tau$.
-If the ``weight,''~$W_{n,m}$, is positive, the influence will be
-excitatory, and if it is negative, the effect will be inhibitory.
-The GLM corresponds to an autoregressive model of spike counts 
-in which the link between previous spike counts and the current 
-spike count takes the form of a linear-nonlinear cascade.
+Suppose, for example, that there is one basis function ($K=1$) defined
+by,~${\phi_{1,\Delta t} = e^{-\Delta t/\tau}}$.
+Then~$\widehat{s}_{t,m,1}$ is a weighted sum of spikes in the
+window~$[t-\Delta t_{\mathsf{max}},t-1]$, where the weights decay
+according to an exponential function with time constant~$\tau$.  If
+the ``weight,''~$W_{n,m}$, is positive, the influence will be
+excitatory, and if it is negative, the effect will be inhibitory.  The
+GLM corresponds to an autoregressive model of spike counts in which
+the link between previous spike counts and the current spike count
+takes the form of a linear-nonlinear cascade.
 
-Our goal is to discover the weights,~$\bW$, which are naturally 
-thought of as a ``functional'' network relating the activity of 
-one neuron to the future activity of others. 
-While it is tempting to relate these 
-weights to underlying, synaptic connections between neurons, 
-in general this is unwarranted. The weights of the generalized 
-linear model can reflect a number of latent factors, like 
-polysynaptic connections and common inputs. Nevertheless, 
-these functional networks can still contain valuable 
-structure that is useful for understanding the neural population. 
+%Our goal is to discover the weights,~$\bW$, which are naturally 
+%thought of as a ``functional'' network relating the activity of 
+%one neuron to the future activity of others. 
+%While it is tempting to relate these 
+%weights to underlying, synaptic connections between neurons, 
+%in general this is unwarranted. The weights of the generalized 
+%linear model can reflect a number of latent factors, like 
+%polysynaptic connections and common inputs. Nevertheless, 
+%these functional networks can still contain valuable 
+%structure that is useful for understanding the neural population. 
 
 
 
