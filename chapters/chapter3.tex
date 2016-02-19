@@ -239,7 +239,7 @@ the GLM so popular. We assume that each neuron is endowed with a set
 of latent features that govern the probability of functional
 interactions. Specifically, we consider two types of features:
 discrete classes,~$c_n \in \{1, \ldots, C\}$, and continuous
-locations,~$\ell_n \in \reals^D$. These can determine either the
+locations,~$\bell_n \in \reals^D$. These can determine either the
 probability of connection,~$p(A_{n \from m})$, or the mean and
 variance of a multivariate Gaussian prior on the
 weights,~$\bmu_{n \from m}$ and~$\bSigma_{n \from m}$.
@@ -252,7 +252,7 @@ Name & Latent Variable & $p(A_{n \from m≈})$ \\
 Dense Model & --- & $1$ \\
 Bernoulli Model & --- & $\rho$ \\
 Stochastic Block Model & $c_n$ & $\rho_{c_n \from c_m}$ \\
-Latent Distance Model & $\ell_n$ & $\sigma(-||\ell_n - \ell_m||_2^2 + \gamma_0)$
+Latent Distance Model & $\bell_n$ & $\sigma(-||\ell_n - \ell_m||_2^2 + \gamma_0)$
 \end{tabular}
 \end{center}
 \caption{Binary Adjacency Matrix Models}
@@ -273,7 +273,7 @@ priors,~${\beta_{c \from c'} \sim \distBeta(\alpha, \beta)}$.
 The latent distance model \cite{Hoff-2008} encodes the belief that 
 connection probability should decrease with distance between latent 
 locations. The locations are given spherical Gaussian 
-priors,~$\ell_n \sim \distNormal(0, \bI)$, as is the 
+priors,~$\bell_n \sim \distNormal(0, \bI)$, as is the 
 offset,~$\gamma_0 \sim \distNormal(0, 1)$.
 
 
@@ -284,119 +284,51 @@ Name & Latent Variable & $\bmu_{n \from m}$ & $\bSigma_{n \from m}$\\
 \hline
 Gaussian Model & --- & $\bmu$ & $\bSigma$ \\
 Stochastic Block Model & $c_n$ & $\bmu_{c_n \from c_m}$ & $\bSigma_{c_n \from c_m}$ \\
-Latent Distance Model (${K=1}$) & $\ell_n \in \reals$ & $-(\ell_n - \ell_m)^2 + \mu_0$ & $\sigma^2$
+Latent Distance Model (${K=1}$) & $\bell_n$ & $-||\bell_n - \bell_m||_2^2 + \mu_0$ & $\sigma^2$
 \end{tabular}
 \end{center}
 \caption{Gaussian Weight Models}
 \label{tab:W_models}
 \end{table}
 
-Likewise, Table~\ref{tab:W_models} defines the three weight models we consider. 
-Each model defines the mean and variance of a multivariate normal 
-distribution,~$\bw_{n \from m} \sim \distNormal(\bmu_{n \from m}, \bSigma_{n \from m})$.
-In the Gaussian model, all weights are independent and identically distributed.
+Likewise, Table~\ref{tab:W_models} defines the three weight models we
+consider.  Each model defines the mean and variance of a multivariate
+normal distribution,~$\bw_{n \from m} \sim \distNormal(\bmu_{n \from
+  m}, \bSigma_{n \from m})$.  In the Gaussian model, all weights are
+independent and identically distributed.  The stochastic block model,
+has parameters for each pair of classes, each drawn from a normal
+inverse-Wishart prior,~$(\bmu_{c \from c'}, \bSigma_{c \from c'}) \sim
+\distNormalInvWishart(\mu_0, \kappa_0, \Sigma_0, \nu_0)$. Finally, we
+consider a latent distance model, but only for the case where the
+weights are scalar, i.e.~$K=1$. In this case, the distance between
+points is inversely proportional to the mean weight.  For higher order
+weights, additional assumptions would be required in order to relate
+distance to vector weights. In this model, we assume standard normal
+priors on the parameters~$\bell_n$ and~$\mu_0$.  The variance is given
+an inverse gamma prior,~$\sigma^2 \sim \distInvGamma(\alpha, \beta)$.
 
+Of course, many other models could be added to this list, and in the
+discussion we will consider various extensions. An attractive feature
+of this approach is that we may indeed draw on an extensive literature
+of network models. For the purposes of this paper, we restrict our
+attention to these models, based on latent classes and locations,
+which are particularly interpretable and easily visualized.
 
-
-We factorize the joint probability
-distribution into the product of three pieces, which will be discussed
-in turn:
+We can now write down the joint probability of our probabilistic model.
+Let~$\theta$ denote the parameters of the network model, like the connection
+probabilities under the Bernoulli model or the class-specific mean and variance
+under a stochastic block model for the weights. 
 \begin{multline}
-p(\bs, \bA, \bW, \{\bz_n\}, \{\nu_n\}, \theta) 
+p(\bs, \{\nu_n\}, \bA, \bW, \{c_n, \bell_n\}, \theta) 
 =  \\
-p(\{\nu_n\}) \,
-\overbrace{p(\theta) \, p(\{\bz_n\} \given \theta)}^\text{structure} \, 
-\overbrace{p(\bA, \bW \given \{\bz_n\}, \theta)}^\text{network} \, \\
-\times \underbrace{ \prod_{t=1}^T \prod_{n=1}^N p \left(s_{t,n} \given \bs_{1:t-1}, \bA, \bW, \nu_n \right)}_\text{observation}.
+\overbrace{p(\theta) \, p(\{c_n, \bell_n\} \given \theta)}^\text{latent variables} \, 
+\overbrace{p(\bA, \bW \given \{c_n, \bell_n\}, \theta)}^\text{network} \, \\
+\times \underbrace{ p(\{\nu_n\}) \prod_{t=1}^T  \prod_{n=1}^N  p \left(s_{t,n} \given \bs_{1:t-1}, \bA, \bW, \nu_n \right) }_\text{observation} .
 \end{multline}
-
-
-
-\paragraph{Latent structure models}
-The first piece is a model of interpretable latent structure. 
-The space of such structures is infinitely diverse, yet many structures can be composed of a few simple building blocks.
-Consider discrete structures, where each neuron has a latent type drawn from a categorical distribution,~$z_n \sim \distCategorical(z_n \given \bpi)$. 
-In Figure~\ref{fig:fig1}(a), we have four classes identified by the four primary colors.
-Some neural populations may be better characterized by having a spectrum of types, which may be formalized by a real-valued feature drawn from a Gaussian distribution,~$z_n \sim \distNormal(z_n \given \bmu, \bSigma)$. 
-Figure~\ref{fig:fig1}(b) illustrates a one dimensional feature space.
-When the relationship between two neurons is a function of the distance between their features, we think of these features as locations in some real or abstract space. 
-The full power of this approach is realized when features are combined, as in the final example of Figure~\ref{fig:fig1} where neurons have both a type and location. 
-This can capture, for example, cells in visual cortex that have a particular type of tuning curve centered at a specific location. 
-%Other possibilities that are not shown but could be formulated in a similar manner include hierarchies and admixtures of types and features. 
-
-\paragraph{Network models}
-These latent structures affect the observed signal by way of a network. 
-This network captures the functional relationships between neurons in an intuitive manner.
-For example, suppose~${z_n \in \{1, 2\}}$ denotes a neuron's discrete type. 
-A stochastic block model, one type of network model, can reflect hypotheses like, ``Neurons of type 1 are likely to excite neurons of type 2, but not vice versa.''  
-This could be encoded by a network model with different mean weights for each ordered pair of classes:~$\mu_{1,1}$,~$\mu_{1,2}$,~$\mu_{2,1}$, and~$\mu_{2,2}$.
-The weight of the connection from neuron~$i$ to neuron~$j$ is then drawn from a normal distribution with the mean for the neurons' respective classes,~$W_{i,j} \sim \distNormal(W_{i,j} \given \mu_{z_i, z_j}, \sigma^2)$. 
-
-Similarly, the latent classes may determine the probability of interaction between two cells. In this case, we have parameters,~$\rho_{1,1}$,~$\rho_{1,2}$,~$\rho_{2,1}$, and~$\rho_{2,2}$, that specify the probability of connection for each ordered pair of classes.
-Then, we have~$A_{i,j} \sim \distBernoulli(A_{i,j} \given \rho_{z_i, z_j})$.
-
-Next, suppose~$z_n \in \reals^2$ denotes the latent location of the neuron, and that nearby cells are more likely to interact. 
-This hypothesis is encoded by the following \emph{latent distance model},~${A_{i,j} \sim \distBernoulli(A_{i,j} \given \sigma(||z_i - z_j||))}$, where~$\sigma(x)=(1+e^{-x})^{-1}$ is the logistic function, which maps~$\reals \to [0,1]$.
-Hence, the probability of connection is a function of the distance between the cells.
-
-%Finally, consider a network model where the weights are a function of continuous latent features. 
-% Instead of depending upon the distance between features, it may be more natural to think of the inner product between features as a measure of similarity.
-% For example, let~$W_{i,j} \sim \distNormal(W_{i,j} \given z_i^\trans z_j, \sigma^2)$. 
-% Then, in expectation, neurons with orthogonal features have zero weight, neurons with parallel feature vectors have positive weights, and neurons with opposite feature vectors have negative weights. 
-
-In all of these cases, the network factorizes into a simple form,
-\begin{align}
-p(\bA, \bW \given \bz, \theta) &\equiv 
-\prod_{m=1}^N \prod_{n=1}^N \distBernoulli \big(A_{m,n} \given \rho_{m,n} \big) \,
-\distNormal \big(W_{m,n} \given \mu_{m,n}\, \sigma_{m,n}^2 \big),
-\end{align}
-where~$\rho_{m,n}$,~$\mu_{m,n}$, and~$\sigma_{m,n}^2$ are connection probabilities, means, and variances, respectively, that depend implicitly on the parameters,~$\theta$, and the pair of latent variables~$z_m$ and~$z_n$.
-
-\paragraph{Autoregressive activation model}
-The activation is a time-varying signal that intuitively represents the intensity of a neuron's activity. 
-If the observed activity is a spike train, then the activation is related to the firing rate.
-Importantly, the instantaneous activation depends upon the neuron's preceding activity as well as the activity of upstream neurons. 
-These dependencies are captured by the functional network.
-
-We formalize this with an autoregressive model of activation,
-\begin{align}
-\psi_{n}[t] &\sim \distNormal\left( b_n + \sum_{m=1}^N A_{m,n} \cdot W_{m,n} \cdot \phi(\bs_m[1:t-1]), \, \sigma_\psi^2 \right).
-\end{align}
-In this formulation,~$\phi(\cdot)$ is a fixed (potentially nonlinear) function that maps a vector of previous spiking activity to a scalar value. For example,~$\phi$ could count the number of spikes in the preceding time bin or compute a weighted average of spikes over some preceding time window. Here, the activation at time~$t$ depends upon only a single function of the preceding activity, but this could easily be extended to have weights for~$B$ different functions by defining~$\bW_{m,n} \in \reals^B$.
-This is developed formally in the appendix.
-
-\begin{comment}
-The Gaussian distribution allows the activation to deviate from that predicted by the preceding signal. 
-If the signal history captures most of the variance in the activation, then the variance of this distribution,~$\sigma_\psi^2$, will be small, and can often be neglected.
-Indeed, in the experiments in this paper, we fixed~$\sigma_\psi^2$ to zero and forced the activation to be a deterministic function of the preceding signal. Then, the joint probability distribution can be simplified to,
-\begin{align}
-p(\bs, \bA, \bW, \bz, \theta) 
-%&= 
-%p(\theta) \, p(\bz \given \theta) \, 
-%p(\bA, \bW \given \bz, \theta) \, 
-%\prod_{n=1}^N \prod_{t=1}^T 
-%p \bigg( s_n[t] \, \bigg| \, \psi_{n}[t] \bigg)
-%\\
-&\equiv p(\theta) \, p(\bz \given \theta) \, 
-p(\bA, \bW \given \bz, \theta) \, 
-\prod_{n=1}^N \prod_{t=1}^T 
-p \bigg( s_n[t] \, \bigg| \, b_n + \sum_{m=1}^N A_{m,n} \cdot W_{m,n} \cdot \phi(\bs_m[1:t-1]) \bigg).
-\end{align}
-\end{comment}
-
-
-\paragraph{Observation models}
-The observation model describes the statistical relationship betwen activation and signal. 
-Here again, we have great flexibility in how we define this model.
-If our signal is naturally continuous, like a time-varying calcium fluorescence, then it is natural to posit a model with Guassian noise,~${s_n[t] \sim \distNormal(s_n[t] \given \psi_n[t], \sigma_s^2)}$. 
-If we are modeling spike trains, then our signal will take the form of discrete spike counts in each time bin.
-When these counts are binary, we use~${s_n[t] \sim \distBernoulli(s_n[t] \given \sigma(\psi_n[t]))}$.
-With larger time bins, the counts will be non-negative integers that are more aptly modeled by a Poisson distribution or negative binomial distribution. 
-In this work, we use the negative binomial distibution since, as we will show, it is amenable to efficient Bayesian inference via data augmentation. 
-Specifically, for non-negative integer spike counts, we let~${s_n[t] \sim \mathrm{NB}(s_{n}[t] \given \xi, \sigma(\psi_n[t]))}$,
-where~$\xi$ is the scale parameter and~$\sigma(\psi_n[t])$ is an instantaneous probability. 
-This is equivalent to saying that the spike counts arise from a two step process: 
-first the instantaneous firing rate is drawn from a gamma distribution,~$\lambda_n[t] \sim \distGamma(\xi, e^{\psi_{n}[t]})$, then the spike count is drawn from,~$s_{n}[t]\sim \distPoisson(\lambda_n[t])$.
+The joint probability
+factorizes into the product of three pieces: the latent variables, the network, and the observed spikes and their corresponding observation parameters. Next, we will describe
+how to perform efficient Bayesian inference of the latent variables
+and the network, given the observed spike train and this probabilistic model.
 
 \subsection{Bayesian Inference}
 Inference is the process of evaluating the posterior distribution over latent variables given the observed signal, which is related to the joint distribution by Bayes' rule:
