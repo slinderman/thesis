@@ -513,117 +513,22 @@ where
   \left(\widehat{\bS}^\trans \bkappa_n \right) \odot \ba_n \right].
 \end{align}
 
-
-
-\paragraph{Network updates} Updating the network is more challenging since there are~$N^2$ entries in both~$\bA$ and~$\bW$. 
-Fortunately, it can be shown that the activation and observation models factorize into a product of terms for each time bin and each neuron.
-Thus, when the network model factorizes into a product over terms for each entry in~$\bA$ and~$\bW$ (as do all of the models used in this paper), then the joint probability factorizes into terms for each neuron. 
-Those terms depend solely on the connections incident to the neuron, i.e. the~$n$-th term depends only on the~$n$-th column of~$\bA$ and~$\bW$, which we denote by~$\bA_{:,n}$ and~$\bW_{:,n}$, respectively.
-We can leverage this fact by updating the columns of these matrices in parallel, thereby reducing our computation to linear in the number of neurons,~$N$.
-
-Consider updating the weights~$\bW_{:,n}$ given a particular set of connections,~$\bA_{:,n}$. The conditional distribution is propotional to the product of two terms,~$p(\bW_{:,n} \given \bz, \theta)$, and,~$p(\bpsi_{:,n} \given \bA_{:,n}, \bW_{:,n})$. In our model, both of these terms are Gaussian so the conditional distribution will be Gaussian as well. The former term can be written as,~$\distNormal(\bW_{:,n} \given \bmu_{:,n}, \bSigma_{:,n})$, where~$\bmu_{:,n} = \left[\mu_{1,n}, \ldots, \mu_{N,n} \right]^\trans$, and~$\bSigma_{:,n} = \diag(\left[\sigma_{1,n}^2, \ldots, \sigma_{N,n}^2 \right])$. Let~$\bPhi \in \reals^{T \times N}$ denote a matrix where~$\Phi_{t,m}=\phi(\bs_m[1:t-1])$, and let~$\bLambda_\psi = \sigma_\psi^{-2} \bI$ denote the~$T \times T$ activation precision matrix. The latter term can then be written as~$\distNormal(\bpsi_{:,n} \given \bPhi (\bW_{:,n} \odot \bA_{:,n}), \bLambda^{-1})$. Then, to update the weights, we sample from the conditional distribution,
+Having introduced auxiliary variables, we must now also derive
+Markov transitions to update them as well. Fortunately, the
+\polyagamma distribution is designed such that the conditional
+distribution of the auxiliary variables is just a ``tilted'' \polyagamma
+distribution,
 \begin{align}
-p(\bW_{:,n} \given \theta, \bz, \bA_{:,n}, \bpsi_{:,n}) &= \distNormal \left( \bW_{:,n} \given \widehat{\bmu}_{:,n}, \widehat{\bSigma}_{:,n} \right),
+  p(\omega_{t,n} \given s_{t,n}, \nu_n, \psi_{t,n})
+  &= p_{\mathrm{PG}}(\omega_{t,n} \given b(s_{t,n}, \nu_n), \, \psi_{t,n}).
 \end{align}
-where
-\begin{align}
-\widehat{\bSigma}_{:,n} &= \left( \bSigma_{:,n}^{-1} + (\bPhi^\trans \bLambda \bPhi) \odot \bA_{:,n} \bA_{:,n}^\trans \right)^{-1}, \\
-\widehat{\bmu}_{:,n} &= \widehat{\bSigma}_{:,n}
-\left( \bSigma_{:,n}^{-1} \bmu_{:,n} + (\bPhi^\trans \bLambda \bpsi_{:,n}) \odot \bA_{:,n} \right).
-\end{align}
+These auxiliary variables are conditionally independent and hence can
+be updated in parallel. Moreover, efficient algorithms are available
+to generate \polyagamma random variates~\cite{windle2014sampling}, and
+we have ported these to Python\footnote{\url{https://github.com/slinderman/pypolyagamma}}.
 
-The na\"ive method of resampling the binary adjacency matrix given a fixed set of weights is doomed to fail because the presence or absence of a connection is highly correlated with the weights. Fortunately, since the weights have a Gaussian conditional distribution, we can integrate over possible weights in order to reason about the conditional probability of a connection independent of the connection's weight. That is, we can sample~$\bA_{:,n}$ from its conditional distribution after marginalizing out~$\bW_{:,n}$. This marginal is,
-\begin{align}
-p(\bA_{:,n} \given \bpsi, \theta, \bz) 
-&= \int p(\bA_{:,n}, \bW_{:,n} \given \bpsi, \theta, \bz) \, \mathrm{d} \bW_{:,n} \\
-&\propto p(\bA_{:,n} \given \theta, \bz) \int \distNormal(\bpsi_{:,n} \given \bPhi (\bW_{:,n} \odot \bA_{:,n}), \bLambda^{-1}) \, \distNormal(\bW_{:,n} \given \bmu_{:,n}, \bSigma_{:,n}) \, \mathrm{d} \bW_{:,n} \\
-&= p(\bA_{:,n} \given \theta, \bz)  \,
-\frac{
-|\bSigma_{:,n}|^{-\frac{1}{2}}
-\exp \big\{-\frac{1}{2} {\bmu}_{:,n}^\trans {\bSigma}_{:,n}^{-1} {\bmu}_{:,n} \big\}
-}
-{
-|\widehat{\bSigma}_{:,n}|^{-\frac{1}{2}}
-\exp \big\{-\frac{1}{2} \widehat{\bmu}_{:,n}^\trans \widehat{\bSigma}_{:,n}^{-1} \widehat{\bmu}_{:,n} \big\} 
-}.
-\end{align}
-Note that~$\widehat{\bmu}_{:,n}$ and~$\widehat{\bSigma}_{:,n}$ are functions of~$\bA_{:,n}$. 
+\subsubsection{Updating latent variables and parameters}
 
-Sampling this conditional distribution directly would require enumerating and evaluating all~$2^N$ possible values of~$\bA_{:,n}$, which is intractable for even small~$N$. However, we can perform Gibbs updates of~$A_{m,n}$ given the state of other incoming connections,~$\bA_{\neg m,n}$, where~$\neg m$ denotes ``all entries except the~$m$-th entry.'' To implement this algorithm, precompute~$\bPhi^\trans \bLambda \bPhi$ and~$\bPhi^\trans \bLambda \bpsi_{:,n}$, and then iterate over the entries in~$\bA_{:,n}$. For each entry, flip its state, update~$\widehat{\bmu}_{:,n}$ and~$\widehat{\bSigma}_{:,n}$, then compute the updated conditional probability of~$\bA_{:,n}$, and sample a new value of~$A_{m,n}$ from the conditional distribution. Once all entries of~$\bA_{:,n}$ have been updated, sample~$\bW_{:,n}$ from its full conditional distribution given above.
-
-\paragraph{Activation updates}
-The only variable left to be updated is the activation,~$\bpsi$. The conditional distribution over~$\bpsi_{:,n}$ is proportional to the product of~$\distNormal(\bpsi_{:,n} \given \bPhi (\bW_{:,n} \odot \bA_{:,n}), \bLambda^{-1})$ and~$\prod_{t=1}^T p(s_{n}[t] \given \psi_{n}[t])$. When the observation model is Gaussian, the latter term can be written as a joint Gaussian,~$\distNormal(\bs_{:,n} \given \bpsi_{:,n}, \bOmega^{-1})$, where~$\bOmega = \sigma_s^{-1} \bI$ is the observation precision matrix. In this case, the conditional distribution on~$\bpsi_{:,n}$ is,
-\begin{align}
-p(\bpsi_{:,n} \given \theta, \bz, \bA_{:,n}, \bW_{:,n}, \bs) &= 
-\distNormal(\bpsi_{:,n} \given \widehat{\bmu}_{\psi_n}, \widehat{\bSigma}_{\psi_n}),
-\end{align}
-where
-\begin{align}
-\widehat{\bSigma}_{\psi_n} &= \left( \bLambda + \bOmega \right)^{-1}
-\\
-\widehat{\bmu}_{\psi_n} &= \bSigma_{\psi_{n}} \left(\bLambda \bPhi (\bA_{:,n} \odot \bW_{:,n}) + \bOmega \bs_{:,n} \right).
-\end{align}
-
-
-In general, however, the observation model will not be Gaussian, and hence will not yield simple closed form updates for~$\bpsi$. We show how even nonconjugate Bernoulli and negative binomial observation models can be rendered conjugate by introducing a set of auxiliary P\'{o}lya-gamma variables.
-
-The integral identity at the heart of the P\'{o}lya-gamma augmentation scheme \cite{polson2013bayesian} is
-\begin{equation}
-\label{eq:pg_identity}
-\frac{(e^{\psi})^a}{(1+e^{\psi})^b} = 2^{-b} e^{\kappa \psi} \int_{0}^{\infty} e^{-\omega \psi^2 /2} p(\omega \given b, 0) \, \mathrm{d}\omega,
-\end{equation}
-where~${\kappa=a-b/2}$ and~$p(\omega\given b, 0)$ is the density of the P\'{o}lya-gamma
-distribution~${\distPolyaGamma(b, 0)}$, which does not depend on $\psi$.
-% Notice that for fixed $\omega$ the right-hand side is log-quadratic in $\psi$,
-% while the left-hand side resembles a logistic link function common in many
-% likelihood functions of interest.
-% This structure, along with the fact that P\'{o}lya-gamma variates can be simulated
-% efficiently \cite{}, leads to the augmentation scheme \cite{}.
-Consider a likelihood function of the form
-\begin{equation}
-  \label{eq:logit_likelihood}
-  p(s \given \psi) = c(s) \frac{(e^\psi)^{a(s)}}{(1+e^\psi)^{b(s)}}
-\end{equation}
-for some functions $a$, $b$, and $c$.
-For example, the Bernoulli distribution has this form with,~$a(s)=s$,~$b(s)=1$, and~$c(s)=1$. Thus,~$\kappa(s)=s-\frac{1}{2}$. Likewise, the negative binomial distribution with parameter~$\xi$ we have,~$a(s)=s$,~$b(s)=s+\xi$, and~$c(s)={s + \xi -1 \choose s}$, yielding~$\kappa(s)=\frac{s-\xi}{2}$.
-
-Using~\eqref{eq:pg_identity} along with a prior~$p(\psi)$, we can write the joint density of $(\psi, s)$ as
-\begin{equation}
-  \label{eq:pg_joint}
-  p(\psi, s) = p(\psi) \, c(s) \frac{(e^\psi)^{a(s)}}{(1+e^\psi)^{b(s)}} = \int_0^\infty
-  p(\psi) \, c(s) \, 2^{-b(s)} e^{\kappa(s) \psi} e^{-\omega \psi^2/2} p(\omega \given b(s), 0) \; \mathrm{d}\omega.
-\end{equation}
-The integrand of~\eqref{eq:pg_joint} defines a joint density on $(\psi, s,
-\omega)$ which admits $p(\psi, s)$ as a marginal density.
-Conditioned on these auxiliary variables $\omega$, we have that the likelihood as a function of~$\psi$ is,
-\begin{equation}
-  p(s \given \psi, \omega) \propto e^{\kappa(s) \psi} e^{- \omega \psi^2/2} 
-\propto \distNormal \left(\frac{\kappa(s)}{\omega} \, \bigg| \, \psi, \, \omega^{-1} \right).
-\end{equation}
-In summary, if we have a Bernoulli or negative binomial observation model, we can introduce a set of P\'{o}lya-gamma auxiliary variables,~$\omega_n[t]$, for each spike count~$s_n[t]$. Conditioned on the auxiliary variables, the likelihood is rendered conjugate to a Gaussian prior on~$\psi$. Specifically, let~$\bOmega = \diag([\omega_{n}[1], \ldots, \omega_n[t]])$. Then the conditional distribution for~$\bpsi_{:,n}$ is 
-$\distNormal(\bpsi_{:,n} \given \widehat{\bmu}_{\psi_n}, \widehat{\bSigma}_{\psi_n})$
-where
-\begin{align}
-\widehat{\bSigma}_{\psi_n} &= \left( \bLambda + \bOmega \right)^{-1},
-\\
-\widehat{\bmu}_{\psi_n} &= \bSigma_{\psi_{n}} \left(\bLambda \bPhi (\bA_{:,n} \odot \bW_{:,n}) + \kappa(\bs_{:,n}) \right).
-\end{align}
-
-
-Finally, we need to update the auxiliary variables by sampling them from their conditional distribution. 
-By the exponential tilting property of the P\'{o}lya-gamma
-distribution, ${p(\omega \given \psi, s) = \distPolyaGamma(b(s), \psi)}$.
-Efficient sampling algorithms for sampling from the P\'{o}lya-gamma distribution, and 
-these samples can be collected in parallel for each neuron and time bin. 
-
-\paragraph{Deterministic activation}
-In many cases, there is no need for Gaussian noise in the activation, and we may let the activation be deterministically defined to be~$\bpsi_{:,n} = \bPhi(\bA_{:,n} \odot \bW_{:,n})$. The network updates remain the same, but the conditional mean and variance of the weights become,
-\begin{align}
-\widehat{\bSigma}_{:,n} &= \left( \bSigma_{:,n}^{-1} + (\bPhi^\trans \bOmega \bPhi) \odot \bA_{:,n} \bA_{:,n}^\trans \right)^{-1}, \\
-\widehat{\bmu}_{:,n} &= \widehat{\bSigma}_{:,n}
-\left( \bSigma_{:,n}^{-1} \bmu_{:,n} + (\bPhi^\trans  \kappa(\bs_{:,n})) \odot \bA_{:,n} \right).
-\end{align}
-The auxiliary variables are sampled from their P\'{o}lya-gamma conditional distribution with the deterministic activation.
 
 \subsection{Model Selection}
 
