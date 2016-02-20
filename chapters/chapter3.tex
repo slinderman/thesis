@@ -148,21 +148,32 @@ activation is typically related to the expected spike count via
 a logistic transformation,~$\sigma(\psi) = e^\psi \, (1+e^\psi)^{-1}$,
 which has the property~$\sigma(-\psi) = 1-\sigma(\psi)$.
 
-In this work we consider the following three observation models:
 \begin{table}
 \begin{center}
-\begin{tabular}{c|c|c|c}
-  \textbf{Distribution} & $p(s \given \nu, \psi)$ & $\bbE[s]$ & $\Var(s)$ \\
+\begin{tabular}{c|c|c|c|c}
+  \textbf{Distribution} & $p(s \given \psi, \nu)$ & Standard Form & $\bbE[s]$ & $\Var(s)$ \\
   \hline
-  Bernoulli & $\sigma(\psi)^s \, \sigma(-\psi)^{1-s}$ & $\sigma(\psi)$ & $\sigma(\psi) \, \sigma(-\psi)$ \\
-  %\hline
-  Binomial & ${\nu \choose s} \, \sigma(\psi)^s \, \sigma(-\psi)^{\nu-s}$ & $\nu \sigma(\psi)$ & $\nu \sigma(\psi) \, \sigma(-\psi)$ \\
-  Negative Binomial & ${\nu + s -1 \choose s} \, \sigma(\psi)^s \, \sigma(-\psi)^{\nu}$ & $\nu e^\psi$ & $\nu e^\psi / \sigma(-\psi)$ \\
+  Gaussian & $\frac{1}{\sqrt{2 \pi \nu}}\exp \left \{ -\frac{1}{2 \nu} (s - \psi)^2 \right \}$
+  & --- 
+  & $\psi$ & $\nu$ \\
+  Bernoulli & $\sigma(\psi)^s \, \sigma(-\psi)^{1-s}$
+  & $\frac{(e^\psi)^s}{1+e^\psi}$
+  & $\sigma(\psi)$ & $\sigma(\psi) \, \sigma(-\psi)$ \\
+  Binomial & ${\nu \choose s} \, \sigma(\psi)^s \, \sigma(-\psi)^{\nu-s}$
+  & ${\nu \choose s} \,\frac{(e^\psi)^s}{(1+e^\psi)^\nu}$
+  & $\nu \sigma(\psi)$ & $\nu \sigma(\psi) \, \sigma(-\psi)$ \\
+  Neg. Binomial & ${\nu + s -1 \choose s} \, \sigma(\psi)^s \, \sigma(-\psi)^{\nu}$
+  & ${\nu +s - 1 \choose s} \,\frac{(e^\psi)^s}{(1+e^\psi)^{\nu+s}}$
+  & $\nu e^\psi$ & $\nu e^\psi / \sigma(-\psi)$ \\
 \end{tabular}
 \end{center}
 \caption{List of observation distributions.}
+\label{tab:obs_models}
 \end{table}
 
+We consider the four observation models shown in Table~\ref{tab:obs_models}.
+The Gaussian model assumes~$s_{t,n}$ is real-valued, and may be
+appropriate for modeling calcium fluorescence, for example.
 The Bernoulli distribution is appropriate for binary spike counts,
 whereas the binomial and negative binomial have support
 for~$s\in[0,\nu]$ and~$s \in [0, \infty)$, respectively.
@@ -373,10 +384,10 @@ With these samples, we can compute unbiased expectations with respect to the pos
 For example, we can compute the expected probability that two neurons belong to the same class, the expected weight of a functional connection between two neurons, or the expected predictive likelihood of heldout test data.
 
 
-\paragraph{Simple Network Updates}
+\subsubsection{Collapsed network updates}
 The most challenging aspect of inference is sampling the
 posterior distribution over connections,~$\bA$. In the
-dense model, where~$A_{n \from m} \equiv 1$, the posterior
+dense model, where~$a_{n \from m} \equiv 1$, the posterior
 distribution over weights is often log concave, which
 makes it easy to find the MAP estimate and characterize
 the local uncertainty around the most likely weights.
@@ -389,8 +400,120 @@ contributes to the interpretability of the model.
 Fortunately, we can make posterior inference of the
 network considerably more efficient by integrating over
 possible weights and sampling the binary adjacency
-matrix from its marginal distribution. To formalize
-this process, 
+matrix from its marginal distribution. 
+First, consider the Gaussian observation model.
+Since~$\psi_{t,n}$ is linear in~$\bw_n$, the likelihood
+is conjugate with the Gaussian prior, and hence the
+posterior is Gaussian as well. We can
+compute the posterior distribution in closed form:
+\begin{align}
+  p(\bw_n \given \widehat{\bS}, \ba_n, \bmu_n, \bSigma_n)
+  &\propto
+  \distNormal(\bw_n \given \bmu_n, \bSigma_n) \,
+  \prod_{t=1}^T \distNormal(s_{t,n} \given (\ba_n \odot \bw_n)^\trans \, \widehat{\bs}_t, \, \nu_n) \\
+  &= \distNormal(\bw_n \given \bmu_n, \bSigma_n) \,
+  \distNormal(\bs_n \given (\ba_n \odot \bw_n)^\trans \, \widehat{\bS}, \, \nu_n \bI) \\
+  \label{eq:w_conditional}
+  &\propto \distNormal(\bw_n \given \widetilde{\bmu}_n, \widetilde{\bSigma}_n),
+\end{align}
+where
+\begin{align}
+  \widetilde{\bSigma}_n &= \left[ \bSigma_n^{-1} +
+  \left(\widehat{\bS}^\trans (\nu_n^{-1} \bI) \widehat{\bS} \right) \odot (\ba_n \ba_n^\trans) \right]^{-1}, \\
+  \widetilde{\bmu}_n &= \widetilde{\bSigma}_n \left[ \bSigma_n^{-1} \bmu_n +
+  \left(\widehat{\bS}^\trans (\nu_n^{-1} \bI)\bs_n \right) \odot \ba_n \right].
+\end{align}
+
+Given this closed-form Gaussian conditional, we can also compute
+the conditional distribution over just~$\ba_n$, integrating out
+the corresponding weights,~$\bw_n$:
+\begin{align}
+  p(\ba_n \given \widehat{\bS}, \brho_n, \bmu_n, \bSigma_n)
+  &= \int p(\ba_n, \bw_n \given \widehat{\bS}, \brho_n, \bmu_n, \bSigma_n) \, \mathrm{d} \bw_n \\
+  &\propto p(\ba_n \given \brho_n) \, \int p(\bw_n \given \widehat{\bS}, \ba_n, \bmu_n, \bSigma_n) \, \mathrm{d} \bw_n \\
+  \label{eq:a_conditional}
+  &= p(\ba_n \given \brho_n) \, \frac{\big| \bSigma_n \big|^{-\frac{1}{2}} \exp \Big \{-\frac{1}{2} \bmu_n^\trans \bSigma_n^{-1} \bmu_n \Big \} }
+  {\big| \widetilde{\bSigma}_n \big|^{-\frac{1}{2}} \exp \Big \{-\frac{1}{2} \widetilde{\bmu}_n^\trans \widetilde{\bSigma}_n^{-1} \widetilde{\bmu}_n \Big \}}.
+\end{align}
+Thus, we can efficiently sample from the conditional
+distribution of~$\ba_n$ and~$\bw_n$ by first iterating
+over each neuron~${m \in \{1, \ldots, N\}}$ and sampling
+a new value of~$a_{n \from m}$, fixing the values of~$a_{n \from m'}$
+for~$m' \neq m$ and integrating out the value of~$\bw_n$.
+To do so, we simply evaluate the marginal probability in Eq.~\ref{eq:a_conditional}
+for both values of~$a_{n \from m}$ and resample accordingly.
+This is a valid Gibbs step. Once~$\ba_n$ has been completely
+resampled, we can sample a new value of~$\bw_n$ from its multivariate
+Gaussian conditional distribution, given by~Eq.~\ref{eq:w_conditional}.
+
+\subsubsection{\polyagamma augmentation for discrete observations}
+When the observations are not Gaussian, the conditional distribution
+of~$\bw_n$ cannot be computed in closed form and the collapsed
+updates are intractable. To circumvent this problem, we leverage
+recently developed augmentation schemes for Gaussian models with
+discrete observations \cite{polson2013bayesian, Pillow2012}. The
+idea is to augment the observations,~$s_{t,n}$, with auxiliary
+variables,~$\omega_{t,n}$, such that conditioned upon the
+auxiliary variables, the discrete likelihood appears Gaussian.
+
+First, notice that the discrete likelihoods in Table~\ref{tab:obs_models}
+can all be put into  a ``standard'' form in which the probability
+mass function can be written,
+\begin{align}
+  p(s \given \psi, \nu) &= c(s, \nu) \, \frac{(e^\psi)^{a(s, \nu)}}{(1+e^\psi)^{b(s, \nu)}},
+\end{align}
+for some functions,~$a$,~$b$, and~$c$ that do not depend on~$\psi$.
+The integral identity at the heart of the P\'{o}lya-gamma augmentation scheme  is
+\begin{align}
+\label{eq:pg_identity}
+\frac{(e^{\psi})^a}{(1+e^{\psi})^b} = 2^{-b} e^{\kappa \psi} \int_{0}^{\infty} e^{-\omega \psi^2 /2} \, p_{\mathrm{PG}}(\omega \given b, 0) \, \mathrm{d}\omega,
+\end{align}
+where~${\kappa=a-b/2}$ and~$p(\omega\given b, 0)$ is the density of the P\'{o}lya-gamma
+distribution~${\distPolyaGamma(b, 0)}$, which does not depend on $\psi$.
+
+Using Eq.~\ref{eq:pg_identity} along with priors~$p(\psi)$ and~$p(\nu)$, we can write the joint density of $(\psi, s, \nu)$ as
+\begin{align}
+  \label{eq:pg_joint}
+  p(s, \nu, \psi)
+  &= p(\nu) \, p(\psi) \, c(s, \nu) \frac{(e^\psi)^{a(s, \nu)}}{(1+e^\psi)^{b(s, \nu)}} \\
+  &= \int_0^\infty
+  p(\nu) \, p(\psi) \, c(s, \nu) \, 2^{-b(s, \nu)} e^{\kappa(s, \nu) \psi} e^{-\omega \psi^2/2} \, p_{\mathrm{PG}}(\omega \given b(s, \nu), 0) \; \mathrm{d}\omega.
+\end{align}
+The integrand of Eq.~\ref{eq:pg_joint} defines a joint density on $(s, \nu, \psi, \omega)$ which admits $p(s, \nu, \psi)$ as a marginal density.
+Conditioned on these auxiliary variables $\omega$, we have that the likelihood as a function of~$\psi$ is,
+\begin{align}
+  p(s \given \psi, \nu, \omega)
+  &\propto e^{\kappa(s, \nu) \psi} e^{- \omega \psi^2/2} 
+\propto \distNormal \left(\frac{\kappa(s, \nu)}{\omega} \, \bigg| \, \psi, \, \frac{1}{\omega} \right).
+\end{align}
+Thus, the effective likelihood of~$\psi$ is Gaussian, which enables
+us to compute the conditional distribution of~$\bw_n$ in closed form.
+Let,
+\begin{align}
+  \bkappa_n
+  &= \begin{bmatrix} \kappa(s_{1,n}, \nu_n), &\ldots, &\kappa(s_{T,n}, \nu_n)
+  \end{bmatrix}^\trans,
+\end{align}
+and
+\begin{align}
+  \bOmega_n &= \diag \left(
+  \begin{bmatrix}
+    \omega_{1,n}, & \ldots, & \omega_{T,n}
+  \end{bmatrix}
+  \right).
+\end{align}
+Then we have~$
+  p(\bw_n \given \widehat{\bS}, \ba_n, \bmu_n, \bSigma_n, \bkappa_n, \bOmega_n)
+  \propto \distNormal(\bw_n \given \widetilde{\bmu}_n, \widetilde{\bSigma}_n)$,
+where
+\begin{align}
+  \widetilde{\bSigma}_n &= \left[ \bSigma_n^{-1} +
+  \left(\widehat{\bS}^\trans \bOmega_n \widehat{\bS} \right) \odot (\ba_n \ba_n^\trans) \right]^{-1}, \\
+  \widetilde{\bmu}_n &= \widetilde{\bSigma}_n \left[ \bSigma_n^{-1} \bmu_n +
+  \left(\widehat{\bS}^\trans \bkappa_n \right) \odot \ba_n \right].
+\end{align}
+
+
 
 \paragraph{Network updates} Updating the network is more challenging since there are~$N^2$ entries in both~$\bA$ and~$\bW$. 
 Fortunately, it can be shown that the activation and observation models factorize into a product of terms for each time bin and each neuron.
