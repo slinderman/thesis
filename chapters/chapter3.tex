@@ -183,31 +183,61 @@ the spike counts at preceding times~${[0,t-1]}$. Specifically,
 let,
 \begin{align}
   \label{eq:glm_activation}
-  \psi_{t,n} &\triangleq b_n  +                 
-               \sum_{m=0}^N  \sum_{k=1}^K A_{n \from m} \, W_{n \from m,k}
+  \psi_{t,n} &\triangleq w_n^{(0)}  +                 
+               \sum_{m=0}^N  \sum_{k=1}^K a_{n \from m} \, w_{n \from m}^{(k)}
                \left( \sum_{\Delta t=1}^{\Delta t_{\mathsf{max}}} \phi_{k, \Delta t} \cdot s_{t-\Delta t, m} \right) \\
-             &= b_n  + \sum_{m=0}^N \sum_{k=1}^K A_{n \from m}  \, W_{n \from m,k} \, \widehat{s}_{t,m,k} \\
+             &= w_n^{(0)}  + \sum_{m=0}^N \sum_{k=1}^K a_{n \from m} \, w_{n \from m}^{(k)} \, \widehat{s}_{t,m}^{(k)} \\
   \label{eq:linear_activation}
-             &= b_n + (\bA_{n} \odot \bW_n) \, \widehat{\bs}_t,
+             &= (\ba_{n} \odot \bw_n)^\trans \, \widehat{\bs}_t,
 \end{align}
-where~$b_n$ is the baseline activation of neuron~$n$,
+where~$w_n^{(0)}$ is the baseline activation of neuron~$n$,
 $\bphi_{k,1:\Delta t_{\mathsf{max}}}$ is a basis function 
 that weights the previous spike counts for 
 offsets~${\Delta t \in [1, \Delta t_{\mathsf{max}}]}$
-, the binary variable~${A_{n \from m} \in \{0,1\}}$ 
+, the binary variable~${a_{n \from m} \in \{0,1\}}$ 
 indicates whether or not there exists 
 a directed connection from neuron~$m$ to neuron~$n$,
-and~$W_{n \from m,k}$ captures the influence that
+and~$w_{n \from m}^{(k)}$ captures the influence that
 spikes on neuron~$m$ exert on neuron~$n$ at
 offsets weighted by the~$k$-th basis function.  
 Since the basis function and the signal 
 are assumed to be fixed,  can precompute the inner sum, which is simply the 
-convolution of the signal with the basis function, to get~$\widehat{s}_{t,m,k}$.
-This leads to the simple linear form in Eq.~\ref{eq:linear_activation}.
-The major difference between this formulation and that of the standard 
+convolution of the signal with the basis function, to get~$\widehat{s}_{t,m}^{(k)}$.
+Since this is a linear function, we can combine the
+connections, weights, and filtered spike trains into
+vectors to get the linear form  in Eq.~\ref{eq:linear_activation}.
+Here, we have,
+\begin{align}
+  \ba_n &=
+    \bigg[
+      1,  
+      &a_{n \from 1}, & & \ldots, & & a_{n \from 1}, 
+      & & \ldots, &
+      &a_{n \from N}, & & \ldots, & &a_{n \from N} 
+    &\bigg]^\trans, \\
+  \bw_n &=
+    \bigg[
+      w_n^{(0)}, 
+      &w_{n \from 1}^{(1)}, & & \ldots, & &w_{n \from 1}^{(K)}, 
+      & &\ldots, &
+      &w_{n \from N}^{(1)}, & & \ldots, & &w_{n \from N}^{(K)} 
+      &\bigg]^\trans, \\
+  \widehat{\bs}_t &=
+    \bigg[
+      1, 
+      &\widehat{s}_{t,1}^{(1)}, & & \ldots, & &\widehat{s}_{t,1}^{(K)}, 
+      & &\ldots, &
+      &\widehat{s}_{t,N}^{(1)}, & & \ldots, & &\widehat{s}_{t,N}^{(K)} 
+    &\bigg]^\trans,
+\end{align}
+and~$\odot$ dentoes the elementwise product. For convenience, we
+let~$\bA$ and~$\bW$ refer to the~$N \times NK+1$ matrices obtained
+by stacking the vectors~$\ba_n^\trans$ and~$\bw_n^\trans$, and we
+let~$\widehat{\bS}$ denote the~$T \times NK+1$ matrix with rows
+given by~$\widehat{\bs}_t^\trans$. The major difference between this formulation and that of the standard 
 GLM is that here we have explicitly modeled the sparsity of the 
 weights via the ``adjacency matrix'' $\bA$. Under the standard 
-formulation, all weights are present, or equivalently,~${A_{n \from m} \equiv 1}$.
+formulation, all weights are present, that is,~${a_{n \from m} \equiv 1}$.
 
 Figure~\TODO{} illustrates the GLM dynamics. In this case, there is
 one basis function ($K=1$) defined
@@ -342,14 +372,25 @@ We use Markov chain Monte Carlo (MCMC) methods to collect samples from this post
 With these samples, we can compute unbiased expectations with respect to the posterior distribution.
 For example, we can compute the expected probability that two neurons belong to the same class, the expected weight of a functional connection between two neurons, or the expected predictive likelihood of heldout test data.
 
-Our Markov chain is defined by transition operators that sample one latent variable at a time while holding the other variables constant. First, we update the parameters,~$\theta$, by sampling them from their conditional distribution given the structural variables and the functional network. Then, we update the structural variables given the parameters and the network. Letting the superscript~$(i)$ denote the sample from the~$i$-th iteration of our algorithm, these two steps can be written as,
-\begin{align}
-\theta^{(i+1)} &\sim p(\theta \given \bz^{(i)}, \bA^{(i)}, \bW^{(i)}, \psi^{(i)}, \bs) 
-\propto p(\theta) \, p(\bz^{(i)} \given \theta) \, p(\bA^{(i)}, \bW^{(i)} \given \bz^{(i)}, \theta),\\
-\bz^{(i+1)} &\sim p(\bz \given \theta^{(i+1)}, \bA^{(i)}, \bW^{(i)}, \bs) 
-\propto p(\bz \given \theta^{(i+1)}) \, p(\bA^{(i)}, \bW^{(i)} \given \bz, \theta^{(i+1)}).
-\end{align}
-We design the structure and network models such that these two steps are straightforward. Full details are given in the appendix.
+
+\paragraph{Simple Network Updates}
+The most challenging aspect of inference is sampling the
+posterior distribution over connections,~$\bA$. In the
+dense model, where~$A_{n \from m} \equiv 1$, the posterior
+distribution over weights is often log concave, which
+makes it easy to find the MAP estimate and characterize
+the local uncertainty around the most likely weights.
+When the connectivity matrix is sparse, there are instead
+many modes corresponding to different patterns of
+connectivity. While this makes inference more challenging,
+sparse connectivity is an important feature that
+contributes to the interpretability of the model.
+
+Fortunately, we can make posterior inference of the
+network considerably more efficient by integrating over
+possible weights and sampling the binary adjacency
+matrix from its marginal distribution. To formalize
+this process, 
 
 \paragraph{Network updates} Updating the network is more challenging since there are~$N^2$ entries in both~$\bA$ and~$\bW$. 
 Fortunately, it can be shown that the activation and observation models factorize into a product of terms for each time bin and each neuron.
