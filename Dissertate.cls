@@ -49,6 +49,8 @@
 %\setmathrm{EB Garamond}
 \widowpenalty=300
 \clubpenalty=300
+
+% Fonts
 \setromanfont[Numbers=OldStyle, Ligatures={Common, TeX}, Scale=1.0]{EB Garamond}
 \newfontfamily{\smallcaps}[RawFeature={+c2sc,+scmp}]{EB Garamond}
 \setsansfont[Scale=MatchLowercase, BoldFont={Lato Bold}]{Lato Regular}
@@ -61,6 +63,12 @@
                 figurewithin=chapter,
                 tablewithin=chapter]{caption}
 \renewcommand{\thefootnote}{\fnsymbol{footnote}}
+
+% Lists
+\usepackage{xcolor}
+\newcommand{\localtextbulletone}{\textcolor{black}{\raisebox{.4ex}{\rule{.6ex}{.6ex}}}}
+\renewcommand{\labelitemi}{\localtextbulletone}
+%\renewcommand{\labelitemi}{{\scriptsize $\blacksquare$}}
 
 % Headings and headers.
 \RequirePackage{fancyhdr}

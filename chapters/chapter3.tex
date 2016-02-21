@@ -120,6 +120,8 @@ We demonstrate the efficacy of this approach on both synthetic and real-world da
 
 \section{Results}
 
+\subsection{Synthetic Data}
+
 \subsection{Retinal Ganglion Cells}
 
 \subsection{Hippocampal Place Cells}
@@ -345,15 +347,18 @@ in which each connection is an independent and identically distributed
 Bernoulli random variable with probability~$\rho$. This is also known 
 as an Erd\"os-R\'enyi model. In the stochastic block model (SBM) 
 \cite{Nowicki-2001}, the probability of connection depends on the class 
-of the up and downstream neurons. The class assignments are given a 
-Dirichlet prior,~${c_n \sim \distDirichlet(\alpha \bone_C)}$, and the 
-connection probabilities are given beta 
-priors,~${\beta_{c \from c'} \sim \distBeta(\alpha, \beta)}$. 
+of the up and downstream neurons. The class assignments are drawn from
+a categorical prior,~${c_n \sim \distCategorical(\bpi)}$, and the class
+weights are given a conjugate, symmetric 
+Dirichlet prior,~${\bpi \sim \distDirichlet(\alpha \bone_C)}$. The 
+connection probabilities are given a conjugate beta 
+prior,~${\beta_{c \from c'} \sim \distBeta(\alpha, \beta)}$. 
 The latent distance model \cite{Hoff-2008} encodes the belief that 
 connection probability should decrease with distance between latent 
 locations. The locations are given spherical Gaussian 
-priors,~$\bell_n \sim \distNormal(0, \bI)$, as is the 
-offset,~$\gamma_0 \sim \distNormal(0, 1)$.
+priors,~$\bell_n \sim \distNormal(0, \eta \bI)$, and the scale is
+drawn from an inverse gamma prior,~$\eta \sim \distInvGamma(1,1)$. The 
+offset is given a standard normal prior,~$\gamma_0 \sim \distNormal(0, 1)$.
 
 
 \begin{table}
@@ -370,7 +375,7 @@ Latent Distance Model (${K=1}$) & $\bell_n$ & $-||\bell_n - \bell_m||_2^2 + \mu_
 \label{tab:W_models}
 \end{table}
 
-Likewise, Table~\ref{tab:W_models} defines the three weight models we
+Table~\ref{tab:W_models} defines the three weight models we
 consider.  Each model defines the mean and variance of a multivariate
 normal distribution,~$\bw_{n \from m} \sim \distNormal(\bmu_{n \from
   m}, \bSigma_{n \from m})$.  In the Gaussian model, all weights are
@@ -578,13 +583,120 @@ for the latent variables,~$\{c_n, \bell_n\}$, and the parameters,~$\theta$ and~$
 are easy by design. 
 
 \begin{itemize}
-  \item \textbf{Latent class updates}:
-  \item \textbf{Latent location updates}:
-  \item \textbf{Latent parameter updates}:
-  \item \textbf{Observation parameter updates}:
+  \item \textit{Latent class updates}:
+    If a stochastic block model is used for either the adjacency matrix
+    or the weights, then it is necessary to sample the class assignments
+    from their conditional distribution. We iterate over each neuron and
+    update its assignment given the rest by sampling from the conditional
+    distribution. For example, if~$c_n$ governs a stochastic block model
+    for the adjacency matrix, the conditional distribution of the label
+    for neuron~$n$ is given by,
+    \begin{align}
+      p(c_n = c \given \bc_{\neg n}, \bA, \theta)
+      &\propto \pi_{c} \,
+      \prod_{m=1}^N p(a_{n \from m} \given \rho_{c \from c_m}) \,
+                    p(a_{m \from n} \given \rho_{c_m \from c}),
+    \end{align}
+    where~$\theta = \{\bpi, \{\rho_{c \from c'}\} \}$. For stochastic block
+    models of the weight matrix,~$\bW$, the conditional distribution
+    depends on~$\bw_{n \from m}$ and~$\bw_{m \from n}$ instead.
+
+    Given the class assignments and the network, the
+    parameters~$\rho_{c \from c'}$,~$\bmu_{c \from c'}$,~$\bSigma_{c \from c'}$, and~$\bpi$ are easily updating
+    according to their conditional distributions, since the model is
+    conjugate.
+    
+  \item \textit{Latent location updates}:
+    We resample the locations using hybrid Monte Carlo (HMC) \cite{Neal10}.
+    Since the latent variables are continuous and unconstrained,
+    this method is quite effective.
+
+    In addition to the locations, the latent distance model is parameterized
+    by a location scale,~$\eta$. Given the locations and an inverse gamma
+    prior, the inverse gamma conditional distribution can be computed in
+    closed form.
+    
+    The remaining parameters include the log-odds,~$\gamma_0$, if the
+    distance model applies to the adjacency matrix. This can be
+    sampled alongside the locations with HMC.  For a latent distance
+    model of weights, the baseline mean and
+    variance,~$(\mu_0,\sigma^2)$, are conjugate with a normal
+    inverse-gamma prior.
+    
+  \item \textit{Observation parameter updates}:
+    The observation parameter updates depend on the particular distribution.
+    For Gaussian observations,~$\nu_n$ is the observation variance, and
+    it is conjugate with an inverse gamma prior.
+    Bernoulli observations have no parameters.
+    In the binomial model,~$\nu_n$ corresponds to the maximum number of
+    possible spikes --- this is best set a priori.
+    For negative binomial spike counts, the shape parameter~$\nu_n$ can
+    be resampled as in~\cite{Zhou2012}.
+
+    
 \end{itemize}
 
 \subsection{Model Selection}
+We have constructed a probabilistic model that supports a variety
+of network models, including the four adjacency models and the three
+weight models described above. How can we compare these models in
+a principled manner? We argue that the typical approach of measuring
+predictive log likelihood on held-out time bins is insufficient, since
+it relies only on having accurately estimated the network,~$\bA$ and~$\bW$.
+It doesn't matter how likely that network is under the latent variable
+model, predictive likelihood on held-out time bins only measures the
+quality of the network at making predictions. Instead, we advocate
+for an alternative measure based on predicting the activity of held-out
+neurons. To perform well on this task, we must first learn an accurate
+model for the structure underlying the network so that we can
+sample latent variables for the new neuron, which in turn allow us to
+sample a weighted set of functional connections for that neuron and
+finally compute the predictive log likelihood.
+
+The objective we measure is the probability of a new spike
+train~$\bs_{n^*}=[s_{1,n^*}, \ldots, s_{T,n^*}]$, given the
+observed spike train. To compute this, we must integrate
+over the latent variables and parameters underlying the
+observed spike train, as well as those underlying the
+new spike train. 
+Let~$\bZ = \{\{\bw_n, \ba_n, \nu_n, c_n, \bell_n\}_{n=1}^N, \theta\}$, and
+let~$\bz_{n^*} = \{\nu_{n^*}, \bw_{n^*}, \ba_{n^*}, c_{n^*}, \bell_{n^*}\}$.
+This objective can be written,
+\begin{align}
+  p(\bs_{n^*} \given \bS) &\approx
+  \int p(\bs_{n^*} \given \bz_{n^*}, \bS) \, p(\bz_{n^*} \given \bZ) \, p(\bZ \given \bS) \,
+  \mathrm{d} \bz_{n^*} \, \mathrm{d} \bZ \\
+  &\approx
+  \frac{1}{Q} \sum_{q=1}^Q p(\bs_{n^*} \given \bz_{n^*}^{(q)}, \bS),
+  %\int p(\bs_{n^*} \given \bS, \bz_{n^*}) \,
+  %p(\bz_{n^*} \given \{c_n, \bell_n\}, \theta) \, \mathrm{d}\bz_{n^*}
+\end{align}
+where
+\begin{align}
+  \bz_{n^*}^{(q)} &\sim p(\bz_{n^*} \given \bZ^{(q)}),
+  &\text{ and }& & 
+  \bZ^{(q)} &\sim p(\bZ \given \bS).
+\end{align}
+The samples~$\{\bZ^{(q)}\}_{q=1}^Q$ are the posterior samples generated
+by the MCMC algorithm presented above. For each sample, we
+sample a new set of latent variables and connections for neuron~$n^*$,
+given the parameters included in~$\bZ^{(q)}$. These, combined with
+the spike train, enable us to compute the likelihood of~$\bs_{n^*}$.
+
+This approach constitutes a minor approximation:
+the new spike train and the original spike train are not
+conditionally independent. It is possible that there are
+significant connections from~$n^*$ to neurons in the training
+population, and if we had known those connections, we would
+have inferred different latent variables and parameters for
+the training population. We assume that these effects are small,
+i.e. we would find similar class assignments even without observing~$n^*$.
+This is reasonable if we are only considering a single neuron~$n^*$
+and the training population is reasonably large, say~$N \geq 20$.
+In fact, this assumption is fundamental to the generalized
+linear model. Without it, the inferred weights and predictions
+would be highly sensitive to the addition of a single neuron.
+In practice this is rarely the case.
 
 
 \section{Discussion}
@@ -597,6 +709,3 @@ are easy by design.
 \item Bayesian inference (go through Liam's work)
 \item Polya-gamma augmentation
 \end{itemize}
-
-
-\section{Synthetic Experiments}
