@@ -96,9 +96,13 @@
 \setcitestyle{authoryear,round,citesep={;},aysep={,},yysep={;}}
 \renewcommand{\cite}[1]{\citep{#1}}
 %\renewcommand{\bibnumfmt}[1]{[#1]}
+
+% Chapter stuff
 \RequirePackage[palatino]{quotchap}
 \renewcommand*{\chapterheadstartvskip}{\vspace*{-0.5\baselineskip}}
 \renewcommand*{\chapterheadendvskip}{\vspace{1.3\baselineskip}}
+\let\size@chapter\LARGE
+
 
 % An environment for paragraph-style section.
 \providecommand\newthought[1]{%
@@ -155,15 +159,23 @@
 % School color found from university's graphic identity site:
 % http://isites.harvard.edu/icb/icb.do?keyword=k75408&pageid=icb.page392732
 \definecolor{SchoolColor}{rgb}{0.6471, 0.1098, 0.1882} % Crimson
+\definecolor{SchoolColor2}{rgb}{0.3058,  0.5176,  0.7686} % Blue
+\definecolor{SchoolColor3}{rgb}{0.7686,  0.5882,  0.1019} % Gold
 \definecolor{chaptergrey}{rgb}{0.6471, 0.1098, 0.1882} % for chapter numbers
 
+
+% Chapter font size
 \hypersetup{
     colorlinks,
-    citecolor=SchoolColor,
+    citecolor=SchoolColor2,
     filecolor=black,
     linkcolor=black,
-    urlcolor=SchoolColor,
+    urlcolor=SchoolColor2,
 }
+
+% TODO Notes
+\RequirePackage[color=SchoolColor3]{todonotes}
+
 
 % Formatting guidelines found in:
 % http://www.gsas.harvard.edu/publications/form_of_the_phd_dissertation.php
@@ -241,3 +253,5 @@
 	\setcounter{page}{1}
 	\pagenumbering{arabic}
 }
+
+

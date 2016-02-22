@@ -3,39 +3,78 @@
 % \qauthor{Quoteauthor Lastname}
 % \end{savequote}
 
-\chapter{Nonlinear Interaction Networks}
+\chapter{Finding Structure in Functional Networks}
 
 
+%Hawkes process inference relied on an augmentation strategy 
+%made possible by the linear form and excitatory nature 
+% of the interactions. In neural settings, these assumptions 
+%of the Hawkes process are not as realistic. Instead, we turn to 
+%the nonlinear Hawkes process, which allows for both excitatory 
+%and inhibitory interactions by introducing a nonlinearity 
+%into the model. This corresponds to the popular generalized 
+%linear model that is widely used in computational neuroscience. 
+%We develop a novel approach that leverages the 
+%\polyagamma augmentation to enable efficient, fully-conjugate 
+%inference. Again, we combine the nonlinear Hawkes process with 
+%prior distributions on the network of interactions, and we focus 
+%on a discrete time approximation. This is part of ongoing work 
+%with Ryan and Jonathan Pillow at Princeton, and it has grown out 
+%of a Cosyne abstract \cite{linderman2015cosyne}. I also have an 
+%unpublished draft in which I extend the abstract and apply it 
+%to a variety of neural datasets, and show how the network models 
+%recover interesting latent features like neural types and locations.
+%I will submit a journal version of this paper as soon as possible.
 
-Hawkes process inference relied on an augmentation strategy 
-made possible by the linear form and excitatory nature 
- of the interactions. In neural settings, these assumptions 
-of the Hawkes process are not as realistic. Instead, we turn to 
-the nonlinear Hawkes process, which allows for both excitatory 
-and inhibitory interactions by introducing a nonlinearity 
-into the model. This corresponds to the popular generalized 
-linear model that is widely used in computational neuroscience. 
-We develop a novel approach that leverages the 
-\polyagamma augmentation to enable efficient, fully-conjugate 
-inference. Again, we combine the nonlinear Hawkes process with 
-prior distributions on the network of interactions, and we focus 
-on a discrete time approximation. This is part of ongoing work 
-with Ryan and Jonathan Pillow at Princeton, and it has grown out 
-of a Cosyne abstract \cite{linderman2015cosyne}. I also have an 
-unpublished draft in which I extend the abstract and apply it 
-to a variety of neural datasets, and show how the network models 
-recover interesting latent features like neural types and locations.
-I will submit a journal version of this paper as soon as possible.
-
-\section{Abstract} 
-We develop a novel method for the unsupervised discovery of interpretable latent structure underlying neural recordings. 
-Rather than directly clustering or factorizing measured activity, we propose a generative model that links latent clusters and features of neurons to measured activity via an intermediate functional network. 
-Thus, latent structure is defined in terms of how neurons interact with one another rather than how they behave. 
-To discover the most appropriate structural form, we propose a fully-Bayesian inference algorithm that enables efficient inference and principled model comparison. 
-We demonstrate the efficacy of this approach on synthetic data and simultaneously recorded multi-neuronal spike trains.
+%\section{Abstract} 
+%We develop a novel method for the unsupervised discovery of interpretable latent structure underlying neural recordings. 
+%Rather than directly clustering or factorizing measured activity, we propose a generative model that links latent clusters and features of neurons to measured activity via an intermediate functional network. 
+%Thus, latent structure is defined in terms of how neurons interact with one another rather than how they behave. 
+%To discover the most appropriate structural form, we propose a fully-Bayesian inference algorithm that enables efficient inference and principled model comparison. 
+%We demonstrate the efficacy of this approach on synthetic data and simultaneously recorded multi-neuronal spike trains.
 
 
-\section{Introduction}
+%\section{Introduction}
+With the advent of novel technologies for large-scale recording of
+neural activity~\cite{grewe2010high, prevedel2014simultaneous,
+  churchland2012neural, holekamp2008fast, ahrens2013whole,
+  portugues2014whole, alivisatos2012brain, briggman2005optical,
+  ahrens2012brain} there comes a pressing need for methods of
+analyzing neural recordings and uncovering their underlying structure.
+The goal of these methods is not only to capture variability in
+activity and make accurate predictions, but to expose meaningful,
+low-dimensional structure that may lead to novel hypotheses and
+interpretations of the circuits under study. In other words, we
+need \emph{exploratory} methods~\cite{tukey1962future} that yield interpretable
+\emph{representations} of large scale data.  
+For example, populations of retinal ganglion cells may be represented as a 
+set of subpopulations, each performing a distinct
+computational role and interacting in characteristic ways with
+other subpopulations~\cite{sanes2015types}.
+Likewise, some populations may be characterized by continuous features,
+like retinotopic location or tuning direction.
+As we probe complex circuits far removed from stimuli and behavioral
+outputs, we need methods that automatically extract these simplified
+representations.
+
+There are a variety of data analysis methods designed to meet this
+need.  Relatively simple analyses, like principal components analysis
+and k-means clustering, can be performed at scale with distributed
+computing platforms~\cite{freeman2014mapping}. At the other end of the
+spectrum, there are many sophisticated models that explicitly model
+neural dynamics, like generalized linear models~\cite{Truccolo-2005,
+  Paninski-2004, Pillow-2008}, state space models~\cite{Smith-2003,
+  paninski2010new, Buesing12, escola2011hidden,
+  linderman2016nonparametric}, and others~\cite{Yu09,
+  churchland2012neural, cunningham2007inferring},
+but applying these methods and interpreting their results requires
+more expertise. 
+
+
+Latent variable models~\cite{blei2014build} are a natural 
+naturally express our intuitions
+and \textit{a priori} knowledge 
+
 As our neural recording capabilities are rapidly expanded, the need for automated methods of exploring large-scale multineuronal recordings becomes ever more pressing. 
 Though our recordings may be incomprehensibly large, capturing the activity of hundreds of thousands of neurons for hours or days at a time, the underlying neural population often exhibits some simplifying structure. 
 For example, we commonly find low-dimensional continuous embeddings of neural populations using tools like principal components analysis (PCA), or distinct classes of neurons with clustering algorithms like k-means. 
@@ -124,9 +163,36 @@ We demonstrate the efficacy of this approach on both synthetic and real-world da
 
 \subsection{Retinal Ganglion Cells}
 
+\begin{figure}[t]
+  \centering
+  \begin{subfigure}[b]{2.25in}
+    \centering
+    \caption{}
+    \vspace{-.2in}
+    \includegraphics[width=\textwidth]{figures/ch3/rgc_pred_ll_bar.pdf}
+  \end{subfigure}
+  ~
+  \begin{subfigure}[b]{1.6in}
+    \centering
+    \caption{}
+    \vspace{-.2in}
+    \includegraphics[width=\textwidth]{figures/ch3/rgc_pairwise_distance_scatter.pdf}
+  \end{subfigure}
+  ~
+  \begin{subfigure}[b]{1.6in}
+    \centering
+    \caption{}
+    \vspace{-.2in}
+    \includegraphics[width=\textwidth]{figures/ch3/rgc_on_locations.pdf}
+  \end{subfigure}
+  
+  \caption{Retinal ganglion cell types and locations can be inferred
+  from spike trains alone.}
+  \label{fig:rgc}
+\end{figure}
+
 \subsection{Hippocampal Place Cells}
 
-\subsection{Calcium Fluorescence}
 
 \section{Methods}
 Our primary contribution is a novel framework for discovering latent
