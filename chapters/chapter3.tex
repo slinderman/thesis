@@ -163,13 +163,39 @@ We demonstrate the efficacy of this approach on both synthetic and real-world da
 
 \subsection{Retinal Ganglion Cells}
 
-\begin{figure}[t]
+\begin{figure}[t!]
   \centering
+    \begin{subfigure}[b]{1.85in}
+    \centering
+    \caption{}
+    \vspace{-.2in}
+    \includegraphics[width=\textwidth]{figures/ch3/rgc_connectivity.pdf}
+    \label{fig:rgc_w}
+  \end{subfigure}
+  ~
+    \begin{subfigure}[b]{1.85in}
+    \centering
+    \caption{}
+    \vspace{-.2in}
+    \includegraphics[width=\textwidth]{figures/ch3/rgc_prob_conn.pdf}
+    \label{fig:rgc_rho}
+  \end{subfigure}
+  ~
+  \begin{subfigure}[b]{1.85in}
+    \centering
+    \caption{}
+    \vspace{-.2in}
+    \includegraphics[width=\textwidth]{figures/ch3/rgc_mean_conn.pdf}
+    \label{fig:rgc_mu}
+  \end{subfigure}
+  \\
+  \vspace{-.2in}
   \begin{subfigure}[b]{2.25in}
     \centering
     \caption{}
     \vspace{-.2in}
     \includegraphics[width=\textwidth]{figures/ch3/rgc_pred_ll_bar.pdf}
+    \label{fig:rgc_pll}
   \end{subfigure}
   ~
   \begin{subfigure}[b]{1.6in}
@@ -177,6 +203,7 @@ We demonstrate the efficacy of this approach on both synthetic and real-world da
     \caption{}
     \vspace{-.2in}
     \includegraphics[width=\textwidth]{figures/ch3/rgc_pairwise_distance_scatter.pdf}
+    \label{fig:rgc_dist}
   \end{subfigure}
   ~
   \begin{subfigure}[b]{1.6in}
@@ -184,10 +211,17 @@ We demonstrate the efficacy of this approach on both synthetic and real-world da
     \caption{}
     \vspace{-.2in}
     \includegraphics[width=\textwidth]{figures/ch3/rgc_on_locations.pdf}
+    \label{fig:rgc_locs}
   \end{subfigure}
-  
+  \vspace{-2em}
   \caption{Retinal ganglion cell types and locations can be inferred
-  from spike trains alone.}
+    from spike trains alone.
+    \textbf{(a)} Inferred network,~${\bA \odot \bW}$, under a latent distance model of connection probability and a stochastic block model for connection weight, averaged over 500 posterior samples.
+    \textbf{(b)} Expected probability of connection under the latent distance model.
+    \textbf{(c)} Expected connection strength under the stochastic block model. The inferred cell classes perfectly match the true ON and OFF types, and reflect within-class excitation and between-class inhibition.
+    \textbf{(d)} The combined distance model and block model yields the highest predictive log likelihood (units: nats/spike), compared to other combinations of adjacency models (groups of bars) and weight models (\textit{blue}: latent distance weight model, \textit{yellow}: stochastic block model for weights, \textit{green}: Gaussian weights).
+    \textbf{(e)} The inferred distances under the latent distance model are highly correlated with the true distances, as measured by stimulus sensitivity, whereas inferred embeddings under PCA are not.
+    \textbf{(f)} Moreover, the inferred locations (semitransparent markers) recover the true receptive field centers (solid markers with black outline). Shown here only for ON cells.}
   \label{fig:rgc}
 \end{figure}
 
