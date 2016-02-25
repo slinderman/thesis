@@ -157,6 +157,79 @@ We demonstrate the efficacy of this approach on both synthetic and real-world da
   \label{fig:fig1}
 \end{figure}
 
+% Network models
+\begin{figure}[t!]
+  \centering
+  \textit{~~~~~Adjacency Model} \\
+  % Gaussian row
+  \hspace{1em}
+  \begin{subfigure}[b]{1.25in}
+    \centering
+    \includegraphics[width=\textwidth]{figures/ch3/Dense-Gaussian.pdf}
+  \end{subfigure}
+  ~
+  \begin{subfigure}[b]{1.10in}
+    \centering
+    \includegraphics[width=\textwidth]{figures/ch3/Bernoulli-Gaussian.pdf}
+  \end{subfigure}
+  ~
+  \begin{subfigure}[b]{1.10in}
+    \centering
+    \includegraphics[width=\textwidth]{figures/ch3/SBM-Gaussian.pdf}
+  \end{subfigure}
+  ~
+  \begin{subfigure}[b]{1.10in}
+    \centering
+    \includegraphics[width=\textwidth]{figures/ch3/Distance-Gaussian.pdf}
+  \end{subfigure}
+  \\
+  % SBM row
+  \rotatebox{90}{\textit{~~~~~Weight Model}}
+  \begin{subfigure}[b]{1.25in}
+    \centering
+    \includegraphics[width=\textwidth]{figures/ch3/Dense-SBM.pdf}
+  \end{subfigure}
+  ~
+  \begin{subfigure}[b]{1.10in}
+    \centering
+    \includegraphics[width=\textwidth]{figures/ch3/Bernoulli-SBM.pdf}
+  \end{subfigure}
+  ~
+  \begin{subfigure}[b]{1.10in}
+    \centering
+    \includegraphics[width=\textwidth]{figures/ch3/SBM-SBM.pdf}
+  \end{subfigure}
+  ~
+  \begin{subfigure}[b]{1.10in}
+    \centering
+    \includegraphics[width=\textwidth]{figures/ch3/Distance-SBM.pdf}
+  \end{subfigure}
+  \\
+  % Distance row
+  \hspace{1em}
+  \begin{subfigure}[b]{1.25in}
+    \centering
+    \includegraphics[width=\textwidth]{figures/ch3/Dense-Distance.pdf}
+  \end{subfigure}
+  ~
+  \begin{subfigure}[b]{1.10in}
+    \centering
+    \includegraphics[width=\textwidth]{figures/ch3/Bernoulli-Distance.pdf}
+  \end{subfigure}
+  ~
+  \begin{subfigure}[b]{1.10in}
+    \centering
+    \includegraphics[width=\textwidth]{figures/ch3/SBM-Distance.pdf}
+  \end{subfigure}
+  ~
+  \begin{subfigure}[b]{1.10in}
+    \centering
+    \includegraphics[width=\textwidth]{figures/ch3/Distance-Distance.pdf}
+  \end{subfigure}
+  \caption{Example network models}
+  \label{fig:networks}
+\end{figure}
+
 \section{Results}
 
 \subsection{Synthetic Data}
@@ -227,6 +300,65 @@ We demonstrate the efficacy of this approach on both synthetic and real-world da
 
 \subsection{Hippocampal Place Cells}
 
+
+\begin{figure}[t!]
+  \centering
+  \vspace{-.2in}
+  \begin{subfigure}[b]{1.75in}
+    \centering
+    \caption{}
+    \vspace{-.2in}
+    \includegraphics[width=\textwidth]{figures/ch3/hipp_true_locations.pdf}
+    \label{fig:hipp_true_locs}
+  \end{subfigure}
+  ~
+  \begin{subfigure}[b]{1.75in}
+    \centering
+    \caption{}
+    \vspace{-.2in}
+    \includegraphics[width=\textwidth]{figures/ch3/hipp_inferred_locations.pdf}
+    \label{fig:hipp_inf_locs}
+  \end{subfigure}
+  ~
+  %\begin{subfigure}[b]{1.75in}
+  %  \centering
+  %  \caption{}
+  %  \vspace{-.2in}
+  %  \includegraphics[width=\textwidth]{figures/ch3/hipp_lds_locations.pdf}
+  %  \label{fig:hipp_lds_locs}
+  %\end{subfigure}
+  %\\
+  %\vspace{-.2in}
+  \begin{subfigure}[b]{1.75in}
+    \centering
+    \caption{}
+    \vspace{-.2in}
+    \includegraphics[width=\textwidth]{figures/ch3/hipp_pairwise_distance_scatter.pdf}
+    \label{fig:hipp_distances}
+  \end{subfigure}
+  %~
+  \\
+  \vspace{-.2in}
+  \begin{subfigure}[b]{2.25in}
+    \centering
+    \caption{}
+    \vspace{-.2in}
+    \includegraphics[width=\textwidth]{figures/ch3/hipp_pred_ll_bar.pdf}
+    \label{fig:hipp_pll}
+  \end{subfigure}
+  ~
+  \begin{subfigure}[b]{1.85in}
+    \centering
+    \caption{}
+    \vspace{-.2in}
+    \includegraphics[width=\textwidth]{figures/ch3/hipp_connectivity.pdf}
+    \label{fig:hipp_conn}
+  \end{subfigure}
+  \vspace{-2em}
+  \caption{Hippocampal place fields are inferred from population spike trains.
+    }
+  \label{fig:hipp}
+\end{figure}
 
 \section{Methods}
 Our primary contribution is a novel framework for discovering latent
