@@ -57,18 +57,23 @@ As we probe complex circuits far removed from stimuli and behavioral
 outputs, we need methods that automatically extract these simplified
 representations.
 
-There are a variety of data analysis methods designed to meet this
-need.  Relatively simple analyses, like principal components analysis
-and k-means clustering, can be performed at scale with distributed
-computing platforms~\cite{freeman2014mapping}. At the other end of the
-spectrum, there are many sophisticated models that explicitly model
-neural dynamics, like generalized linear models~\cite{Truccolo-2005,
-  Paninski-2004, Pillow-2008}, state space models~\cite{Smith-2003,
+While many modeling and data analysis methods aim to meet this
+need, few succeed in providing a concise, interpretable representation
+while also capturing the temporal variability of neural activity.
+Simple methods, like principal components analysis
+and k-means clustering, provide intuitive snapshots of neural activity
+in the form of neural features and classes,
+%and can easily be performed at scale~\cite{freeman2014mapping},
+but they do not explicitly capture the temporal dynamics of neural signals.
+At the other end of the spectrum, there are many sophisticated models
+that explicitly model neural dynamics, like  state space models~\cite{Smith-2003,
   paninski2010new, Buesing12, escola2011hidden,
-  linderman2016nonparametric}, and others~\cite{Yu09,
+  linderman2016nonparametric}, generalized linear models~\cite{Truccolo-2005,
+  Paninski-2004, Pillow-2008}, and many others~\cite{Yu09,
   churchland2012neural, cunningham2007inferring},
-but applying these methods and interpreting their results requires
-more expertise. 
+but the outputs of these models are complex state trajectories and dense
+coupling filters. Typically far from intuitive, these results are
+often subjected to even \emph{further} modeling in hopes of gleaning insight.
 
 
 Latent variable models~\cite{blei2014build} are a natural 
@@ -168,21 +173,25 @@ We demonstrate the efficacy of this approach on both synthetic and real-world da
     \includegraphics[width=\textwidth]{figures/ch3/Dense-Gaussian.pdf}
   \end{subfigure}
   ~
+  \hspace{-.1in}
   \begin{subfigure}[b]{1.10in}
     \centering
     \includegraphics[width=\textwidth]{figures/ch3/Bernoulli-Gaussian.pdf}
   \end{subfigure}
   ~
+  \hspace{-.1in}
   \begin{subfigure}[b]{1.10in}
     \centering
     \includegraphics[width=\textwidth]{figures/ch3/SBM-Gaussian.pdf}
   \end{subfigure}
   ~
+  \hspace{-.1in}
   \begin{subfigure}[b]{1.10in}
     \centering
     \includegraphics[width=\textwidth]{figures/ch3/Distance-Gaussian.pdf}
   \end{subfigure}
   \\
+  \vspace{-.1in}
   % SBM row
   \rotatebox{90}{\textit{~~~~~Weight Model}}
   \begin{subfigure}[b]{1.25in}
@@ -190,43 +199,52 @@ We demonstrate the efficacy of this approach on both synthetic and real-world da
     \includegraphics[width=\textwidth]{figures/ch3/Dense-SBM.pdf}
   \end{subfigure}
   ~
+  \hspace{-.1in}
   \begin{subfigure}[b]{1.10in}
     \centering
     \includegraphics[width=\textwidth]{figures/ch3/Bernoulli-SBM.pdf}
   \end{subfigure}
   ~
+  \hspace{-.1in}
   \begin{subfigure}[b]{1.10in}
     \centering
     \includegraphics[width=\textwidth]{figures/ch3/SBM-SBM.pdf}
   \end{subfigure}
   ~
+  \hspace{-.1in}
   \begin{subfigure}[b]{1.10in}
     \centering
     \includegraphics[width=\textwidth]{figures/ch3/Distance-SBM.pdf}
   \end{subfigure}
   \\
   % Distance row
+  \vspace{-.1in}
   \hspace{1em}
   \begin{subfigure}[b]{1.25in}
     \centering
     \includegraphics[width=\textwidth]{figures/ch3/Dense-Distance.pdf}
   \end{subfigure}
   ~
+  \hspace{-.1in}
   \begin{subfigure}[b]{1.10in}
     \centering
     \includegraphics[width=\textwidth]{figures/ch3/Bernoulli-Distance.pdf}
   \end{subfigure}
   ~
+  \hspace{-.1in}
   \begin{subfigure}[b]{1.10in}
     \centering
     \includegraphics[width=\textwidth]{figures/ch3/SBM-Distance.pdf}
   \end{subfigure}
   ~
+  \hspace{-.1in}
   \begin{subfigure}[b]{1.10in}
     \centering
     \includegraphics[width=\textwidth]{figures/ch3/Distance-Distance.pdf}
   \end{subfigure}
-  \caption{Example network models}
+  \\
+  \vspace{-.1in}
+  \caption{\textit{Example networks drawn from the prior for different combinations of weight and adjacency model.} Each row corresponds to a weight model (Gaussian, stochastic block model (SBM), or latent distance model) with a fixed set of weights, and each column corresponds to an adjacency model (dense, Bernoulli, SBM, or latent distance model) with a fixed sparsity pattern. In SBMs, nodes are sorted by class; in distance models, nodes are sorted by first coordinate of the location. For SBMs, black lines denote class boundaries. }
   \label{fig:networks}
 \end{figure}
 
