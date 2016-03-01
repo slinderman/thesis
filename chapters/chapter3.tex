@@ -63,104 +63,132 @@ while also capturing the temporal variability of neural activity.
 Simple methods, like principal components analysis
 and k-means clustering, provide intuitive snapshots of neural activity
 in the form of neural features and classes,
-%and can easily be performed at scale~\cite{freeman2014mapping},
-but they do not explicitly capture the temporal dynamics of neural signals.
-At the other end of the spectrum, there are many sophisticated models
-that explicitly model neural dynamics, like  state space models~\cite{Smith-2003,
+but they do 
+not account for important temporal dynamics of neural activity. 
+At the other end of the
+spectrum, there are many sophisticated models that explicitly model
+temporal dynamics, like generalized linear models~\cite{Truccolo-2005,
+  Paninski-2004, Pillow-2008}, state space models~\cite{Smith-2003,
   paninski2010new, Buesing12, escola2011hidden,
-  linderman2016nonparametric}, generalized linear models~\cite{Truccolo-2005,
-  Paninski-2004, Pillow-2008}, and many others~\cite{Yu09,
+  linderman2016nonparametric}, and many others~\cite{Yu09,
   churchland2012neural, cunningham2007inferring},
 but the outputs of these models are complex state trajectories and dense
 coupling filters. Typically far from intuitive, these results are
 often subjected to even \emph{further} modeling in hopes of gleaning insight.
 
-
-Latent variable models~\cite{blei2014build} are a natural 
-naturally express our intuitions
-and \textit{a priori} knowledge 
-
-As our neural recording capabilities are rapidly expanded, the need for automated methods of exploring large-scale multineuronal recordings becomes ever more pressing. 
-Though our recordings may be incomprehensibly large, capturing the activity of hundreds of thousands of neurons for hours or days at a time, the underlying neural population often exhibits some simplifying structure. 
-For example, we commonly find low-dimensional continuous embeddings of neural populations using tools like principal components analysis (PCA), or distinct classes of neurons with clustering algorithms like k-means. 
-These simplified representations serve a number of roles: 
-they reduce data to a interpretable set of features and types; 
-they denoise data by capturing shared structure and throwing away noise; 
-they may confirm that hypothesized structure exist, for example, that spatially localized cells are functionally similar as well; 
-and, most importantly, they suggest novel hypotheses about how neural populations should be understood.
-
-\TODO{Discuss some recent successes of unsupervised structure discovery methods and emphasize some examples of continuous and discrete representations}
-
-Unfortunately, most common approaches do not take advantage of the important temporal dependencies in neural recordings. 
-The generative assumptions underlying PCA assert that each neuron's activity can be represented as a linear combination of a small number of bases. 
-It says nothing about the relationship between activity in one time bin and the next.
-Similarly, na\"ive clustering methods implicitly assume that time bins are conditionally independent given the latent cluster assignment. 
-We propose a generative model where latent structure is reflected in an patterns of functional connectivity among neurons.  This functional network parameterizes an autoregressive model that gives rise to temporally structured activity.
-  
-Figure~\ref{fig:fig1} illustrates the steps of the proposed generative model. 
-We assume that neuron~$n$ has some latent feature~$z_n$ that may be continuous or discrete. 
-In Figure~\ref{fig:fig1}, each neuron belongs to one of four classes, so~$z_n$ is discrete and is one of~$\{\textit{red}, \textit{blue}, \textit{green}, \textit{yellow}\}$. 
-These latent class assignments affect the probability of a functional connection from one neuron to another. 
-In this case, \textit{red} neurons sparsely connect to \textit{blue} neurons, \textit{blue} to \textit{green}, and \textit{green} to \textit{yellow}.
-These connections are aggregated into the functional network,~$\bW$, shown in Figure~\ref{fig:fig1}.
-Finally, this network parameterizes an autoregressive model for neural activity.
-In this case, the \textit{activation} of the~$n$-th neuron,~$\psi_n(t)$, depends on the number of spikes that connected neurons fired in the preceeding time bins. 
-%This might give rise to the roughly periodic activity shown in Figure~\ref{fig:fig1}.
-
-This generative approach formalizes many of the intuitive hypotheses that systems neuroscientists already employ. 
-Neural circuits are commonly described with simplified block diagrams that show how one subpopulation of neurons drives another. 
-In other cases, neurons are described by continuous features, such as ``place fields'' that describe the spatial location in which hippocampal place cells fire.
-Since our movement is continuous, neurons with similar place fields are functionally correlated.
-Our approach begins with high-level hypotheses like, ``neurons have latent types that determine functional connectivity.''
-These hypotheses are instantiated as generative models which are then fit to the data using probabilistic inference techniques and compared on the basis of how well they explain the measured activity.
-
-We show how a host of high-level hypotheses can be formalized as generative models using random network models. 
-We then develop a flexible Bayesian inference algorithm for discovering the latent parameters of this model from the measured activity. 
-Finally, we derive a principled method for comparing these models on the basis of their \textit{marginal likelihood}, that is, the probability they assign to the data. 
-We demonstrate the efficacy of this approach on both synthetic and real-world datasets. 
-
-% \begin{figure}[t]
-%   \centering
-%   \begin{subfigure}[b]{.3\textwidth}
-%     \centering
-%     \includegraphics[width=\textwidth]{clustered_neurons}
-%     \caption{}
-%     \label{fig:fig1_z}
-%   \end{subfigure}
-%   \begin{subfigure}[b]{.3\textwidth}
-%     \centering
-%     \includegraphics[width=\textwidth]{clustered_network}
-%     \caption{}
-%     \label{fig:fig1_W}
-%   \end{subfigure}
-%   \begin{subfigure}[b]{.3\textwidth}
-%     \centering
-%     \includegraphics[width=\textwidth]{clustered_rates}
-%     \caption{}
-%     \label{fig:fig1_psi}
-%   \end{subfigure}
-%   \caption{Illustrative example of a generative model relating latent
-%     structure to multineuronal spike trains via a functional
-%     network. (a) Here, neurons have a latent class (\textit{red},
-%     \textit{blue}, \textit{yellow}, or \textit{green}). 
-%     (b) These classes govern the probability of functional
-%     interactions for each pair of neurons. (c) The network
-%     parameterizes an autoregressive model for the activation of the
-%     neurons, which, in this example, give rise to the stochastic spike
-%     trains we observe.}
-% \label{fig:fig1}
-% \end{figure}
+We introduce a modeling framework that combines the desirable 
+properties of both of these approaches: it captures the autoregressive 
+dynamics of neural populations as well as interpretable, high-level 
+latent variables that govern those dynamics. The crucial link is 
+provided by a structured model for the network of functional 
+connections. Probabilistic network models~\cite{Hoff-2002}
+describe structure in the pattern of connections and weights in 
+terms of neuron-specific latent variables. For example, 
+neurons may have latent locations that govern the probability of 
+connection or latent types that specify the strength of interaction.
+Given the network, we specify an generative model for spike 
+trains in which action potentials induce impulse responses on 
+downstream neurons that modulate the probability of spiking. 
+These autoregressive dynamics are the basis for the popular 
+generalized linear model (GLM)~\cite{Truccolo-2005, Paninski-2004, Pillow-2008}
+of multineuronal spike trains. 
+As we will show, by incorporating these probabilistic network models 
+into the GLM, we can recover meaningful 
+and interpretable patterns on the basis of neural activity alone.
 
 
 \begin{figure}[t]
   \centering
-  \begin{subfigure}[b]{\textwidth}
+  \begin{subfigure}[b]{1.3in}
     \centering
-    \includegraphics[width=\textwidth]{figures/ch3/figure1.png}
+    \caption{}
+    \vspace{-.25in}
+    \includegraphics[width=\textwidth]{figures/ch3/new_clustered_embedded_neurons}
+    \label{fig:fig1_network}
   \end{subfigure}
-  \caption{Overview of model.}
-  \label{fig:fig1}
-\end{figure}
+   \begin{subfigure}[b]{1.3in}
+     \centering
+     \caption{}
+     \vspace{-.25in}
+     \includegraphics[width=\textwidth]{figures/ch3/new_activation}
+     \label{fig:fig1_activation}
+   \end{subfigure}
+   \begin{subfigure}[b]{1.3in}
+     \centering
+     \caption{}
+     \vspace{-.25in}
+     \includegraphics[width=\textwidth]{figures/ch3/new_observed_spikes}
+     \label{fig:fig1_spikes}
+   \end{subfigure}
+   \begin{subfigure}[b]{1.3in}
+     \centering
+     \caption{}
+     \vspace{-.25in}
+     \includegraphics[width=\textwidth]{figures/ch3/new_observed_fluorescence}
+     \label{fig:fig1_fluorescence}
+   \end{subfigure}
+   \vspace{-.2in}
+   \caption{Components of the generative model. 
+     \textbf{(a)} Each neuron is endowed with latent variables, like 
+     locations in space and discrete types (illustrated with different colors).
+     These variables determine the probability of connections and the 
+     strength of those connections. In this example, nearby neurons of the same 
+     type are most likely to connect.
+     \textbf{(b)} The network parameterizes an autoregressive model 
+     with a time-varying activation, which specifies the instantaneous probability 
+     of an action potential.
+     \textbf{(c)} Spikes are randomly generated according to the 
+     activation. Each spike induces an impulse response on the activation 
+     of downstream neurons.
+     \textbf{(d)} In imaging studies, we only observe a noisy fluorescence 
+     trace that reflects the underlying spike train.}
+ \label{fig:fig1}
+ \end{figure}
+
+Figure~\ref{fig:fig1} illustrates the components of our generative model. 
+In this example, each neuron belongs to one of four classes (\textit{red}, \textit{blue}, \textit{green}, or \textit{yellow}). Additionally, neurons have a latent location in two-dimensional space. The connection probability is determined by distance between the locations (nearby neurons are more likely to connect), as well as the latent types (neurons of the same type are more likely to connect).
+This network parameterizes an autoregressive model for neural activity.
+The instantaneous probability of firing an action potential is a function of the underlying \textit{activation}.
+The activation obeys autoregressive dynamics: when a neuron fires an action potential, an impulse response is added to the activation of downstream neurons. Excitatory connections induce positive impulse responses; inhibitory connections induce negative ones. 
+on the \textit{activation} of downstream neurons
+In many modern recordings, the spike trains must be inferred from an observed calcium fluorescence trace. In these cases, the model may be augmented with a generative model for fluorescence 
+that captures the slower calcium dynamics~\cite{Vogelstein-2010, Mishchenko11a}. 
+
+In our framework, probabilistic network models formalize the intuitive belief 
+that functional connections arise from underlying latent variables. 
+For some well-studied populations, like retinal ganglion cells (RGCs) 
+and hippocampal place cells, 
+we already have a strong intuition about what these latent 
+variables should be --- RGCs come in a variety of 
+distinct types and respond to light in their receptive field, 
+while hippocampal place cells reflect locations 
+in the environment. These exemplify the interpretable latent variables 
+we wish to infer for other brain circuits, 
+which have eluded simplifying representations. 
+
+% This generative approach formalizes many of the intuitive hypotheses already employed in neuroscience. 
+% Neural circuits are commonly described with simplified block diagrams that show how one subpopulation of neurons drives another. 
+% In other cases, neurons are described by continuous features, such as ``place fields'' that describe the spatial location in which hippocampal place cells fire.
+% Since our movement is continuous, neurons with similar place fields are functionally correlated.
+% Our approach begins with high-level hypotheses like, ``neurons have latent types that determine functional connectivity.''
+% These hypotheses are instantiated as generative models which are then fit to the data using probabilistic inference techniques and compared on the basis of how well they explain the measured activity.
+
+To perform this inference, we develop novel a Markov chain Monte Carlo (MCMC)
+algorithm that can efficiently invert this generative procedure 
+to explore the posterior distribution over 
+latent variables given observed spike trains or calcium fluorescence traces. 
+Since we do not know \textit{a priori} what types of latent variables to expect, 
+we show how a wide range of hypotheses can be encoded as prior distributions 
+over networks. Since weighted, directed networks can be equivalently represented 
+as sparse matrices, prior distributions over the space networks correspond 
+to distributions over matrices. Specifically, a network can be represented 
+as the elementwise product of a real-valued weight matrix~$bW$, whose 
+entries~$W_{n \from m}$ specify the strength of the directed connection from 
+neuron~$m$ to neuron~$n$, and a binary adjacency matrix~$\bA$, whose 
+entries denote whether or not a connection is present. Thus,~$\bA$ specifies 
+the sparsity of the network, while~$\bW$ specifies the strength. This 
+decomposition is known as a spike-and-slab model in machine 
+learning~\cite{Mitchell1988}.
 
 % Network models
 \begin{figure}[t!]
@@ -242,45 +270,76 @@ We demonstrate the efficacy of this approach on both synthetic and real-world da
     \centering
     \includegraphics[width=\textwidth]{figures/ch3/Distance-Distance.pdf}
   \end{subfigure}
+<<<<<<< HEAD
   \\
   \vspace{-.1in}
   \caption{\textit{Example networks drawn from the prior for different combinations of weight and adjacency model.} Each row corresponds to a weight model (Gaussian, stochastic block model (SBM), or latent distance model) with a fixed set of weights, and each column corresponds to an adjacency model (dense, Bernoulli, SBM, or latent distance model) with a fixed sparsity pattern. In SBMs, nodes are sorted by class; in distance models, nodes are sorted by first coordinate of the location. For SBMs, black lines denote class boundaries. }
   \label{fig:networks}
+=======
+  \caption{Example network models. Each row corresponds to a fixed weight matrix,~$\bW$, 
+    and each column corresponds to a fixed adjacency matrix,~$\bA$. The panels show 
+    the elementwise product of the two. In the left column, the adjacency matrix is 
+    dense, i.e.~$A_{n \from m} \equiv 1$ for all pairs. Thus the left column shows
+    just the matrix~$\bW$. Color denotes the weight (blue is negative, red is postiive).
+    The second column shows an independent Bernoulli adjacency 
+    model in which each connection is present with the same probability. In the SBM, 
+    each neuron has a latent cluster assignment that governs the probability of 
+    connections, and in the distance model, the neurons have a latent location such 
+    that nearby neurons are more likey to connect. In the SBM, the rows and columns 
+    are sorted by type, and in the distance model, they are sorted by location. 
+    In the top row, the weights are drawn from an independent Gaussian model. The 
+    SBM has type-dependent mean weights. The distance model has weights that 
+    decrease as a function of distance, whcih leads to the banded structure.
+    independent Gaussian model}
+  \label{fig:network_models}
+>>>>>>> 62b3cc244382e27c6bad803d5e55a29539f364b0
 \end{figure}
 
-\section{Results}
+Figure~\ref{fig:network_models} shows how a variety of networks can be 
+constructed by combining different priors on the weights 
+(rows) with priors on the pattern of 
+connectivity (columns). Each row corresponds to a fixed weight matrix 
+drawn from a independent Gaussian prior, a stochastic block model (SBM), or a latent 
+distance model. Each column corresponds to a fixed adjacency matrix 
+drawn from a complete graph model, and independent Bernoulli model, 
+an SBM, or a latent distance model. The matrices show the elementwise 
+product, which encodes a weighted, directed network. Standard generalized linear models implicitly assume a complete network with 
+independent Gaussian weights (top left panel of Figure~\ref{fig:network_models}).
+Here, all pairs of neurons are connected to each other and all weights are 
+independent, identically distributed Gaussian random variables. By using latent variable 
+models, we can construct much richer network models in which the sparsity 
+and strength of connections depend on types and locations of neurons. 
+Complete details of these models are given in Section~\ref{sec:methods}
 
-\subsection{Synthetic Data}
+Once we have specified a class network models, we can perform inference and 
+evaluate them on the basis of their predictive power. A good model should 
+be able to generalize to new neurons by predicting the neurons' latent 
+variables and connections. If these predictions are accurate, the model 
+will assign high probability to the held-out neurons' spike trains. 
+In this way, we can assess the quality of the different network models
+and determine which latent variable model is most appropriate for the 
+neural population under study. This provides a flexible, data-driven 
+method of exploring a variety of hypotheses about interpretable structure 
+underlying complex, dynamical models of neural activity.
+
+
+\section{Results}
+We demonstrate the efficacy of this approach by applying our framework 
+to two neural populations for which we have longstanding experimental 
+evidence in favor of a particular latent variable representation.
+First, we consider a population of simultaneously recorded retinal 
+ganglion cells (RGCs), which can be characterized by their type 
+(either \textit{on} or \textit{off} in this dataset) and
+by the location of their receptive field centers. 
+We then consider a population of hippocampal place cells, which encode 
+positions in a two dimensional environment. In both cases, our approach 
+recovers these latent representations given only the neural spike trains,
+without any knowledge of the stimulus or the true location.
 
 \subsection{Retinal Ganglion Cells}
 
 \begin{figure}[t!]
   \centering
-    \begin{subfigure}[b]{1.85in}
-    \centering
-    \caption{}
-    \vspace{-.2in}
-    \includegraphics[width=\textwidth]{figures/ch3/rgc_connectivity.pdf}
-    \label{fig:rgc_w}
-  \end{subfigure}
-  ~
-    \begin{subfigure}[b]{1.85in}
-    \centering
-    \caption{}
-    \vspace{-.2in}
-    \includegraphics[width=\textwidth]{figures/ch3/rgc_prob_conn.pdf}
-    \label{fig:rgc_rho}
-  \end{subfigure}
-  ~
-  \begin{subfigure}[b]{1.85in}
-    \centering
-    \caption{}
-    \vspace{-.2in}
-    \includegraphics[width=\textwidth]{figures/ch3/rgc_mean_conn.pdf}
-    \label{fig:rgc_mu}
-  \end{subfigure}
-  \\
-  \vspace{-.2in}
   \begin{subfigure}[b]{2.25in}
     \centering
     \caption{}
@@ -304,17 +363,126 @@ We demonstrate the efficacy of this approach on both synthetic and real-world da
     \includegraphics[width=\textwidth]{figures/ch3/rgc_on_locations.pdf}
     \label{fig:rgc_locs}
   \end{subfigure}
+  \\
+  \vspace{-.2in}
+  \begin{subfigure}[b]{1.85in}
+    \centering
+    \caption{}
+    \vspace{-.2in}
+    \includegraphics[width=\textwidth]{figures/ch3/rgc_connectivity.pdf}
+    \label{fig:rgc_w}
+  \end{subfigure}
+  ~
+    \begin{subfigure}[b]{1.85in}
+    \centering
+    \caption{}
+    \vspace{-.2in}
+    \includegraphics[width=\textwidth]{figures/ch3/rgc_prob_conn.pdf}
+    \label{fig:rgc_rho}
+  \end{subfigure}
+  ~
+  \begin{subfigure}[b]{1.85in}
+    \centering
+    \caption{}
+    \vspace{-.2in}
+    \includegraphics[width=\textwidth]{figures/ch3/rgc_mean_conn.pdf}
+    \label{fig:rgc_mu}
+  \end{subfigure}
   \vspace{-2em}
   \caption{Retinal ganglion cell types and locations can be inferred
     from spike trains alone.
-    \textbf{(a)} Inferred network,~${\bA \odot \bW}$, under a latent distance model of connection probability and a stochastic block model for connection weight, averaged over 500 posterior samples.
-    \textbf{(b)} Expected probability of connection under the latent distance model.
-    \textbf{(c)} Expected connection strength under the stochastic block model. The inferred cell classes perfectly match the true ON and OFF types, and reflect within-class excitation and between-class inhibition.
-    \textbf{(d)} The combined distance model and block model yields the highest predictive log likelihood (units: nats/spike), compared to other combinations of adjacency models (groups of bars) and weight models (\textit{blue}: latent distance weight model, \textit{yellow}: stochastic block model for weights, \textit{green}: Gaussian weights).
-    \textbf{(e)} The inferred distances under the latent distance model are highly correlated with the true distances, as measured by stimulus sensitivity, whereas inferred embeddings under PCA are not.
-    \textbf{(f)} Moreover, the inferred locations (semitransparent markers) recover the true receptive field centers (solid markers with black outline). Shown here only for ON cells.}
+    \textbf{(a)} The combined distance model and block model yields the highest predictive log likelihood (units: nats/spike), compared to other combinations of adjacency models (groups of bars) and weight models (\textit{blue}: latent distance weight model, \textit{yellow}: stochastic block model for weights, \textit{green}: Gaussian weights).
+    \textbf{(b)} The inferred distances under the latent distance model are highly correlated with the true distances, as measured by stimulus sensitivity, whereas inferred embeddings under PCA are not.
+    \textbf{(c)} Moreover, the inferred locations (semitransparent markers) recover the true receptive field centers (solid markers with black outline). Shown here only for ON cells.
+    \textbf{(d)} Inferred network,~${\bA \odot \bW}$, under a latent distance model of connection probability and a stochastic block model for connection weight, averaged over 500 posterior samples.
+    \textbf{(e)} Expected probability of connection under the latent distance model.
+    \textbf{(f)} Expected connection strength under the stochastic block model. The inferred cell classes perfectly match the true ON and OFF types, and reflect within-class excitation and between-class inhibition.
+}
   \label{fig:rgc}
 \end{figure}
+
+We applied our model to simultaneously recorded multineuronal spike
+trains from a population of 27 primate retinal ganglion cells
+(RGCs). This dataset was previously analyzed with a generalized linear
+model in \cite{Pillow-2008}.  In this
+dataset, the population is presented with a Gaussian white noise video
+with pixel sizes tuned to approximately the width of a receptive
+field. We trained our models on one minute of spiking activity, binned at 1ms time
+resolution. There were approximately 50,000 spikes in this recording.
+We also held out one minute of data for model evaluation.
+
+Retinal ganglion cells respond to light (or the absence thereof) shown
+upon their receptive field. The cells are roughly evenly distributed
+across the two-dimensional retinal plane. Thus, it is natural to
+characterize these cells by the location of their receptive field
+center.  Moreover, this population is comprised of two types of cells,
+\textit{on} and \textit{off} cells, characterized by their response to
+visual stimuli. \textit{On} cells increase their firing when light is
+shone upon their receptive field; \textit{off} cells decrease their
+firing rate in response to light in their receptive field.  Cell types
+are identified by similarity in their response properties as well as
+morphological and physiological properties~\cite{sanes2015types}. With
+knowledge of the stimulus, these cells can be clearly separated into
+their respective types by clustering the spike-triggered average
+simulus.  This characterization in terms of latent locations and cell
+types has been validated through decades of experiments, and has been
+made possible by the relative ease with which relevant stimuli can be
+identified and controlled. To what extent can these latent
+representations be discovered from the spike trains alone?
+
+We fit our model to the measured spike trains for each of the twelve
+probabilistic network priors shown above --- three weight models and
+four adjacency models. Predictive likelihood comparisons on the
+held-out data reveal that the adjacency matrix, i.e. the pattern of
+connectivity, is well-characterized by a two-dimensional latent
+distance model (Fig.~\ref{fig:rgc_locs}, as expected given the
+localized receptive fields of RGCs. Moreover, the pairwise distances
+between the latent locations are highly correlated with the true
+distances between receptive field centers (Fig.~\ref{fig:rgc_dist}),
+even though the stimulus was never used during training. By contrast,
+the inferred locations given by the top two principal components of
+the spike trains are highly uncorrelated, indicating that PCA does not
+recover a meaningful spatial embedding.  Finally, the inferred
+locations can be rotated and scaled such that they match the true
+locations almost perfectly (Fig.~\ref{fig:rgc_locs}). Rotation does
+not change the pairwise distances and scaling simply changes the
+units. This matching is highly unlikely for randomly distributed
+locations.  In Fig.~\ref{fig:rgc_locs}, the true locations are shown
+as solid markers with black outlines, and the inferred locations
+sampled from the posterior distribution are shown as semitransparent
+markers of the same color and shape.
+
+For the weight matrix, a latent distance model (Dist) and a stochastic
+block model (SBM) both yield similar predictive likelihoods. Looking
+into the inferred types under the SBM, we find that the neurons are
+grouped according to their true \textit{on} and \textit{off} cells,
+again without any knowledge of the stimulus. These types determine 
+the expected interaction weight for each pair of neurons. 
+
+\TODO{Compare this to kmeans clustering on the spike train?}
+
+Figure~\ref{fig:rgc_w} shows the inferred functional network under the
+latent distance adjacency model and stochastic block model for
+weights.  The neurons are sorted first by their type (\textit{off}
+then \textit{on}) and then by their $x$-location. This yields the
+three bands in the matrix of connection
+probabilities~\ref{fig:rgc_rho}. Nearby cells have much higher
+probability of connection. The mean connection strength
+(Fig.~\ref{fig:rgc_mu}) shows the characteristic pattern of positive
+weights between cells of the same type and negative weights betewen
+cells of opposite types. The diagonal of this matrix shows the weights
+of self-connections, which are typically negative due to refractory
+effects. 
+
+Together, these inferred types and locations provide 
+compelling evidence for a highly structured pattern of functional 
+connectivity. Given the extensive work on characterizing retinal 
+ganglion cell responses, we have considerable evidence that the 
+representation we learn from spike trains alone is indeed the 
+optimal way to characterize this population of cells. This 
+lends us confidence that we may trust the representations learned from 
+spike trains recorded from deeper brain areas, where traditional 
+stimulus-response correlations are less valuable.
 
 \subsection{Hippocampal Place Cells}
 
@@ -378,7 +546,73 @@ We demonstrate the efficacy of this approach on both synthetic and real-world da
   \label{fig:hipp}
 \end{figure}
 
+We also applied our framework to simultaneously recorded multi-neuronal spike trains from the hippocampus of freely moving rats in a circular arena. 
+%Experiments were conducted under the supervision of the Massachusetts Institute of Technology (MIT)  Committee on Animal Care and followed the NIH guidelines.
+%The micro-drive arrays containing multiple tetrodes were implanted above the  right dorsal hippocampus of male Long-Evans rats. 
+%The tetrodes were slowly lowered into the brain reaching the cell layer of CA1 two to four weeks following the date of surgery. 
+%Recorded spikes were manually clustered and sorted.
+This dataset consists of~$N=25$ neurons recorded for a duration of almost ten minutes and binned in 250ms time bins.
+The rat is freely foraging in an open field enviornment roughly 120cm in diameter.
+%Since place cells are primarily active during location, the spike train is segmented into individual running epochs by discarding bins in which the velocity is less than 10cm/s. 
+%This results in a dataset that is approximately 2000 time bins in length.
+
+As in the retina, we have strong intuitions about the latent structure underlying hippocampal place cell activity, namely, we expect cells representing nearby locations to be correlated and cells with disjoint place fields to be anticorrelated. Can we extend the spatial layout of place fields from spike trains alone?
+
+We apply our framework, fitting all twelve network models and
+evaluating them on the basis of predictive likelihood. In this case,
+the distance dependent weight models yield the highest predictive
+likelihood (Fig.~\ref{fig:hipp_pll}). The stochastic block model
+yields the highest predictive likelihood, but upon futher
+investigation we find that almost all neurons are connected in this
+model. There is one outlier, neuron \#1, which is only sparsely
+connected. The SBM assings 24 neurons are assigned to one cluster, and
+assigns neuron \#1 to its own group. \TODO{Put this figure in the supplementary material}
+Thus, the stochastic block model is quite similar to an independent
+Bernoulli model, as is evident from the similar predictive likelihood 
+of these two models. 
+
+Looking into the inferred locations under the latent distance model
+for the weight matrix, we find that the inferred locations
+(Fig~\ref{fig:hipp_inf_locs}) are, up to rotation and scale, highly
+similar to the true place field centers (Fig~\ref{fig:hipp_true_locs})
+measured using the rat's true location. This is quantified by 
+plotting the pairwise distances between inferred locations against 
+the pairwise distances between place field centers. The latent 
+distance model's pairwise distances are highly correlated with the 
+ground truth, whereas distances between PCA embeddings are very uncorrelated (Fig.~\ref{fig:hipp_distances}). For further comparison, we fit a Poisson linear dynamical system (PLDS) \cite{macke2011empirical} with a two dimensional latent state space, and used the rows of the 
+~$N \times 2$ emission matrix as the locations of the neurons. This sophisticated 
+model, which captures temporal dynamics of the neural population, yields 
+pairwise distances that are quite correlated with the true distances, 
+but we find that the variance of this fit grows with the true distance.
+This reflects the fact that the PLDS does not explicitly parameterize
+interaction as a function of distance, but rather induces correlation 
+due to similarity in the emission matrix as well as shared dynamics.
+
+Finally, we investigated the expected network under the posterior and 
+found that upon sorting the neurons by their inferred locations, an
+intuitive banded structure emerges (Fig.~\ref{fig:hipp_conn}). 
+The positive diagonal indicates strong autocorrelation between a 
+neurons spiking in consecutive 250ms bins. Over these time scales, 
+self-refractory effects are not evident. The primary connections 
+are inhibitory in nature, such that active cells suppress the activity 
+of cells with distal place fields. 
+
+These inferred representations again confirm our intuitive beliefs 
+about the structure of hippocamapl place cell responses. The 
+inferred latent variables recover meaningful structure in the
+neural activity, without any access to the location. Instead, 
+these representations arise from the neural activity alone.
+
+\subsection{Synthetic Data}
+
+\TODO{
+How scalable is this approach?
+When would simpler methods suffice?
+Could we just fit a GLM and then model its weights?
+}
+
 \section{Methods}
+\label{sec:methods}
 Our primary contribution is a novel framework for discovering latent
 network structure underlying neural activity.  This framework consists
 of a probabilistic model relating structure to observed signals, an
@@ -440,7 +674,7 @@ is always under-dispersed, since its mean always exceeds its variance,
 and the negative binomial is always over-dispersed, with variance greater 
 than its mean.
 
-The generalized linear model (GLM) \cite{Paninski-2004, Truccolo-2003, Pillow-2008} 
+The generalized linear model (GLM) \cite{Paninski-2004, Truccolo-2005, Pillow-2008} 
 models the activation at time~$t$ as a weighted function of 
 the spike counts at preceding times~${[0,t-1]}$. Specifically,
 let,
@@ -502,8 +736,7 @@ GLM is that here we have explicitly modeled the sparsity of the
 weights via the ``adjacency matrix'' $\bA$. Under the standard 
 formulation, all weights are present, that is,~${a_{n \from m} \equiv 1}$.
 
-Figure~\TODO{} illustrates the GLM dynamics. In this case, there is
-one basis function ($K=1$) defined
+Consider a model with one basis function ($K=1$) defined
 by,~${\phi_{1,\Delta t} = e^{-\Delta t/\tau}}$.
 Then~$\widehat{s}_{t,m,1}$ is a weighted sum of spikes in the
 window~$[t-\Delta t_{\mathsf{max}},t-1]$, where the weights decay
@@ -950,12 +1183,10 @@ In practice this is rarely the case.
 
 
 \section{Discussion}
-
-\subsection{Related Work}
 \begin{itemize}
 \item Simple clustering and dimensionality reduction of spike train matrices
-\item Network models
+\item Network models in other domains (Hawkes processes?)
 \item Generalized linear models
-\item Bayesian inference (go through Liam's work)
+\item Why be Bayesian?
 \item Polya-gamma augmentation
 \end{itemize}
