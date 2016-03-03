@@ -72,7 +72,7 @@ temporal dynamics, like generalized linear models~\cite{Truccolo-2005,
   linderman2016nonparametric}, and many others~\cite{Yu09,
   churchland2012neural, cunningham2007inferring},
 but the outputs of these models are complex state trajectories and dense
-coupling filters. Typically far from intuitive, these results are
+coupling filters. Typically far from intuitive, these outputs are
 often subjected to even \emph{further} modeling in hopes of gleaning insight.
 
 We introduce a modeling framework that combines the desirable 
@@ -145,26 +145,36 @@ and interpretable patterns on the basis of neural activity alone.
  \label{fig:fig1}
  \end{figure}
 
-Figure~\ref{fig:fig1} illustrates the components of our generative model. 
-In this example, each neuron belongs to one of four classes (\textit{red}, \textit{blue}, \textit{green}, or \textit{yellow}). Additionally, neurons have a latent location in two-dimensional space. The connection probability is determined by distance between the locations (nearby neurons are more likely to connect), as well as the latent types (neurons of the same type are more likely to connect).
-This network parameterizes an autoregressive model for neural activity.
-The instantaneous probability of firing an action potential is a function of the underlying \textit{activation}.
-The activation obeys autoregressive dynamics: when a neuron fires an action potential, an impulse response is added to the activation of downstream neurons. Excitatory connections induce positive impulse responses; inhibitory connections induce negative ones. 
-on the \textit{activation} of downstream neurons
-In many modern recordings, the spike trains must be inferred from an observed calcium fluorescence trace. In these cases, the model may be augmented with a generative model for fluorescence 
-that captures the slower calcium dynamics~\cite{Vogelstein-2010, Mishchenko11a}. 
+ Figure~\ref{fig:fig1} illustrates the components of our generative
+ model.  In this example, each neuron belongs to one of four classes
+ (\textit{red}, \textit{blue}, \textit{green}, or
+ \textit{yellow}). Additionally, neurons have a latent location in
+ two-dimensional space. The connection probability is determined by
+ distance between the locations (nearby neurons are more likely to
+ connect), as well as the latent types (neurons of the same type are
+ more likely to connect).  This network parameterizes an
+ autoregressive model for neural activity.  The instantaneous
+ probability of firing an action potential is a function of the
+ underlying \textit{activation}.  The activation obeys autoregressive
+ dynamics: when a neuron fires an action potential, an impulse
+ response is added to the activation of downstream neurons. Excitatory
+ connections induce positive impulse responses; inhibitory connections
+ induce negative ones.  In many modern recordings, the spike trains
+ must be inferred from an observed calcium fluorescence trace. In
+ these cases, the model may be augmented with a generative model for
+ fluorescence that captures the slower calcium
+ dynamics~\cite{Vogelstein-2010, Mishchenko11a}.
 
-In our framework, probabilistic network models formalize the intuitive belief 
-that functional connections arise from underlying latent variables. 
-For some well-studied populations, like retinal ganglion cells (RGCs) 
-and hippocampal place cells, 
-we already have a strong intuition about what these latent 
-variables should be --- RGCs come in a variety of 
-distinct types and respond to light in their receptive field, 
-while hippocampal place cells reflect locations 
-in the environment. These exemplify the interpretable latent variables 
-we wish to infer for other brain circuits, 
-which have eluded simplifying representations. 
+ In our framework, probabilistic network models formalize the
+ intuitive belief that functional connections arise from underlying
+ latent variables.  For some well-studied populations, like retinal
+ ganglion cells (RGCs) and hippocampal place cells, we already have a
+ strong intuition about what these latent variables should be --- RGCs
+ come in a variety of distinct types and respond to light in their
+ receptive field, while hippocampal place cells reflect locations in
+ the environment. These exemplify the interpretable latent variables
+ we wish to infer for brain circuits that have eluded simple
+ representations.
 
 % This generative approach formalizes many of the intuitive hypotheses already employed in neuroscience. 
 % Neural circuits are commonly described with simplified block diagrams that show how one subpopulation of neurons drives another. 
@@ -173,22 +183,24 @@ which have eluded simplifying representations.
 % Our approach begins with high-level hypotheses like, ``neurons have latent types that determine functional connectivity.''
 % These hypotheses are instantiated as generative models which are then fit to the data using probabilistic inference techniques and compared on the basis of how well they explain the measured activity.
 
-To perform this inference, we develop novel a Markov chain Monte Carlo (MCMC)
-algorithm that can efficiently invert this generative procedure 
-to explore the posterior distribution over 
-latent variables given observed spike trains or calcium fluorescence traces. 
-Since we do not know \textit{a priori} what types of latent variables to expect, 
-we show how a wide range of hypotheses can be encoded as prior distributions 
-over networks. Since weighted, directed networks can be equivalently represented 
-as sparse matrices, prior distributions over the space networks correspond 
-to distributions over matrices. Specifically, a network can be represented 
-as the elementwise product of a real-valued weight matrix~$bW$, whose 
-entries~$W_{n \from m}$ specify the strength of the directed connection from 
-neuron~$m$ to neuron~$n$, and a binary adjacency matrix~$\bA$, whose 
-entries denote whether or not a connection is present. Thus,~$\bA$ specifies 
-the sparsity of the network, while~$\bW$ specifies the strength. This 
-decomposition is known as a spike-and-slab model in machine 
-learning~\cite{Mitchell1988}.
+ To perform this inference, we develop novel a Markov chain Monte
+ Carlo (MCMC) algorithm that can efficiently invert the generative
+ procedure above in order to find the posterior distribution over
+ latent variables given observed spike trains or calcium fluorescence
+ traces.  Since we do not know \textit{a priori} what types of latent
+ variables to expect, we show how a wide range of hypotheses can be
+ encoded as prior distributions over networks. Since weighted,
+ directed networks can be equivalently represented as sparse matrices,
+ prior distributions over the space networks correspond to
+ distributions over matrices. Specifically, a network can be
+ represented as the elementwise product of a real-valued weight
+ matrix~$\bW$, whose entries,~$\bw_{n \from m}$, specify the strength
+ of the directed connection from neuron~$m$ to neuron~$n$, and a
+ binary adjacency matrix~$\bA$, whose entries,~$a_{n \from m}$, denote
+ whether or not a connection is present. Thus,~$\bA$ specifies the
+ sparsity of the network, while~$\bW$ specifies the strength. This
+ decomposition is known as a spike-and-slab model in machine
+ learning~\cite{Mitchell1988}.
 
 % Network models
 \begin{figure}[t!]
@@ -291,21 +303,24 @@ learning~\cite{Mitchell1988}.
   \label{fig:network_models}
 \end{figure}
 
-Figure~\ref{fig:network_models} shows how a variety of networks can be 
-constructed by combining different priors on the weights 
-(rows) with priors on the pattern of 
-connectivity (columns). Each row corresponds to a fixed weight matrix 
-drawn from a independent Gaussian prior, a stochastic block model (SBM), or a latent 
-distance model. Each column corresponds to a fixed adjacency matrix 
-drawn from a complete graph model, and independent Bernoulli model, 
-an SBM, or a latent distance model. The matrices show the elementwise 
-product, which encodes a weighted, directed network. Standard generalized linear models implicitly assume a complete network with 
-independent Gaussian weights (top left panel of Figure~\ref{fig:network_models}).
-Here, all pairs of neurons are connected to each other and all weights are 
-independent, identically distributed Gaussian random variables. By using latent variable 
-models, we can construct much richer network models in which the sparsity 
-and strength of connections depend on types and locations of neurons. 
-Complete details of these models are given in Section~\ref{sec:methods}
+Figure~\ref{fig:network_models} shows how a variety of networks can be
+constructed by combining different priors on the weights (rows) with
+priors on the pattern of connectivity (columns). Each row corresponds
+to a fixed weight matrix drawn from either an independent Gaussian
+prior, a stochastic block model (SBM), or a latent distance
+model. Each column corresponds to a fixed adjacency matrix drawn from
+either a complete graph model, an independent Bernoulli model, an SBM,
+or a latent distance model. The matrices show the element-wise
+product, which encodes a weighted, directed network. Standard
+generalized linear models implicitly assume a complete network with
+independent Gaussian weights (top left panel of
+Figure~\ref{fig:network_models}).  Here, all pairs of neurons are
+connected to each other and all weights are independent, identically
+distributed Gaussian random variables. By using latent variable
+models, we can construct much richer network models in which the
+sparsity and strength of connections depend on types and locations of
+neurons.  Complete details of these models are given in
+Section~\ref{sec:methods}
 
 Once we have specified a class network models, we can perform inference and 
 evaluate them on the basis of their predictive power. A good model should 
@@ -330,7 +345,9 @@ by the location of their receptive field centers.
 We then consider a population of hippocampal place cells, which encode 
 positions in a two dimensional environment. In both cases, our approach 
 recovers these latent representations given only the neural spike trains,
-without any knowledge of the stimulus or the true location.
+without any knowledge of the stimulus or the true location. Finally, 
+we assess the advantages of our Bayesian approach and the scalability 
+of our algorithm with synthetic data.
 
 \subsection{Retinal Ganglion Cells}
 \label{sec:rgc}
@@ -402,13 +419,14 @@ without any knowledge of the stimulus or the true location.
 
 We applied our model to simultaneously recorded multineuronal spike
 trains from a population of 27 primate retinal ganglion cells
-(RGCs). This dataset was previously analyzed with a generalized linear
-model in \cite{Pillow-2008}.  In this
-dataset, the population is presented with a Gaussian white noise video
-with pixel sizes tuned to approximately the width of a receptive
-field. We trained our models on one minute of spiking activity, binned at 1ms time
-resolution. There were approximately 50,000 spikes in this recording.
-We also held out one minute of data for model evaluation.
+(RGCs). This dataset was previously analyzed with a standard
+generalized linear model in \cite{Pillow-2008}.  In this dataset, the
+population is presented with a Gaussian white noise video with pixel
+sizes tuned to approximately the width of a receptive field. We
+trained our models on one minute of spiking activity, binned at one
+millisecond time resolution. There were approximately 50,000 spikes in
+this recording.  We also held out one minute of data for model
+evaluation.
 
 Retinal ganglion cells respond to light (or the absence thereof) shown
 upon their receptive field. The cells are roughly evenly distributed
@@ -429,12 +447,13 @@ made possible by the relative ease with which relevant stimuli can be
 identified and controlled. To what extent can these latent
 representations be discovered from the spike trains alone?
 
+\sloppy
 We fit our model to the measured spike trains for each of the twelve
 probabilistic network priors shown above --- three weight models and
 four adjacency models. Predictive likelihood comparisons on the
 held-out data reveal that the adjacency matrix, i.e. the pattern of
 connectivity, is well-characterized by a two-dimensional latent
-distance model (Fig.~\ref{fig:rgc_locs}, as expected given the
+distance model (Fig.~\ref{fig:rgc_locs}), as expected given the
 localized receptive fields of RGCs. Moreover, the pairwise distances
 between the latent locations are highly correlated with the true
 distances between receptive field centers (Fig.~\ref{fig:rgc_dist}),
@@ -457,8 +476,6 @@ into the inferred types under the SBM, we find that the neurons are
 grouped according to their true \textit{on} and \textit{off} cells,
 again without any knowledge of the stimulus. These types determine 
 the expected interaction weight for each pair of neurons. 
-
-\TODO{Compare this to kmeans clustering on the spike train?}
 
 Figure~\ref{fig:rgc_w} shows the inferred functional network under the
 latent distance adjacency model and stochastic block model for
@@ -546,47 +563,65 @@ stimulus-response correlations are less valuable.
   \label{fig:hipp}
 \end{figure}
 
-We also applied our framework to simultaneously recorded multi-neuronal spike trains from the hippocampus of freely moving rats in a circular arena. 
-%Experiments were conducted under the supervision of the Massachusetts Institute of Technology (MIT)  Committee on Animal Care and followed the NIH guidelines.
-%The micro-drive arrays containing multiple tetrodes were implanted above the  right dorsal hippocampus of male Long-Evans rats. 
-%The tetrodes were slowly lowered into the brain reaching the cell layer of CA1 two to four weeks following the date of surgery. 
-%Recorded spikes were manually clustered and sorted.
-This dataset consists of~$N=25$ neurons recorded for a duration of almost ten minutes and binned in 250ms time bins.
-The rat is freely foraging in an open field enviornment roughly 120cm in diameter.
-%Since place cells are primarily active during location, the spike train is segmented into individual running epochs by discarding bins in which the velocity is less than 10cm/s. 
-%This results in a dataset that is approximately 2000 time bins in length.
+We also applied our framework to simultaneously recorded
+multi-neuronal spike trains from the hippocampus of freely moving rats
+in a circular arena.
+% Experiments were conducted under the supervision of the
+% Massachusetts Institute of Technology (MIT) Committee on Animal Care
+% and followed the NIH guidelines.  The micro-drive arrays containing
+% multiple tetrodes were implanted above the right dorsal hippocampus
+% of male Long-Evans rats.  The tetrodes were slowly lowered into the
+% brain reaching the cell layer of CA1 two to four weeks following the
+% date of surgery.  Recorded spikes were manually clustered and
+% sorted.
+This dataset consists of~$N=25$ neurons recorded for a duration of
+almost ten minutes and binned in 250ms time bins.  The rat is freely
+foraging in an open field environment roughly 120cm in diameter.
+% Since place cells are primarily active during location, the spike
+% train is segmented into individual running epochs by discarding bins
+% in which the velocity is less than 10cm/s.  This results in a
+% dataset that is approximately 2000 time bins in length.
 
-As in the retina, we have strong intuitions about the latent structure underlying hippocampal place cell activity, namely, we expect cells representing nearby locations to be correlated and cells with disjoint place fields to be anticorrelated. Can we extend the spatial layout of place fields from spike trains alone?
+As in the retina, we have strong intuitions about the latent structure
+underlying hippocampal place cell activity, namely, we expect cells
+representing nearby locations to be correlated and cells with disjoint
+place fields to be anticorrelated. Can we extract the spatial layout
+of place fields from spike trains alone?
 
 We apply our framework, fitting all twelve network models and
-evaluating them on the basis of predictive likelihood. In this case,
-the distance dependent weight models yield the highest predictive
-likelihood (Fig.~\ref{fig:hipp_pll}). The stochastic block model
-yields the highest predictive likelihood, but upon futher
-investigation we find that almost all neurons are connected in this
-model. There is one outlier, neuron \#1, which is only sparsely
-connected. The SBM assings 24 neurons are assigned to one cluster, and
-assigns neuron \#1 to its own group. \TODO{Put this figure in the supplementary material}
-Thus, the stochastic block model is quite similar to an independent
-Bernoulli model, as is evident from the similar predictive likelihood 
-of these two models. 
+evaluating them on the basis of predictive likelihood. We use a
+negative binomial observation model to allow multiple spikes per time
+bin. We find that the distance dependent weight models yield the
+highest predictive likelihood (Fig.~\ref{fig:hipp_pll}). The
+stochastic block model yields the highest predictive likelihood, but
+upon futher investigation we find that almost all neurons are
+connected in this model. There is one outlier, neuron \#$1$, which is
+only sparsely connected. The SBM assigns 24 neurons are assigned to
+one cluster, and assigns neuron \#$1$ to its own group.  Thus, the
+stochastic block model is quite similar to an independent Bernoulli
+model, as is evident from the similar predictive likelihood of these
+two models.
 
 Looking into the inferred locations under the latent distance model
 for the weight matrix, we find that the inferred locations
-(Fig~\ref{fig:hipp_inf_locs}) are, up to rotation and scale, highly
+(Fig~\ref{fig:hipp_inf_locs}) are (up to rotation and scale) highly
 similar to the true place field centers (Fig~\ref{fig:hipp_true_locs})
-measured using the rat's true location. This is quantified by 
-plotting the pairwise distances between inferred locations against 
-the pairwise distances between place field centers. The latent 
-distance model's pairwise distances are highly correlated with the 
-ground truth, whereas distances between PCA embeddings are very uncorrelated (Fig.~\ref{fig:hipp_distances}). For further comparison, we fit a Poisson linear dynamical system (PLDS) \cite{macke2011empirical} with a two dimensional latent state space, and used the rows of the 
-~$N \times 2$ emission matrix as the locations of the neurons. This sophisticated 
-model, which captures temporal dynamics of the neural population, yields 
-pairwise distances that are quite correlated with the true distances, 
-but we find that the variance of this fit grows with the true distance.
-This reflects the fact that the PLDS does not explicitly parameterize
-interaction as a function of distance, but rather induces correlation 
-due to similarity in the emission matrix as well as shared dynamics.
+measured using the rat's true location. This is quantified by plotting
+the pairwise distances between inferred locations against the pairwise
+distances between place field centers. The latent distance model's
+pairwise distances are highly correlated with the ground truth,
+whereas distances between PCA embeddings are very uncorrelated
+(Fig.~\ref{fig:hipp_distances}). For further comparison, we fit a
+Poisson linear dynamical system (PLDS) \cite{macke2011empirical} with
+a two dimensional latent state space, and used the rows of the
+~$N \times 2$ emission matrix as the locations of the neurons. This
+sophisticated model, which captures temporal dynamics of the neural
+population, yields pairwise distances that are quite correlated with
+the true distances, but we find that the variance of this fit grows
+with the true distance.  This reflects the fact that the PLDS does not
+explicitly parameterize interaction as a function of distance, but
+rather induces correlation due to similarity in the emission matrix as
+well as shared dynamics.
 
 Finally, we investigated the expected network under the posterior and 
 found that upon sorting the neurons by their inferred locations, an
@@ -618,6 +653,7 @@ methods that incur an additional~$O(N^3)$ cost per potential connection.
 
 
 \subsubsection{Advantages of being Bayesian}
+\label{sec:advantages}
 \begin{figure}[t!]
   \centering
   \vspace{-.2in}
@@ -670,7 +706,6 @@ each time bin were one millisecond, the firing rates would range from 10Hz to
 external white noise stimulus, here we simulate spontaneous activity
 of the network.
 
-\TODO{update this when we have all the results}
 Since we know the generative model that gave rise to the data, we can
 quantify the improvement from using our fully Bayesian approach
 rather than a standard GLM, and compare these improvements to the
@@ -690,22 +725,22 @@ these results suggest that the Bayesian approach can yield substantial
 benefits.
 
 Rather than simultaneously fitting the network and the underlying
-latent variables, one may instead fit the network with an $L_1$-regularized
-GLM and \textit{then} fit a probabilistic network model to the GLM
-connection weights. This is the approach taken by~\citet{stevenson2009bayesian}.
-The advantage is that the network is only fit once, and since this
-is usually the most expensive aspect of inference, it can save considerable
-time. However, when the data
-is limited, both the network and the latent variables are uncertain.
-Our Bayesian approach finds joint assignments with high posterior probability,
-whereas the standard GLM finds a single network that does not account for
-prior beliefs about structure underlying the network.
+latent variables, one may instead fit the network with an
+$L_1$-regularized GLM and \textit{then} fit a probabilistic network
+model to the GLM connection weights. This is the approach taken
+by~\citet{stevenson2009bayesian}.  The advantage is that the network
+is only fit once, and since this is usually the most expensive aspect
+of inference, it can save considerable time. However, when the data is
+limited, both the network and the latent variables are uncertain.  Our
+Bayesian approach finds joint assignments with high posterior
+probability, whereas the standard GLM finds a single network that does
+not account for prior beliefs about structure underlying the network.
 In this example, subsequently fitting a latent distance model to the
-adjacency matrix of a thresholded GLM network finds an embedding
-that is somewhat like the true locations, but is vastly inferior to
-the embedding found by our Bayesian approach. This is illustrated
-by the increased correlation between true and inferred pairwise
-distances under the joint, Bayesian approach, as shown in 
+adjacency matrix of a thresholded GLM network finds an embedding that
+is considerably worse than the embedding found by our Bayesian
+approach. This is illustrated by the decreased correlation between
+true and inferred pairwise distances under the standard GLM compared
+to that of our joint, Bayesian approach, as shown in
 Figure~\ref{fig:synth_rgc_pairwise_dists}.
 
 \begin{figure}[t!]
@@ -759,8 +794,11 @@ Figure~\ref{fig:synth_rgc_pairwise_dists}.
   \end{subfigure}
   \caption[Inferred connection probabilities for synthetic RGC data]{
     \textbf{(a)} Weighted adjacency matrix for the synthetic RGC network shown in Fig.~\ref{fig:synth_rgc_true_network}.
-    \textbf{(b)} Inferred connection probability found by our fully Bayesian approach.
-    \textbf{(c)} Inferred connection probability found by fitting a latent distance model to the thresholded network from the MAP estimate of an~$L_1$-regularized GLM.
+    \textbf{(b)} Network inferred by our fully Bayesian approach.
+    \textbf{(c)} Thresholded network found by an~$L_1$-regularized GLM.
+    \textbf{(d)} Adjacency matrix corresponding to the true network in Fig.~\ref{fig:synth_rgc_true_conn}.
+    \textbf{(e)} Inferred connection probability found by our model with a latent distance prior. The diagonal bands reflect the increased probability for nearby neurons..
+    \textbf{(f)} Inferred connection probability found by fitting a latent distance model to the network in Fig.~\ref{fig:synth_rgc_bfgs_conn}. Noise in this network leads to poor location estimates and nearly uniform connection probabilities.
   }
   \label{fig:synth_rgc_prob_conn}
 \end{figure}
@@ -774,7 +812,8 @@ latent distance model prior are shown in
 Fig.~\ref{fig:synth_rgc_mcmc_conn} and
 Fig.~\ref{fig:synth_rgc_mcmc_prob_conn}, respectively. Our MCMC
 algorithm does a good job recovering the underlying locations, which
-give rise to the distance-dependent connection probabilities.  By
+give rise to the diagonally banded connection probabilities, which reflect 
+distance dependence.  By
 contrast, the MAP network found via an $L_1$-regularized standard GLM
 is considerably noisier (Fig.~\ref{fig:synth_rgc_bfgs_conn}), since it
 knows nothing of the underlying distance dependent connectivity. A
@@ -786,6 +825,36 @@ embedding. By jointly fitting the network and the latent locations, we
 weed out these spurious connections.
 
 \subsubsection{Scalability Analysis}
+
+Finally, we address the scalability of our Bayesian inference algorithms.
+With large-scale recordings becoming the norm, efficiency is paramount.
+There are three major parameters that govern the complexity of inference:
+the number of time bins,~$T$; the number of neurons,~$N$; and the level
+of sparsity,~$\rho$. The natural unit of measure is the wall-clock time
+required to perform one iteration of our MCMC algorithm. The following
+experiments were run on a quad-core Intel i5 with 6GB of RAM. Since the
+core operations consist of parallelized sampling code and standard linear
+algebra, performance scales almost linearly in the number of cores. We
+break down the wall-clock time into time spent updating the auxiliary
+variables of the observation model and time spent updating the network.
+Resampling the latent variables is a negligible cost.
+
+The wall clock time scales linearly with~$T$, as shown in
+Figure~\ref{fig:runtime_vs_T}. As we will show in
+Section~\ref{sec:methods}, the observation model contains~${NT}$
+auxiliary variables, each of which must be resampled. Additionally,
+each neuron must compute its sufficient statistics, which involves a
+rectangular matrix multiplication costing~$O(TN^2)$ time.
+
+Since there are~$O(N^2)$ possible connections in a network of~$N$
+neurons, there is no way to circumvent at least a quadratic cost
+in~$N$ (unless some connections can be ruled out \textit{a priori}).
+Figure~\ref{fig:runtime_vs_N} shows that this quadratic penalty is
+indeed evident. The cost of updating the auxiliary variables is only
+linear in~$N$, but the cost of updating the network is quadratic. In
+Section~\ref{sec:discussion}, we discuss potential strategies for
+ruling out connections and limiting this cost.
+
 
 \begin{figure}[t!]
   \centering
@@ -828,45 +897,19 @@ weed out these spurious connections.
   \label{fig:scalability}
 \end{figure}
 
-Finally, we address the scalability of our Bayesian inference algorithms.
-With large-scale recordings becoming the norm, efficiency is paramount.
-There are three major parameters that govern the complexity of inference:
-the number of time bins,~$T$; the number of neurons,~$N$; and the level
-of sparsity,~$\rho$. The natural unit of measure is the wall-clock time
-required to perform one iteration of our MCMC algorithm. The following
-experiments were run on a quad-core Intel i5 with 6GB of RAM. Since the
-core operations consist of parallelized sampling code and standard linear
-algebra, performance scales almost linearly in the number of cores. We
-breakdown the wall-clock time into time spent updating the auxiliary
-variables of the observation model and time spent updating the network.
-Resampling the latent variables is a negligible cost.
 
-The wall clock time scales linearly with~$T$, as shown in
-Figure~\ref{fig:runtime_vs_T}. As we will show in
-Section~\ref{sec:methods}, the observation model contains~${NT}$
-auxiliary variables, each of which must be resampled. Additionally,
-each neuron must compute its sufficient statistics, which involves a
-rectangular matrix multiplication costing~$O(TN^2)$ time.
-
-Since there are~$O(N^2)$ possible connections in a network of~$N$
-neurons, there is no way to circumvent at least a quadratic cost
-in~$N$ (unless some connections can be ruled out \textit{a priori}).
-Figure~\ref{fig:runtime_vs_N} shows that this quadratic penalty is
-indeed evident. The cost of updating the auxiliary variables is only
-linear in~$N$, but the cost of updating the network is quadratic. In
-Section~\ref{sec:discussion}, we discuss potential strategies for
-ruling out connections and limiting this cost.
-
-For each potential connection, the cost per iteration can also depend
-on~$N$ in the worst case. Fortunately, the complexity of our collapsed
-Gibbs sampling algorithm (described in Section~\ref{sec:methods}) only
-depends on the number of incident connections received by each neuron,~$d$.
-Specifically, we must invert a~$d \times d$ matrix, which incurs an~$O(d^3)$
-cost. Figure~\ref{fig:runtime_vs_rho} illustrates this for a Bernoulli network
-with~$N=200$ neurons. The expected number of incoming connections
-is related to the probability of connection by~$\bbE[d]=\rho N$. If we
-increased the number of neurons but kept the average in-degree constant,
-the total cost would scale only quadratically with~$N$.
+The total cost could actually be worse than quadratic because the cost
+of updating each connection could depend on~$N$. Fortunately, the
+complexity of our collapsed Gibbs sampling algorithm (described in
+Section~\ref{sec:methods}) only depends on the number of incident
+connections received by each neuron,~$d$.  Specifically, we must
+invert a~$d \times d$ matrix, which incurs an~$O(d^3)$
+cost. Figure~\ref{fig:runtime_vs_rho} illustrates this for a Bernoulli
+network with~$N=200$ neurons. The expected number of incoming
+connections is related to the probability of connection
+by~$\bbE[d]=\rho N$. If we increased the number of neurons but kept
+the average in-degree constant, the total cost would scale only
+quadratically with~$N$.
 
 \section{Methods}
 \label{sec:methods}
@@ -1453,50 +1496,31 @@ In practice this is rarely the case.
 \label{sec:discussion}
 We have shown that the functional networks underlying
 spike trains may provide unique insight into the low-dimensional
-structure of neural populations.
+structure of neural populations. Looking forward, there are 
+two main concerns that we would like to address.
+First, ideally we would like algorithms that scale better 
+than quadratically with the number of neurons. Second, we 
+would like to automate the process of relating the latent 
+structure to simultaneously measured environmental cues, stimuli, 
+and behavioral correlates. 
 
-\TODO{Lead in...}
-
-
-\subsection{Approximate Methods}
-For large networks, the bulk of the running time is spent 
+\subsection{Further scalability improvements}
+For large populations, the bulk of the running time is spent 
 sampling the network variables,~$\bA$ and~$\bW$. As the number of
 neurons grows, this complexity scales as~$O(N^2)$. To
 what extent can we minimize this complexity? As we have shown,
 na\"ively applying clustering algorithms and PCA directly
-to spike trains does not yield meaningful features. These
+to spike trains does not necessarily yield meaningful features. These
 results can be somewhat improved by smoothing the spike
 trains (e.g. by taking a moving average), but they are still
 fundamentally limited when the low-dimensional structure
-lies in the pattern of sparsity in the functional network. 
+lies in the pattern of functional connectivity.
 
-We may, however, resort to approximate methods that only estimate the
-functional network once, rather than resampling it every
-iteration. Conditioned on this network, we can attempt to learn its
-underly structure. This is the approach taken
-by~\citet{stevenson2009bayesian}. The simplest way to approximate the
-network is by summing the cross-correlation of the spike trains for
-a sequence of time lags. A more accurate and only slightly more expensive
-approach is to fit a standard GLM to the spike train using a
-sparsity-inducing regularization penalty. As the number of time bins
-in our dataset grows, the standard GLM will yield networks that
-approach the networks learned via our fully Bayesian method, since the
-effect of the prior is limited in the large-data regime. However, in
-modern recordings the number of time bins and the number of neurons
-are often comparable, in which case a well-informed prior can
-substantially improve inference results.
-
-While these methods yield matrices of functional weights, we must
-then threshold these matrices to obtain a sparse functional network.
-For cross-correlation, there is no clear way to set this threshold,
-so we must instead try multiple values. A standard GLM with
-an $L_1$ penalty will yield networks with weights that are exactly
-zero. However, we must then set the regularization parameter that
-governs this threshold. In practice, this requires fitting multiple
-networks and evaluating them with cross-validation. Eventually,
-the cost of this approach becomes comparable to that of our
-fully Bayesian procedure.
-
+Moreover, our results in Section~\ref{sec:advantages} show that 
+separating the problem of inferring the network and discovering 
+its latent structure may yield to inferior results. This is 
+particularly common for large neural populations, where there is 
+substantial posterior uncertainty. 
 In practice, we initialize our method with a standard GLM and
 find that a small number of iterations of our MCMC algorithm
 can yield large improvements in the predictive likelihood of our
@@ -1505,12 +1529,39 @@ weakly supported by the data, but which are very unlikely under the
 prior. This improvement in predictive likelihood is consistent with
 existing literature on Bayesian spike-and-slab modeling \cite{Mohamed-2012}.
 
+\sloppy
+An alternative approach is to consider models that explicitly limit 
+the dimensionality of the network. For example, if we know the 
+physical location of neurons (or their approximate location from 
+electrode number), we may rule out long-range connections. 
+Alternatively, we may constrain the weighted adjacency matrix to be 
+low rank, that is ${\bW \odot \bA \equiv \bU \bV^\trans}$, where~$\bU$
+and~$\bV$ are rank~${K < N}$. The effect is similar to that of 
+a linear dynamical system model~\cite{paninski2010new, macke2011empirical}. 
+Unfortunately, it is less clear how to incorporate interpretable 
+structure into this type of model, although see~\citet{buesing2014clustered}
+for some initial steps in this direction.
 
 
-\begin{itemize}
-\item Simple clustering and dimensionality reduction of spike train matrices
-\item Network models in other domains (Hawkes processes?)
-\item Generalized linear models
-\item Why be Bayesian?
-\item Polya-gamma augmentation
-\end{itemize}
+Finally, we have developed a Markov chain Monte Carlo inference algorithm,
+and while we have shown reasonable performance on recordings of 
+hundreds of neurons over tens of thousands of time bins, as we scale 
+to larger recordings alternative algorithms may be preferable. 
+When the complexity is dominated by the number of time bins, 
+stochastic variational inference (SVI)~\cite{Hoffman13} provides 
+an attractive alternative. Since the time bins are conditionally 
+independent given the network, we can get unbiased estimates of 
+sufficient statistics from \textit{mini-batches} of time bins
+and use them to inform stochastic mean field updates. 
+While we have not derived this mean field algorithm here, it is 
+relatively straightforward to derive these algorithms for 
+\polyagamma augmented models~\cite{Pillow2012, Zhou2012}. 
+Still, the limiting factor will often be the number of neurons, 
+in which case SVI is not immediately applicable. Developing 
+approximate inference algorithms that only consider subsets of neurons is 
+an active area of research~\cite{soudry2015efficient}. 
+
+\subsection{Relating circuit structure to stimuli and behavior}
+\TODO{Can we automate the task of relating the inferred latent structure to
+simultaneously recorded, but potentially high-dimensional, measurements of 
+the environment or the animal's behavior?}
