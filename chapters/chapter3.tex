@@ -105,7 +105,7 @@ and interpretable patterns on the basis of neural activity alone.
     \vspace{-.25in}
     \includegraphics[width=\textwidth]{figures/ch3/new_clustered_embedded_neurons}
     \label{fig:fig1_network}
-  \end{subfigure}
+ \end{subfigure}
    \begin{subfigure}[b]{1.3in}
      \centering
      \caption{}
@@ -128,7 +128,8 @@ and interpretable patterns on the basis of neural activity alone.
      \label{fig:fig1_fluorescence}
    \end{subfigure}
    \vspace{-.2in}
-   \caption{Components of the generative model. 
+   \caption[Components of the network GLM]{
+     Components of the generative model. 
      \textbf{(a)} Each neuron is endowed with latent variables, like 
      locations in space and discrete types (illustrated with different colors).
      These variables determine the probability of connections and the 
@@ -270,13 +271,10 @@ learning~\cite{Mitchell1988}.
     \centering
     \includegraphics[width=\textwidth]{figures/ch3/Distance-Distance.pdf}
   \end{subfigure}
-<<<<<<< HEAD
   \\
   \vspace{-.1in}
-  \caption{\textit{Example networks drawn from the prior for different combinations of weight and adjacency model.} Each row corresponds to a weight model (Gaussian, stochastic block model (SBM), or latent distance model) with a fixed set of weights, and each column corresponds to an adjacency model (dense, Bernoulli, SBM, or latent distance model) with a fixed sparsity pattern. In SBMs, nodes are sorted by class; in distance models, nodes are sorted by first coordinate of the location. For SBMs, black lines denote class boundaries. }
-  \label{fig:networks}
-=======
-  \caption{Example network models. Each row corresponds to a fixed weight matrix,~$\bW$, 
+  \caption[Examples of network models]{Example network models.
+    Each row corresponds to a fixed weight matrix,~$\bW$, 
     and each column corresponds to a fixed adjacency matrix,~$\bA$. The panels show 
     the elementwise product of the two. In the left column, the adjacency matrix is 
     dense, i.e.~$A_{n \from m} \equiv 1$ for all pairs. Thus the left column shows
@@ -292,7 +290,6 @@ learning~\cite{Mitchell1988}.
     decrease as a function of distance, whcih leads to the banded structure.
     independent Gaussian model}
   \label{fig:network_models}
->>>>>>> 62b3cc244382e27c6bad803d5e55a29539f364b0
 \end{figure}
 
 Figure~\ref{fig:network_models} shows how a variety of networks can be 
@@ -337,6 +334,7 @@ recovers these latent representations given only the neural spike trains,
 without any knowledge of the stimulus or the true location.
 
 \subsection{Retinal Ganglion Cells}
+\label{sec:rgc}
 
 \begin{figure}[t!]
   \centering
@@ -389,7 +387,9 @@ without any knowledge of the stimulus or the true location.
     \label{fig:rgc_mu}
   \end{subfigure}
   \vspace{-2em}
-  \caption{Retinal ganglion cell types and locations can be inferred
+  \caption[Retinal ganglion cell types and locations inferred
+    from spike trains alone]
+          {Retinal ganglion cell types and locations can be inferred
     from spike trains alone.
     \textbf{(a)} The combined distance model and block model yields the highest predictive log likelihood (units: nats/spike), compared to other combinations of adjacency models (groups of bars) and weight models (\textit{blue}: latent distance weight model, \textit{yellow}: stochastic block model for weights, \textit{green}: Gaussian weights).
     \textbf{(b)} The inferred distances under the latent distance model are highly correlated with the true distances, as measured by stimulus sensitivity, whereas inferred embeddings under PCA are not.
@@ -485,7 +485,7 @@ spike trains recorded from deeper brain areas, where traditional
 stimulus-response correlations are less valuable.
 
 \subsection{Hippocampal Place Cells}
-
+\label{sec:hipp}
 
 \begin{figure}[t!]
   \centering
@@ -541,7 +541,8 @@ stimulus-response correlations are less valuable.
     \label{fig:hipp_conn}
   \end{subfigure}
   \vspace{-2em}
-  \caption{Hippocampal place fields are inferred from population spike trains.
+  \caption[Hippocampal place fields inferred from spike trains]{
+    Hippocampal place fields are inferred from population spike trains.
     }
   \label{fig:hipp}
 \end{figure}
@@ -604,6 +605,176 @@ neural activity, without any access to the location. Instead,
 these representations arise from the neural activity alone.
 
 \subsection{Synthetic Data}
+\label{sec:synthetic}
+
+To assess the robustness and scalability of our framework, we apply
+our methods to simulated data with known ground truth.  First, we show
+that our Bayesian approach can recover structure in larger populations
+of neurons than those studied above.  Moreover, we show that our
+approach outperforms alternative methods that separate the problems of
+finding the network and discovering the underlying structure. Then, we
+show that for sparse networks, our approach only scales quadratically
+with the number of neurons --- a significant improvement over na\"ive
+methods that incur an additional~$O(N^3)$ cost per potential connection.
+
+
+\begin{figure}[t!]
+  \centering
+  \vspace{-.2in}
+  \begin{subfigure}[b]{1.8in}
+    \centering
+    \caption{}
+    \vspace{-.25in}
+    \includegraphics[width=\textwidth]{figures/ch3/synth_rgc_true_network.pdf}
+    \label{fig:synth_rgc_true_network}
+  \end{subfigure}
+  ~
+  \begin{subfigure}[b]{1.8in}
+    \centering
+    \caption{}
+    \vspace{-.25in}
+    \includegraphics[width=\textwidth]{figures/ch3/synth_rgc_pred_ll.pdf}
+    \label{fig:synth_rgc_predll}
+  \end{subfigure}
+  ~
+  \begin{subfigure}[b]{1.8in}
+    \centering
+    \caption{}
+    \vspace{-.25in}
+    \includegraphics[width=\textwidth]{figures/ch3/synth_rgc_pairwise_distance_scatter.pdf}
+    \label{fig:synth_rgc_pairwise_dists}
+  \end{subfigure}
+  \caption[Synthetic RGC results]{Synthetic results based on the
+    retinal ganglion cell population studied above.
+    \textbf{(a)} Locations of the 200 neurons (100 \textit{on} and 100 \textit{off} cells) along with a subset of the connections. For clarity, 15\% of the connections are randomly chosen. Though the network is not symmetric, arrowheads are dropped for clarity.
+    \textbf{(b)} Predictive likelihood on 10,000 held-out time bins as a function of the number of time bins in the training dataset. ``MCMC'' denotes our Bayesian approach with a latent distance adjacency model and a SBM weight model. ``MAP'' denotes the $L_1$-regularized standard GLM.
+    \textbf{(c)} Inferred locations found by our model (MCMC) and by fitting a latent distance model to the thresholded standard GLM network (MAP).
+  }
+  \label{fig:synth_rgc}
+\end{figure}
+
+
+For these analyses, we simulate a population of 200 neurons with
+structure that mimics that of the retinal ganglion cell population
+analyzed in Section~\ref{sec:rgc}. Figure~\ref{fig:synth_rgc_true_network}
+illustrates the underlying network. As before, we have \textit{on}
+cells and \textit{off} cells, each centered at a location in the 2D
+retinal plane. Nearby cells are more likely to be functionally
+connected, and cells of the same type will have excitatory influence
+on one another while cells of different types will inhibit one
+another. Again, these functional connections reflect correlations and
+anticorrelations between cells that arise from common input. We
+simulate 60,000 time bins and tune the network parameters such that if
+each time bin were one millisecond, the firing rates would range from 10Hz to
+70Hz with a mean of about 30Hz.  Rather than simulating an
+external white noise stimulus, here we simulate spontaneous activity
+of the network.
+
+\TODO{update this when we have all the results}
+Since we know the generative model that gave rise to the data, we can
+quantify the improvement from using our fully Bayesian approach
+rather than a standard GLM, and compare these improvements to the
+upper bound provided by the true model. Figure~\ref{fig:synth_rgc_predll}
+shows the predictive log likelihood for 10,000 bins of held-out data as
+a function of the number of time bins of training data. For shorter
+training datasets, our Bayesian approach yields considerably higher
+predictive likelihood than the standard,~$L_1$-regularized GLM. As
+the length of the training data increases, both our method and
+the standard GLM improve, and ultimately approach the likelihood of
+thet true model that generated the data. With more data, the network
+inference is driven less by the prior and more by the observations.
+Thus, in the limit of infinite data,the GLM will converge to the same
+network, and hence the same predictive likelihood, as our Bayesian method.
+However, with hundreds of neurons and tens of thousands of time bins,
+these results suggest that the Bayesian approach can yield substantial
+benefits.
+
+Rather than simultaneously fitting the network and the underlying
+latent variables, one may instead fit the network with an $L_1$-regularized
+GLM and \textit{then} fit a probabilistic network model to the GLM
+connection weights. This is the approach taken by~\citet{stevenson2009bayesian}.
+The advantage is that the network is only fit once, and since this
+is usually the most expensive aspect of inference, it can save considerable
+time. However, when the data
+is limited, both the network and the latent variables are uncertain.
+Our Bayesian approach finds joint assignments with high posterior probability,
+whereas the standard GLM finds a single network that does not account for
+prior beliefs about structure underlying the network.
+In this example, subsequently fitting a latent distance model to the
+adjacency matrix of a thresholded GLM network finds an embedding
+that is somewhat like the true locations, but is vastly inferior to
+the embedding found by our Bayesian approach. This is illustrated
+by the increased correlation between true and inferred pairwise
+distances under the joint, Bayesian approach, as shown in 
+Figure~\ref{fig:synth_rgc_pairwise_dists}.
+
+\begin{figure}[t!]
+  \centering
+  \vspace{-.2in}
+  \begin{subfigure}[b]{1.8in}
+    \centering
+    \caption{}
+    \vspace{-.25in}
+    \includegraphics[width=\textwidth]{figures/ch3/synth_rgc_true_conn.pdf}
+    \label{fig:synth_rgc_true_conn}
+  \end{subfigure}
+  ~
+  \begin{subfigure}[b]{1.8in}
+    \centering
+    \caption{}
+    \vspace{-.25in}
+    \includegraphics[width=\textwidth]{figures/ch3/synth_rgc_mcmc_conn.pdf}
+    \label{fig:synth_rgc_mcmc_conn}
+  \end{subfigure}
+  ~
+  \begin{subfigure}[b]{1.8in}
+    \centering
+    \caption{}
+    \vspace{-.25in}
+    \includegraphics[width=\textwidth]{figures/ch3/synth_rgc_bfgs_conn.pdf}
+    \label{fig:synth_rgc_bfgs_conn}
+  \end{subfigure} \\
+  \begin{subfigure}[b]{1.8in}
+    \centering
+    \caption{}
+    \vspace{-.25in}
+    \includegraphics[width=\textwidth]{figures/ch3/synth_rgc_true_sparsity.pdf}
+    \label{fig:synth_rgc_true_sparsity}
+  \end{subfigure}
+  ~
+  \begin{subfigure}[b]{1.8in}
+    \centering
+    \caption{}
+    \vspace{-.25in}
+    \includegraphics[width=\textwidth]{figures/ch3/synth_rgc_mcmc_prob_conn.pdf}
+    \label{fig:synth_rgc_mcmc_prob_conn}
+  \end{subfigure}
+  ~
+  \begin{subfigure}[b]{1.8in}
+    \centering
+    \caption{}
+    \vspace{-.25in}
+    \includegraphics[width=\textwidth]{figures/ch3/synth_rgc_bfgs_prob_conn.pdf}
+    \label{fig:synth_rgc_bfgs_prob_conn}
+  \end{subfigure}
+  \caption[Inferred connection probabilities for synthetic RGC data]{
+    \textbf{(a)} Weighted adjacency matrix for the synthetic RGC network shown in Fig.~\ref{fig:synth_rgc_true_network}.
+    \textbf{(b)} Inferred connection probability found by our fully Bayesian approach.
+    \textbf{(c)} Inferred connection probability found by fitting a latent distance model to the thresholded network from the MAP estimate of an~$L_1$-regularized GLM.
+  }
+  \label{fig:synth_rgc_prob_conn}
+\end{figure}
+
+
+Scalability plots:
+\begin{enumerate}
+\item Wall-clock time per iteration (broken down into time spent updating augmentation variables, updating network, and updating latent variables) as a function of:
+  \begin{enumerate}
+  \item Number of neurons (fixed sparsity)
+  \item Degree of sparsity (fixed number of neurons)
+  \item Number of time bins
+  \end{enumerate}
+\end{enumerate}
 
 \TODO{
 How scalable is this approach?
@@ -648,6 +819,9 @@ which has the property~$\sigma(-\psi) = 1-\sigma(\psi)$.
   Binomial & ${\nu \choose s} \, \sigma(\psi)^s \, \sigma(-\psi)^{\nu-s}$
   & ${\nu \choose s} \,\frac{(e^\psi)^s}{(1+e^\psi)^\nu}$
   & $\nu \sigma(\psi)$ & $\nu \sigma(\psi) \, \sigma(-\psi)$ \\
+  Poisson (Exp) & $\frac{1}{s!} e^{-e^\psi} e^{\psi  s}$
+  & ---
+  & $e^\psi$ & $e^\psi$ \\
   Neg. Binomial & ${\nu + s -1 \choose s} \, \sigma(\psi)^s \, \sigma(-\psi)^{\nu}$
   & ${\nu +s - 1 \choose s} \,\frac{(e^\psi)^s}{(1+e^\psi)^{\nu+s}}$
   & $\nu e^\psi$ & $\nu e^\psi / \sigma(-\psi)$ \\
@@ -656,6 +830,7 @@ which has the property~$\sigma(-\psi) = 1-\sigma(\psi)$.
 \caption{List of observation distributions.}
 \label{tab:obs_models}
 \end{table}
+
 
 We consider the four observation models shown in Table~\ref{tab:obs_models}.
 The Gaussian model assumes~$s_{t,n}$ is real-valued, and may be
@@ -972,7 +1147,13 @@ a new value of~$a_{n \from m}$, fixing the values of~$a_{n \from m'}$
 for~$m' \neq m$ and integrating out the value of~$\bw_n$.
 To do so, we simply evaluate the marginal probability in Eq.~\ref{eq:a_conditional}
 for both values of~$a_{n \from m}$ and resample accordingly.
-This is a valid Gibbs step. Once~$\ba_n$ has been completely
+%This is a valid Gibbs step.
+Moreover, note that if~$a_{n \from m}$, the log determinant and the quadratic
+form in the numerator of Eq.~\ref{eq:a_conditional} will cancel with the
+corresponding term in the denominator. Thus, if~$\bA$ is $d$-sparse (i.e. 
+each neuron  has at most~$d$ incoming edges) evaluating
+the marginal probability of~$\ba_n$ has complexity an~$O(d^3)$.
+Once~$\ba_n$ has been completely
 resampled, we can sample a new value of~$\bw_n$ from its multivariate
 Gaussian conditional distribution, given by~Eq.~\ref{eq:w_conditional}.
 
@@ -1175,7 +1356,7 @@ have inferred different latent variables and parameters for
 the training population. We assume that these effects are small,
 i.e. we would find similar class assignments even without observing~$n^*$.
 This is reasonable if we are only considering a single neuron~$n^*$
-and the training population is reasonably large, say~$N \geq 20$.
+and the training population is relatively large.
 In fact, this assumption is fundamental to the generalized
 linear model. Without it, the inferred weights and predictions
 would be highly sensitive to the addition of a single neuron.
@@ -1183,6 +1364,62 @@ In practice this is rarely the case.
 
 
 \section{Discussion}
+We have shown that the functional networks underlying
+spike trains may provide unique insight into the low-dimensional
+structure of neural populations.
+
+\TODO{Lead in...}
+
+
+\subsection{Approximate Methods}
+For large networks, the bulk of the running time is spent 
+sampling the network variables,~$\bA$ and~$\bW$. As the number of
+neurons grows, this complexity scales as~$O(N^2)$. To
+what extent can we minimize this complexity? As we have shown,
+na\"ively applying clustering algorithms and PCA directly
+to spike trains does not yield meaningful features. These
+results can be somewhat improved by smoothing the spike
+trains (e.g. by taking a moving average), but they are still
+fundamentally limited when the low-dimensional structure
+lies in the pattern of sparsity in the functional network. 
+
+We may, however, resort to approximate methods that only estimate the
+functional network once, rather than resampling it every
+iteration. Conditioned on this network, we can attempt to learn its
+underly structure. This is the approach taken
+by~\citet{stevenson2009bayesian}. The simplest way to approximate the
+network is by summing the cross-correlation of the spike trains for
+a sequence of time lags. A more accurate and only slightly more expensive
+approach is to fit a standard GLM to the spike train using a
+sparsity-inducing regularization penalty. As the number of time bins
+in our dataset grows, the standard GLM will yield networks that
+approach the networks learned via our fully Bayesian method, since the
+effect of the prior is limited in the large-data regime. However, in
+modern recordings the number of time bins and the number of neurons
+are often comparable, in which case a well-informed prior can
+substantially improve inference results.
+
+While these methods yield matrices of functional weights, we must
+then threshold these matrices to obtain a sparse functional network.
+For cross-correlation, there is no clear way to set this threshold,
+so we must instead try multiple values. A standard GLM with
+an $L_1$ penalty will yield networks with weights that are exactly
+zero. However, we must then set the regularization parameter that
+governs this threshold. In practice, this requires fitting multiple
+networks and evaluating them with cross-validation. Eventually,
+the cost of this approach becomes comparable to that of our
+fully Bayesian procedure.
+
+In practice, we initialize our method with a standard GLM and
+find that a small number of iterations of our MCMC algorithm
+can yield large improvements in the predictive likelihood of our
+model. These improvements come from pruning connections that are
+weakly supported by the data, but which are very unlikely under the
+prior. This improvement in predictive likelihood is consistent with
+existing literature on Bayesian spike-and-slab modeling \cite{Mohamed-2012}.
+
+
+
 \begin{itemize}
 \item Simple clustering and dimensionality reduction of spike train matrices
 \item Network models in other domains (Hawkes processes?)
