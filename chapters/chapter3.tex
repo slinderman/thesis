@@ -26,15 +26,14 @@
 %recover interesting latent features like neural types and locations.
 %I will submit a journal version of this paper as soon as possible.
 
-%\section{Abstract} 
-%We develop a novel method for the unsupervised discovery of interpretable latent structure underlying neural recordings. 
-%Rather than directly clustering or factorizing measured activity, we propose a generative model that links latent clusters and features of neurons to measured activity via an intermediate functional network. 
-%Thus, latent structure is defined in terms of how neurons interact with one another rather than how they behave. 
-%To discover the most appropriate structural form, we propose a fully-Bayesian inference algorithm that enables efficient inference and principled model comparison. 
-%We demonstrate the efficacy of this approach on synthetic data and simultaneously recorded multi-neuronal spike trains.
+We develop a novel method for the unsupervised discovery of interpretable latent structure underlying neural recordings. 
+Rather than directly clustering or factorizing measured activity, we propose a generative model that links latent clusters and features of neurons to measured activity via an intermediate functional network. 
+Thus, latent structure is defined in terms of patterns of interaction rather than patterns of activity. 
+To discover the most appropriate structural form, we propose a fully-Bayesian inference algorithm that enables efficient inference and principled model comparison. 
+We demonstrate the efficacy of this approach on simultaneously recorded multi-neuronal spike trains and synthetic data.
 
 
-%\section{Introduction}
+\section{Introduction}
 With the advent of novel technologies for large-scale recording of
 neural activity~\cite{grewe2010high, prevedel2014simultaneous,
   churchland2012neural, holekamp2008fast, ahrens2013whole,
@@ -199,25 +198,25 @@ learning~\cite{Mitchell1988}.
   \hspace{1em}
   \begin{subfigure}[b]{1.25in}
     \centering
-    \includegraphics[width=\textwidth]{figures/ch3/Dense-Gaussian.pdf}
+    \includegraphics[width=\textwidth]{figures/ch3/Dense-Gaussian.png}
   \end{subfigure}
   ~
   \hspace{-.1in}
   \begin{subfigure}[b]{1.10in}
     \centering
-    \includegraphics[width=\textwidth]{figures/ch3/Bernoulli-Gaussian.pdf}
+    \includegraphics[width=\textwidth]{figures/ch3/Bernoulli-Gaussian.png}
   \end{subfigure}
   ~
   \hspace{-.1in}
   \begin{subfigure}[b]{1.10in}
     \centering
-    \includegraphics[width=\textwidth]{figures/ch3/SBM-Gaussian.pdf}
+    \includegraphics[width=\textwidth]{figures/ch3/SBM-Gaussian.png}
   \end{subfigure}
   ~
   \hspace{-.1in}
   \begin{subfigure}[b]{1.10in}
     \centering
-    \includegraphics[width=\textwidth]{figures/ch3/Distance-Gaussian.pdf}
+    \includegraphics[width=\textwidth]{figures/ch3/Distance-Gaussian.png}
   \end{subfigure}
   \\
   \vspace{-.1in}
@@ -225,25 +224,25 @@ learning~\cite{Mitchell1988}.
   \rotatebox{90}{\textit{~~~~~Weight Model}}
   \begin{subfigure}[b]{1.25in}
     \centering
-    \includegraphics[width=\textwidth]{figures/ch3/Dense-SBM.pdf}
+    \includegraphics[width=\textwidth]{figures/ch3/Dense-SBM.png}
   \end{subfigure}
   ~
   \hspace{-.1in}
   \begin{subfigure}[b]{1.10in}
     \centering
-    \includegraphics[width=\textwidth]{figures/ch3/Bernoulli-SBM.pdf}
+    \includegraphics[width=\textwidth]{figures/ch3/Bernoulli-SBM.png}
   \end{subfigure}
   ~
   \hspace{-.1in}
   \begin{subfigure}[b]{1.10in}
     \centering
-    \includegraphics[width=\textwidth]{figures/ch3/SBM-SBM.pdf}
+    \includegraphics[width=\textwidth]{figures/ch3/SBM-SBM.png}
   \end{subfigure}
   ~
   \hspace{-.1in}
   \begin{subfigure}[b]{1.10in}
     \centering
-    \includegraphics[width=\textwidth]{figures/ch3/Distance-SBM.pdf}
+    \includegraphics[width=\textwidth]{figures/ch3/Distance-SBM.png}
   \end{subfigure}
   \\
   % Distance row
@@ -251,25 +250,25 @@ learning~\cite{Mitchell1988}.
   \hspace{1em}
   \begin{subfigure}[b]{1.25in}
     \centering
-    \includegraphics[width=\textwidth]{figures/ch3/Dense-Distance.pdf}
+    \includegraphics[width=\textwidth]{figures/ch3/Dense-Distance.png}
   \end{subfigure}
   ~
   \hspace{-.1in}
   \begin{subfigure}[b]{1.10in}
     \centering
-    \includegraphics[width=\textwidth]{figures/ch3/Bernoulli-Distance.pdf}
+    \includegraphics[width=\textwidth]{figures/ch3/Bernoulli-Distance.png}
   \end{subfigure}
   ~
   \hspace{-.1in}
   \begin{subfigure}[b]{1.10in}
     \centering
-    \includegraphics[width=\textwidth]{figures/ch3/SBM-Distance.pdf}
+    \includegraphics[width=\textwidth]{figures/ch3/SBM-Distance.png}
   \end{subfigure}
   ~
   \hspace{-.1in}
   \begin{subfigure}[b]{1.10in}
     \centering
-    \includegraphics[width=\textwidth]{figures/ch3/Distance-Distance.pdf}
+    \includegraphics[width=\textwidth]{figures/ch3/Distance-Distance.png}
   \end{subfigure}
   \\
   \vspace{-.1in}
@@ -277,7 +276,7 @@ learning~\cite{Mitchell1988}.
     Each row corresponds to a fixed weight matrix,~$\bW$, 
     and each column corresponds to a fixed adjacency matrix,~$\bA$. The panels show 
     the elementwise product of the two. In the left column, the adjacency matrix is 
-    dense, i.e.~$A_{n \from m} \equiv 1$ for all pairs. Thus the left column shows
+    dense, i.e.~$a_{n \from m} \equiv 1$ for all pairs. Thus the left column shows
     just the matrix~$\bW$. Color denotes the weight (blue is negative, red is postiive).
     The second column shows an independent Bernoulli adjacency 
     model in which each connection is present with the same probability. In the SBM, 
@@ -618,6 +617,7 @@ with the number of neurons --- a significant improvement over na\"ive
 methods that incur an additional~$O(N^3)$ cost per potential connection.
 
 
+\subsubsection{Advantages of being Bayesian}
 \begin{figure}[t!]
   \centering
   \vspace{-.2in}
@@ -765,22 +765,108 @@ Figure~\ref{fig:synth_rgc_pairwise_dists}.
   \label{fig:synth_rgc_prob_conn}
 \end{figure}
 
+Figure~\ref{fig:synth_rgc_prob_conn} further illustrates this
+point. Here, the true network is shown as a weighted adjacency matrix
+(Fig.~\ref{fig:synth_rgc_true_conn}), along with its binary adjacency
+matrix (Fig.~\ref{fig:synth_rgc_true_sparsity}). The inferred network
+and connection probabilities from our fully Bayesian method with a
+latent distance model prior are shown in
+Fig.~\ref{fig:synth_rgc_mcmc_conn} and
+Fig.~\ref{fig:synth_rgc_mcmc_prob_conn}, respectively. Our MCMC
+algorithm does a good job recovering the underlying locations, which
+give rise to the distance-dependent connection probabilities.  By
+contrast, the MAP network found via an $L_1$-regularized standard GLM
+is considerably noisier (Fig.~\ref{fig:synth_rgc_bfgs_conn}), since it
+knows nothing of the underlying distance dependent connectivity. A
+latent distance model fit to a thresholded copy of this network fails
+to capture the distance dependence
+(Fig.~\ref{fig:synth_rgc_bfgs_prob_conn}), since the spurious
+connections force otherwise well-separated neurons to lie close in the
+embedding. By jointly fitting the network and the latent locations, we
+weed out these spurious connections.
 
-Scalability plots:
-\begin{enumerate}
-\item Wall-clock time per iteration (broken down into time spent updating augmentation variables, updating network, and updating latent variables) as a function of:
-  \begin{enumerate}
-  \item Number of neurons (fixed sparsity)
-  \item Degree of sparsity (fixed number of neurons)
-  \item Number of time bins
-  \end{enumerate}
-\end{enumerate}
+\subsubsection{Scalability Analysis}
 
-\TODO{
-How scalable is this approach?
-When would simpler methods suffice?
-Could we just fit a GLM and then model its weights?
-}
+\begin{figure}[t!]
+  \centering
+  \vspace{-.2in}
+  \begin{subfigure}[b]{1.81in}
+    \centering
+    \caption{}
+    \vspace{-.25in}
+    \includegraphics[width=\textwidth]{figures/ch3/runtime_vs_T.pdf}
+    \label{fig:runtime_vs_T}
+  \end{subfigure}
+  ~
+  \begin{subfigure}[b]{2.17in}
+    \centering
+    \caption{}
+    \vspace{-.25in}
+    \includegraphics[width=\textwidth]{figures/ch3/runtime_vs_N.pdf}
+    \label{fig:runtime_vs_N}
+  \end{subfigure}
+  ~
+  \begin{subfigure}[b]{1.27in}
+    \centering
+    \caption{}
+    \vspace{-.25in}
+    \includegraphics[width=\textwidth]{figures/ch3/runtime_vs_rho.pdf}
+    \label{fig:runtime_vs_rho}
+  \end{subfigure}
+  \vspace{-2em}
+  \caption[Scalability of the proposed Bayesian inference algorithm]{
+    Scalability of our inference algorithm as a function of: 
+    \textbf{(a)} the number of time bins,~$T$;
+    \textbf{(b)} the number of neurons,~$N$; and
+    \textbf{(c)} the average sparsity of the network,~$\rho$.
+    The complexity grows linear with~$T$ and quadratically with~$N$
+    (for fixed~$\rho$). The cost is broken down into the cost of
+    resampling the \polyagamma auxiliary variables (``Obs.'') and
+    the cost of resampling the sparse network (``Net.''). Color
+    scheme shared across all panels.
+  }
+  \label{fig:scalability}
+\end{figure}
+
+Finally, we address the scalability of our Bayesian inference algorithms.
+With large-scale recordings becoming the norm, efficiency is paramount.
+There are three major parameters that govern the complexity of inference:
+the number of time bins,~$T$; the number of neurons,~$N$; and the level
+of sparsity,~$\rho$. The natural unit of measure is the wall-clock time
+required to perform one iteration of our MCMC algorithm. The following
+experiments were run on a quad-core Intel i5 with 6GB of RAM. Since the
+core operations consist of parallelized sampling code and standard linear
+algebra, performance scales almost linearly in the number of cores. We
+breakdown the wall-clock time into time spent updating the auxiliary
+variables of the observation model and time spent updating the network.
+Resampling the latent variables is a negligible cost.
+
+The wall clock time scales linearly with~$T$, as shown in
+Figure~\ref{fig:runtime_vs_T}. As we will show in
+Section~\ref{sec:methods}, the observation model contains~${NT}$
+auxiliary variables, each of which must be resampled. Additionally,
+each neuron must compute its sufficient statistics, which involves a
+rectangular matrix multiplication costing~$O(TN^2)$ time.
+
+Since there are~$O(N^2)$ possible connections in a network of~$N$
+neurons, there is no way to circumvent at least a quadratic cost
+in~$N$ (unless some connections can be ruled out \textit{a priori}).
+Figure~\ref{fig:runtime_vs_N} shows that this quadratic penalty is
+indeed evident. The cost of updating the auxiliary variables is only
+linear in~$N$, but the cost of updating the network is quadratic. In
+Section~\ref{sec:discussion}, we discuss potential strategies for
+ruling out connections and limiting this cost.
+
+For each potential connection, the cost per iteration can also depend
+on~$N$ in the worst case. Fortunately, the complexity of our collapsed
+Gibbs sampling algorithm (described in Section~\ref{sec:methods}) only
+depends on the number of incident connections received by each neuron,~$d$.
+Specifically, we must invert a~$d \times d$ matrix, which incurs an~$O(d^3)$
+cost. Figure~\ref{fig:runtime_vs_rho} illustrates this for a Bernoulli network
+with~$N=200$ neurons. The expected number of incoming connections
+is related to the probability of connection by~$\bbE[d]=\rho N$. If we
+increased the number of neurons but kept the average in-degree constant,
+the total cost would scale only quadratically with~$N$.
 
 \section{Methods}
 \label{sec:methods}
@@ -913,12 +999,12 @@ formulation, all weights are present, that is,~${a_{n \from m} \equiv 1}$.
 
 Consider a model with one basis function ($K=1$) defined
 by,~${\phi_{1,\Delta t} = e^{-\Delta t/\tau}}$.
-Then~$\widehat{s}_{t,m,1}$ is a weighted sum of spikes in the
+Then~$\widehat{s}_{t,m}^{(1)}$ is a weighted sum of spikes in the
 window~$[t-\Delta t_{\mathsf{max}},t-1]$, where the weights decay
 according to an exponential function with time constant~$\tau$.  
-If~${A_{n \from m}=1}$, indicating a
+If~${a_{n \from m}=1}$, indicating a
 connection from neuron~$m$ to neuron~$n$, and
-the weight,~$W_{n \from m,1}$, is positive, the influence will be
+the weight,~$w_{n \from m}^{(1)}$, is positive, the influence will be
 excitatory. If it is negative, the effect will be inhibitory.
 Together, the weights~$\bW$ define a functional \emph{network} of
 interactions.
@@ -986,7 +1072,7 @@ which we describe next.
 \begin{table}
 \begin{center}
 \begin{tabular}{c|c|c}
-Name & Latent Variable & $p(A_{n \from m≈})$ \\
+Name & Latent Variable & $p(a_{n \from m})$ \\
 \hline
 Dense Model & --- & $1$ \\
 Bernoulli Model & --- & $\rho$ \\
@@ -1364,6 +1450,7 @@ In practice this is rarely the case.
 
 
 \section{Discussion}
+\label{sec:discussion}
 We have shown that the functional networks underlying
 spike trains may provide unique insight into the low-dimensional
 structure of neural populations.
