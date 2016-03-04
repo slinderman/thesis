@@ -371,13 +371,67 @@ still hold.
   than~$\epsilon$ in total variation distance from~$\bpi$ 
   with confidence~$1-\delta$ if,
   \begin{align}
-    \rho \gamma_t R \geq \frac{1}{1-e^{-2\epsilon^2}} \ln \frac{2L}{\delta}.
+    \gamma_t R \rho &\geq \lambda^*,
+    %\\
+    %\lambda^* &\leq \frac{1}{1-e^{-2\epsilon^2}} \ln \frac{2L}{\delta}.
   \end{align}
+  for~$\lambda^*$ given in Theorem~\ref{thm:rate_bounds}.
 \end{corollary}
 
 \begin{proof}
   Let~$A_{\ell,r} \in \{0,1\}$ denote whether or not the~$(\ell,r)$-th neuron 
-  is included in the observed subset. The distribution on the total number 
+  is included in the observed subset.
+  
+  Analyzing the exact conditional distribution of~$M_{t, \ell}$
+  given~$M_t$ is tricky for two reasons. First, we might not see any
+  neurons representing location~$\ell$.  However, when~$R\rho \gg 0$,
+  the probability of not seeing any neurons for a given location is
+  negligible. Second, whereas in the proofs above we saw exactly the
+  same number of neurons for each location, here we may be biased by
+  seeing~$r$ neurons for one location and~$r'$ neurons for another. To
+  handle these complications, we first study the probability of error
+  in the case where~$\sum_{r} A_{\ell, r}$ is equal to its mean,
+  $\bbE[\sum_{r} A_{\ell, r}] = R\rho$. Then,
+  \begin{align}
+    M_{t, \ell} &\sim \distPoisson(\gamma_t \sum_{r=1}^R \pi_{t, \ell} A_{\ell, r}) \\
+    &= \distPoisson(  \gamma_t \pi_{t, \ell} R \rho)
+  \end{align}
+  In this case, the same calculations as above carry through to yield
+  the stated result. 
+
+  \sloppy
+  Next, we study the case where~$\sum_{r} A_{\ell,r}$ is not equal to
+  its mean. Instead, suppose~${\sum_{r} A_{\ell, r}=R \widetilde{\rho}_\ell}$
+  This can be viewed as a change in
+  the probability distribution that is being represented. Instead of
+  representing~$\bpi_t$, this population is now encoding~$\widetilde{\bpi}_t$,
+  with,
+  \begin{align}
+    \widetilde{\pi}_{t, \ell} &= \frac{\pi_{t, \ell} \widetilde{\rho}_\ell}{Z}\\
+    Z &= \sum_{\ell'} \pi_{t, \ell'} \widetilde{\rho}_{\ell'}
+  \end{align}
+
+  Let~$\zeta = \widetilde{\pi}_{t, \ell} - \pi_{t, \ell}$. Then,
+  \begin{align}
+    \Pr(\widehat{\pi}_{t,\ell} - \pi_{t, \ell} > \epsilon \given M_t, \bA) &=
+    \Pr(\widehat{\pi}_{t, \ell} - \widetilde{\pi}_{t, \ell} +
+    \widetilde{\pi}_{t, \ell} - \pi_{t, \ell} > \epsilon \given M_t, \bA) \\
+    &= \Pr(\widehat{\pi}_{t, \ell} - \widetilde{\pi}_{t, \ell} > \epsilon - \zeta \given M_t, \bA)
+  \end{align}
+      
+  \begin{align}
+    &\Pr \left(M_{t, \ell} >
+    M_{t} \pi_{t, \ell}
+    \left(1 + \frac{\epsilon}{\pi_{t, \ell}} \right) \bigg| \, M_t \right)
+    \\
+    &\qquad= \Pr \left(M_{t, \ell} >
+    \bbE[M_t \given M_{t, \ell}] 
+    \left(\frac{M_{t} \pi_{t, \ell}}{\bbE[M_{t, \ell} \given M_{t}]} \right)
+    \left(1 + \frac{\epsilon}{\pi_{t, \ell}} \right) \bigg| \,M_t \right)
+  \end{align}
+
+  
+  The distribution on the total number 
   of observed spikes is,
   \begin{align}
     M_t \given \bA &\sim \distPoisson \left( \sum_\ell \sum_r \lambda_{t,\ell,r} A_{\ell, r} \right) \\
@@ -388,16 +442,41 @@ still hold.
   \begin{align}
     M_{t, \ell} \given M_t, \bA 
     &\sim \distBinomial \left( M_t, 
-      \frac{ \pi_{t, \ell} \sum_r A_{\ell, r}}
-      { \sum_{\ell'} \pi_{t, \ell'}  \sum_r A_{\ell', r}} \right) \\
-    &= \distBinomial \left( M_t,  
-      \frac{ \pi_{t, \ell} N_\ell}
-      { \sum_{\ell'} \pi_{t, \ell'} N_{\ell'}}  \right),
+      \frac{ \sum_r \pi_{t, \ell} A_{\ell, r}}
+      { \sum_{\ell'}  \sum_r  \pi_{t, \ell'} A_{\ell', r}} \right) \\
+      &= \distBinomial \left( M_t,
+      \frac{ \pi_{t, \ell} N_\ell}{ \sum_{\ell'}  \pi_{t, \ell'}N_{\ell'}}  \right),
   \end{align} 
-  where~$N_\ell=\sum_r A_{\ell, r}$ is the number of observed neurons that encode location~$\ell$.
-  Unfortunately, the expected value of~$\widehat{\pi}_{t, \ell}$ is undefined because there 
-  is a nonzero probability that~$N_\ell=0$ for all~$\ell$, which leads to an undefined 
-  fraction below,
+  where~$N_\ell=\sum_r A_{\ell, r}$ is the number of observed neurons
+  that encode location~$\ell$. Thus,
+  \begin{align}
+    \bbE[M_{t,\ell} \given M_t, \bA] &=
+    M_t  \, \pi_{t, \ell}
+    \left(\frac{ N_\ell}{ \sum_{\ell'}  \pi_{t, \ell'}N_{\ell'}}\right) \\
+    &= M_t \, \pi_{t, \ell} \, \xi_\ell,
+  \end{align}
+  where~$\xi_\ell$ measures the bias toward representing the~$\ell$-th component.
+  if~$N_\ell \equiv N$ for all~$\ell$, then~$\xi_\ell \equiv 1$. Note that it
+  is a function of the true probability distribution~$\bpi_t$. 
+  Assume that for all~$\ell$ we have $1 \leq N_\ell \leq R$. Then,
+  $\frac{1}{R} \leq \xi_\ell \leq R$.
+
+  \begin{align}
+    \Pr(\widehat{\pi}_{t, \ell} - \pi_{t,\ell}   &> \epsilon \given M_t, \bA) \\
+    &= \Pr(\widehat{\pi}_{t,\ell} - \pi_{t,\ell}  > \epsilon \given M_t, \bA) \\
+    &= \Pr \left(M_{t,\ell} > \frac{M_t \pi_{t, \ell} \xi_\ell}{\xi_\ell} \left(1+\frac{\epsilon}{\pi_{t, \ell}} \right) \, \bigg| \, M_t, \bA \right)  \\
+    &= \Pr \left(M_{t, \ell} > \bbE[M_{t,\ell} \given M_t, \bA] \left(
+    \frac{1}{\xi_\ell} \right) \left(1+\frac{\epsilon}{\pi_{t, \ell}}
+    \right) \right)
+%    \\
+%    &\leq \Pr \left(M_{t, \ell} > \bbE[M_{t,\ell} \given M_t, \bA]
+%    \left(1+\left(R-1 + \frac{R\epsilon}{\pi_{t, \ell}} \right) \right) \right).
+  \end{align}
+
+Since each edge is an independent Bernoulli
+  random variable,~$N_\ell \sim \distBinomial(R, \rho)$. 
+  
+  Plugging this in, we get,
   \begin{align}
     \bbE[\widehat{\pi}_{t, \ell}] &= \bbE_{\bA}\left[ \bbE_{M_t} \left[ \bbE_{M_{t, \ell}} \left[\frac{M_{t, \ell}}{M_t} \bigg| M_t, \bA \right] \right] \right] \\
     &= \bbE_{\bA}\left[ \bbE_{M_t} \left[ \frac{ M_t}{M_t} \times 
@@ -406,8 +485,17 @@ still hold.
     &= \bbE_{\bA}\left[ \frac{ \pi_{t, \ell} N_{\ell}}
       {\sum_{\ell'} \pi_{t, \ell'} N_{\ell'}} \right].
   \end{align}
+
+  Unfortunately, the expected value
+  of~$\widehat{\pi}_{t, \ell}$ is undefined because there is a nonzero
+  probability that~$N_\ell=0$ for all~$\ell$, which leads to an
+  undefined fraction below,
   
   todo: what can we say instead?
+
+  If we assume the spike count from one subpopulation is a small
+  fraction of the total, we can almost claim independence. This,
+  however, assumes that the probability vector is never one-hot. 
 
 \end{proof}
 
