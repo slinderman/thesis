@@ -14,6 +14,508 @@ The probabilistic model is learned through experience, supervised
 training, or evolution, though the mechanisms of learning are 
 less thoroughly explored. 
 
+\clearpage
+\section{Outline}
+Why be probabilistic? Distinguish between explicit representation and
+computation of probability distributions and methods which learn
+mappings from inputs to decisions without representing uncertainty. 
+
+A theory of probabilistic computation must address at least three questions?
+\begin{enumerate}
+\item How do we represent probability distributions?
+\item How do we perform inference? That is, how do we update these
+  probabilities based on evidence?
+\item How do we learn the probabilistic dependencies between random variables?
+\end{enumerate}
+
+
+What are the constraints facing this theory? Can we evaluate the
+theoretical complexity in terms of number of neurons, number of
+connections, etc?
+
+What does neural activity look like? How can we use the work of
+previous chapters to discover neurons for each variable and value?
+
+\section{Introduction}
+Bayesian theories of neural computation address a fundamental
+question: how do organisms reason, act, and make decisions given only
+limited, noisy information about the world around them?  Bayes' rule
+tells us how an optimal agent should combine noisy information with
+prior knowledge to make inferences and decisions under uncertainty. A
+burgeoning body of evidence shows that organisms perform
+near-optimally in many behavioral tasks that require reasoning under
+uncertainty \todo{cite}, which suggests that the brain may be performing, or at
+least approximating, Bayesian inference.  Given this evidence, it is
+natural to ask what algorithms and neural implementations underly this
+capability. 
+
+Any theory that claims to answer to this question must address four
+interrelated concerns.  First, it must specify how posterior
+probabilities are represented, and how the conditional probability
+distributions that constitute the probabilistic model are encoded.
+Second, it must describe a set of neural dynamics that compute the
+desired posterior distribution for a given set of observations. That
+is, it must define an algorithm for probabilistic inference. These
+dynamics must respect the natural constraints of neural systems, for
+example, that neural connectivity is sparse and that neurons have
+limited computational power. Finally, a theory is incomplete without a
+description of how the parameters that define the conditional
+probability distributions are learned, and how new variables of
+interest are incorporated into an existing model.
+
+\TODO{Discuss ways of evaluating theories: complexity and consistency
+  with neural data.}
+
+The purpose of this work is not to present a radically novel
+  way of representing distributions, performing inference, or even
+  learning probabilistic relationships. Indeed, the theory we present
+  borrows much from existing work on these topics. Instead, our main contributions
+  are
+  \begin{enumerate}
+    \item an analysis of the complexity of the proposed representation
+  and algorithms, which provides nontrivial constraints on the
+  biological realizations of this theory; 
+  and \item a study of the observable consequences of this theory and
+  a method for testing this theory with neural recordings. 
+  \end{enumerate}
+
+
+\section{Representation of probability distributions}
+\TODO{Quickly survey previous approaches. Leave the longer conversation for the discussion.}
+
+\sloppy
+Perhaps the simplest representation of probability is a \emph{direct}
+representation in which neural firing rates reflect instantaneous
+probabilities. Assume a population of neurons is responsible for
+representating the distribution over values that a set of random
+variables may take on. We separate these variables into two sets: the
+observed or ``visible'' variables,~${\bx = \{x_1, \ldots, x_V\}}$, and the
+latent or ``hidden'' variables,~${\bz = \{z_1, \ldots, z_H\}}$.  For
+simplicity, assume for now that these variables can only assume a
+discrete set of values,~${\{1, \ldots, K\}}$.  \todo{example} Our
+neural population is thus tasked with representing probabilty
+vectors,~$\bpi^{(v)}$ and~$\bpi^{(h)}$, for each observed and hidden
+variable. The entries of these vectors are,~${\pi^{(v)}_k =
+  \Pr(x_v=k)}$ and~${\pi^{(h)}_k = \Pr(z_h=k)}$, respectively.
+\TODO{Later, we will discuss how this representation could be extended
+  to allow continuous random variables.}
+
+In a direct representation, each variable-value pair,~$(x_v, k)$
+or~$(z_h,k)$, is associated with a population of neurons. The firing
+rate of these neurons reflect the instantaneous probability of the
+variable taking on that particular value.  Suppose that each
+pair, is represented by~$R$ neurons. Moreover, suppose
+these representations are \emph{non-overlapping} such that each neuron
+can be represented with at most one variable-value pair.
+If the neuron represents a hidden variable, let~${h_n \in \{1, \ldots, H\}}$
+denote the index of the specific variable; if the neuron represents
+a visible variable, let its index be denoted by~${v_n \in \{1, \ldots, V\}}$.
+Then, let~$k_n$ denote the particular value that neuron~$n$ represents.
+%A representation size of~$R$ implies that~$\sum_{n=1}^N \bbI[h_n=h] \, \bbI[k_n=k] = R$.
+
+We assume these neurons are stochastic, each endowed
+with an instantaneous firing rate,~$\lambda_{t,n}$, which gives rise to an
+instantaneous spike count,~$s_{t,n}$. These spike counts encode
+instantaneous probability distributions for each hidden and visible variable,
+\begin{align}
+  \widehat{\pi}_{t,k}^{(h)} &=
+  \frac{\sum_{n=1}^N \bbI[h_n=h] \, \bbI[k_n=k] \, s_{t,n}}
+       {\sum_{n=1}^N \bbI[h_n=h] \, s_{t,n}}, &\text{ and }& &
+       \widehat{\pi}_{t,k}^{(v)} &=
+  \frac{\sum_{n=1}^N \bbI[v_n=v] \, \bbI[k_n=k] \, s_{t,n}}
+       {\sum_{n=1}^N \bbI[v_n=v] \, s_{t,n}}.
+\end{align}
+
+Two forces cause the encoded distributions to change over time. As
+we interact with the world and receive new inputs, the probabilities
+of the visible variables change to reflect the new
+observations. Moreover, even for a fixed set of visible variable
+assignments, the probabilities of hidden variables will change as we
+perform inference. Bayesian inference is the process of computing the
+posterior distribution over latent variables given the values of visible
+inputs. Many inference algorithms are iterative. Thus, as the
+algorithms execute, the instantaneous probability distribution will
+vary. Next, we describe how a simple inference algorithm can be
+implemented with biologically plausible neural dynamics.
+
+\section{Bayesian inference with neural dynamics}
+We assume that as an organism receives new inputs from the world, it
+updates its posterior distribution over the values of latent
+variables. Doing so requires a probabilistic model that relates hidden
+and observed variables via a joint probability distribution.  Whereas
+in previous chapters we have considered directed graphical models,
+here we assume that the probabilistic models implemented in the brain
+are best described in terms of a \emph{factor graph},
+\begin{align}
+  \label{eq:probabilistic_model}
+  p(\bx, \bz \given \btheta) &=
+  \frac{1}{Z}
+  \prod_{h \in \mcG} \phi(z_h \given \btheta) \,
+  \prod_{v \in \mcG} \phi(x_v \given \btheta) \,
+  \prod_{h,h' \in \mcG} \phi(z_h, z_{h'} \given \btheta) \,
+  \prod_{v,h \in \mcG} \phi(x_v, z_{h} \given \btheta).
+\end{align}
+Here, the graph,~$\mcG$, specifies pairs of variables with
+probabilistic dependencies.  Each unary factor,~$\phi(\cdot \given
+\btheta)$ is a function that maps a variable assignment to a
+nonnegative real number, and each pairwise factor,~$\phi(\cdot, \cdot
+\given \btheta)$, is a function that maps a pair of assignments,
+say~${(z_h=k, z_{h'}=k')}$ to a nonnegative real number. The
+normalizing constant,~$Z$, ensures that the joint probability
+distribution sums to one.
+
+The probabilistic model in Eq.~\ref{eq:probabilistic_model} reflects
+a specific assumption about the types of dependency structures
+neural populations can represent.
+
+\begin{assumption}
+  Neural populations only perform inference in probabilistic models
+  that factor into the product of unary and pairwise dependencies. 
+\end{assumption}
+
+A typical model need not factor into pairwise terms. It may instead
+have factors that relate three or more latent variables. As we will
+see, unary and pairwise factors map naturally onto neural biases
+and synaptic weights. In our proposed neural implementation, higher
+order factors would require the interaction of three or more neurons.
+While this may be realized with dendritic computation or interneurons,
+these more sophisticated implementations are beyond the scope of this
+chapter. 
+
+In general, the posterior distribution,
+\begin{align}
+  p(\bz \given \bx, \btheta) &=
+  \frac{p(\bx, \bz \given \btheta)}
+       {\sum_{\bz} p(\bx, \bz \given \btheta)},
+\end{align}
+cannot be efficiently computed since it requires a sum over all
+possible hidden variable assignments.
+However, as we have seen in previous chapters, there are many methods of
+approximating posterior distributions. Mean field variational
+inference  maps particularly nicely onto the natural constraints
+of neural dynamics. 
+In mean field variational inference, the exact (but intractable)
+posterior distribution is approximated with a factorized
+distribution,
+\begin{align}
+  p(\bz \given \bx, \btheta) &\approx q(\bz) \equiv \prod_{h=1}^H q(z_h).
+\end{align}
+The terms in this product are called \emph{variational factors}.  We
+solve for the variational factors that minimize KL-divergence between
+the true and approximate posterior,~$\KL(q(\bz) \,||\, p(\bz
+\given \bx, \btheta))$. In minimizing the KL-divergence, we
+simultaneously maximize a lower bound on the marginal log
+likelihood,~$\log p(\bx \given \btheta)$.
+
+The simplest method of minimizing this objective is via coordinate
+descent, iteratively updating the probability of one hidden variable
+given the probabilities of the rest. Since our variational
+distribution is factorized, the variational factor for variable~$h$
+must satisfy the mean field consistency equation:
+\begin{align}
+  \label{eq:mf_consistency}
+  \log q(z_h) &\simeq \bbE_{q(\bz_{\neg h})}
+  \left[ \log p(\bx, \bz \given \btheta) \right],
+\end{align}
+where~$\simeq$ denotes equality up to an additive constant and the
+expectations are taken with respect to the variational
+distribution over other hidden variables,
+\begin{align}
+  q(\bz_{\neg h}) &= \prod_{h' \neq h} q(z_{h'}).
+\end{align}
+The additive constant
+ensures normalization of the probabilities, and will be discussed
+subsequently.  
+
+For discrete random variables, the variational factors are simply
+vectors specifying the posterior probability of each variable,~$z_h$.
+Under the direct representation described above, these instantaneous
+values of these factors are encoded in the relative spike counts of
+populations of neurons,
+\begin{align}
+  q_t(z_h=k) &= \widehat{\pi}_{t,k}^{(h)} &\text{ and }& &
+  q_t(x_v=k) &= \widehat{\pi}_{t,k}^{(v)}.
+\end{align}
+To perform inference, the neuronal dynamics must be such that at each
+time step, the relative spike counts satisfy~Eq.~\ref{eq:mf_consistency}. 
+%For discrete random variables, this implies that the rate of a neuron~$n$
+%that represents the variable-value pair~(${h_n=h,\,k_n=k}$) should obey,
+Explicitly writing the additive constant, we have,
+\begin{align}
+  \nonumber
+  \log \widehat{\pi}_{t,k}^{(h)} 
+  &= -\log c_t^{(h)} + \bbE_{q_{t-1}(\bz_{\neg h})} 
+    \bigg[\log \phi(z_h=k \given \btheta) \\
+  &\nonumber \hspace{10em}+\sum_{h' \in \neigh(h)} \log \phi(z_{h'}, z_h=k \given \btheta)\\
+  &\hspace{12em}+\sum_{v \in \neigh(h)} \log \phi(x_v, z_h=k \given \btheta) \bigg], \\
+  % In terms of firing rates
+  & \nonumber = 
+     - \log c_t^{(h)} + \log \phi(z_h=k \given \btheta) \\
+  & \nonumber \hspace{4em} + \sum_{h' \in \neigh(h)} \sum_{k'=1}^K
+  \bigg[\log \phi(z_{h'}=k', z_h=k \given \btheta) \,\cdot  \widehat{\pi}_{t-1,k'}^{(h')} \bigg] \\
+  & \label{eq:variational_rate}
+    \hspace{8em} + \sum_{v \in \neigh(h)} \sum_{k'=1}^K
+    \bigg[\log \phi(x_v=k', z_h=k \given \btheta) \, \cdot \widehat{\pi}_{t-1,k'}^{(v)} \bigg] \\
+    &=  -\log c_t^{(h)} + \psi_{t,k}^{(h)},
+\end{align}
+where we have combined the terms from the unary and pairwise factors
+into the activation,~$\psi_{t,k}^{(h)}$.
+
+Since~$\widehat{\bpi}_{t}^{(h)}$ is a probability distribution, we
+know it must sum to one. Thus the additive constant must be set to
+ensure this normalization.  Thus,
+\begin{align}
+  \widehat{\pi}_{t,k}^{(h)} &=
+  \exp \left \{\psi_{t,k}^{(h)} -\log c_{t}^{(h)} \right \},
+  & & &
+  c_t^{(h)} &= \sum_{k'} \exp \left \{\psi_{t,k'}^{(h)} \right \}.
+\end{align}
+
+%Note that the pairwise factor functions are not necessarily symmetric.
+%In fact, the two variables may have support for different ranges of
+%values, so symmetry often does not make sense.  We have written this
+%such that~$z_h$ is always the second argument, but its order will
+%depend on its role in each factor.
+
+Now that we have derived theoretically exact mean field updates, we
+must show how they can be approximated with plausible neural dynamics.
+We assume that inference occurs on a characteristic time scale of~$T_I$
+time steps. This reflects the window of time over which neurons estimate
+probability distributions.
+From Lemma~\ref{lem:consistency}, we know that if the firing rates of
+neurons the variable-value pair~${(z_h,k)}$ are proportional
+to~$\widehat{\pi}_{t,k}^{(h)}$, then in expectation, the empirical
+distribution represented by the spike counts will be equal to the
+desired distribution. Thus, we aim to set,
+\begin{align}
+  \lambda_{t,n} &= \gamma \, \widehat{\pi}_{t,k_n}^{(h_n)}
+  = \gamma \exp \left \{\psi_{t,k_n}^{(h_n)} -\log c_{t}^{(h_n)} \right \},
+\end{align}
+for fixed \emph{gain},~$\gamma$. While this rate function is
+nearly a linear-nonlinear cascade, as we studied in previous
+chapters, there is one major impediment to realizing this
+calculation in biological neurons. Specifically, to compute
+the activation, a neuron must have access to the \emph{normalized}
+probabilities of other hidden and visible variables. In practice,
+a neuron only observes the spike counts, which are
+unnormalized probabilities. This motivates our next assumption,
+
+\begin{assumption}
+  All neurons in the population share the same gain,~$\gamma$.
+  Thus,
+  \begin{align}
+    \bbE \left[ \sum_{n=1}^N \bbI[h_n=h] \, s_{t,n} \right]
+    &= \bbE \left[ \sum_{n=1}^N \sum_{k=1}^K \bbI[h_n=h] \, \bbI[k_n=k] \,s_{t,n} \right] \\
+    &= \gamma \sum_{n=1}^N \sum_{k=1}^K \bbI[h_n=h] \, \bbI[k_n=k] \, \widehat{\pi}_{t,k}^{(h)} \\
+    &= \gamma R.
+  \end{align}
+
+  Moreover, the instantaneous probability is well-approximated by,
+  \begin{align}
+      \widehat{\pi}_{t,k}^{(h)} &=
+  \frac{\sum_{\Delta=1}^{T_I} \sum_{n=1}^N \bbI[h_n=h] \, \bbI[k_n=k] \, s_{t-\Delta ,n}}
+       {\sum_{\Delta=1}^{T_I} \sum_{n=1}^N \bbI[h_n=h] \, s_{t-\Delta ,n}} \\
+       &\approx (\gamma T_I R)^{-1} \sum_{\Delta=1}^{T_I} \sum_{n=1}^N \bbI[h_n=h] \, \bbI[k_n=k] \, s_{t-\Delta,n}.
+  \end{align}
+  In other words, the total spike count is concentrated around its mean.
+\end{assumption}
+
+Under the assumption of shared gain, the
+desired dynamics in~Eq.~\ref{eq:variational_rate}
+simplify to,
+\begin{align}
+  \label{eq:mf_log_probs}
+  \lambda_{t,n} &= \gamma
+  \exp \left \{b_n + (\gamma T_I R)^{-1} \sum_{\Delta=1}^{T_I} \sum_{m=1}^N w_{n \from m} \cdot s_{t-\Delta,m}
+  - \log c_t^{(h_n)} \right \}
+\end{align}
+where
+\begin{align}
+  b_n &= \log \phi(z_{h_n} = k_n \given \btheta),
+\end{align}
+and
+\begin{align}
+  w_{n \from m} &=
+  \begin{cases}
+    \log \phi(z_{h_n}=k_n, z_{h_m}=k_m \given \btheta) & \text{if }h_m
+    \in \neigh(h_n) \\
+    \log \phi(x_{v_m}=k_m, z_{h_n}=k_n \given \btheta) & \text{if }v_m \in \neigh(h_n) \\
+    0 & \text{o.w.}
+  \end{cases}
+\end{align}
+
+\TODO{Show a figure of inference dynamics for a simple model}
+
+The last step is to compute the normalizing input,~$c_t^{(h)}$.
+This requires summing the instantaneous rates of all neurons representing the
+random variable,~$z_h$. While this is clearly implausible, we may derive
+a gain controller from an alternative perspective. Normalizing the
+probability distribution ensures that the expected spike count at
+any time step for
+neurons representing~$z_h$ is equal to~$R\gamma$. If the distribution
+is not properly normalized, the expected spike count will deviate.
+Thus, a reasonable gain controller can estimate the population
+can estimate the population rate,
+\begin{align}
+\widehat{\lambda}_{t}^{(h)} &= \sum_{\Delta = 1}^{T_G} \sum_{n=1}^N \bbI[h_n=h] s_{t-\Delta, n},
+\end{align}
+and set the control input to,
+\begin{align}
+  c_{t}^{(h)} &= \frac{\widehat{\lambda}_{t}^{(h)}}{\gamma T_G R}.
+\end{align}
+The time scale of the gain controller is typically set to be
+less than the time scale of inference, that is~$T_G < T_I$.
+
+
+This theory provides a normative interpretation of synaptic weights.
+Here, synaptic weights reflect the conditional log probabilities
+for the variable-value pairs represented by the pre- and post-synaptic
+neurons. 
+
+\section{Unsupervised Learning via Synaptic Plasticity}
+\label{sec:learning}
+The parameters of the model,~$\btheta$, specify the conditional
+probabilities for pairs of hidden and visible variables. Rather than
+treating the parameters as given, we now treat them as part of the
+model.
+\begin{align}
+  p(\bx, \bz, \btheta) &= p(\bx, \bz \given \btheta) \, p(\btheta).
+\end{align}
+Recall that~$\btheta$ parameterizes the conditional probabilities
+of one variable given another. Since we are assuming the variables
+are discrete,~$\btheta$ effectively specify the non-negative values of the
+unary and pairwise factors for each variable assignment. We
+make this explicit with the following notation,
+\begin{align}
+  \theta_{k}^{(h)} &= \phi(z_h=k \given \btheta), \\
+  \theta_{k, k'}^{(h,h')} &= \phi(z_h=k, \, z_{h'}=k'\given \btheta), \\
+  \theta_{k, k'}^{(v,h)}  &= \phi(x_v=k, \, z_h=k' \given \btheta).
+\end{align}
+To incorporate them into the model, we introduce gamma priors
+over these non-negative values,
+\begin{align}
+  \theta_{k}^{(h)} &\sim \distGamma(\alpha, \beta), & & &
+  \theta_{k,k'}^{(h,h')} &\sim \distGamma(\alpha, \beta), & & &
+  \theta_{k,k'}^{(v,h)} &\sim \distGamma(\alpha, \beta).
+\end{align}
+
+Learning in a Bayesian framework corresponds to performing posterior
+inference over the parameters. Thus, we introduce a variational factor
+for~$\btheta$ as well,
+\begin{align}
+  q(\btheta) &=
+  \prod_{h}\prod_{k} q(\theta_{k}^{(h)})
+  \prod_{h,h' \in \mcG} \prod_{k} \prod_{k'} q(\theta_{k,k'}^{(h,h')})
+  \prod_{v,h \in \mcG} \prod_{k} \prod_{k'} q(\theta_{k,k'}^{(v,h)} ).
+\end{align}
+Now consider the mean field consistency equation governing a parameter
+of a unary potential,
+\begin{align}
+  \log q_t(\theta_k^{(h)}) &\simeq
+  \bbE_{q_{t-1}(\bz)}\left[ \log p(\bx, \bz, \btheta) \right] \\
+  &\simeq \bbE_{q_{t-1}(\bz)} \left[\bbI[z_h=k] \log \phi(z_h=k \given \btheta)\right]
+  + (\alpha-1) \log \theta_k^{(h)} - \beta \theta_k^{(h)} \\
+  &\simeq  (\widehat{\pi}_{t-1,k}^{(h)} + \alpha-1) \log \theta_k^{(h)}
+  - \beta \theta_k^{(h)}
+\end{align}
+This is the form of a gamma distribution, which implies,
+\begin{align}
+  q_t(\theta_k^{(h)})
+  &= \distGamma(\theta_k^{(h)} \given  \alpha_{t,k}^{(h)}, \, \beta) \\
+  \alpha_{t,k}^{(h)} &= \alpha + \widehat{\pi}_{t-1,k}^{(h)}
+\end{align}
+Similarly, the variational factors for the parameters of the pairwise
+potentials follow gamma distributions as well,
+\begin{align}
+  q_t(\theta_{k,k'}^{(h,h')}) &=
+  \distGamma(\theta_{k,k'}^{(h,h')} \given
+  \alpha_{t,k,k'}^{(h,h')},
+  \, \beta), \\
+  \alpha_{t,k,k'}^{(h,h')} &= \alpha + \widehat{\pi}_{t-1,k}^{(h)} \cdot \widehat{\pi}_{t-1,k'}^{(h')}.
+  %q_t(\theta_{k,k'}^{(v,h)}) &=
+  %\distGamma(\theta_{k,k'}^{(v,h)} \given
+  %\alpha + \widehat{\pi}_{t-1,k}^{(v)} \cdot \widehat{\pi}_{t-1,k'}^{(h)},
+  %\, \beta).
+\end{align}
+
+Returning to the task of inferring the posterior distribution over
+hidden variables, we see that the updates for~$q(z_h)$ must now
+be derived with respect to the expectation of~$q(\btheta)$ as well,
+\begin{align}
+  \log q(z_h) &\simeq \bbE_{q(\bz_{\neg h})} \bbE_{q(\btheta)} \left[ p(\bx, \bz, \btheta) \right].
+\end{align}
+Instead of working directly with~$\log \phi(z_h, z_{h'} \given \btheta)$,
+the updates must work with its expectation under the gamma
+variational factor,
+\begin{align}
+  \bbE_{q_t(\btheta)} \left[\log \phi(z_h=k, z_{h'}=k' \given \btheta)\right]
+  &= \bbE_{q_t(\btheta)} \left[\log \theta_{k,k'}^{(h,h')} \right] \\
+  \label{eq:expected_log_theta}
+  &= \psi(\alpha_{t,k,k'}^{(h,h')}) - \log \beta,
+\end{align}
+where~$\psi(\cdot)$ is the digamma function. Likewise for the connections
+between hidden and visible variables.
+
+How could this be implemented biologically?
+First, we assume that learning occurs on a 
+timescale of~$T_L$ time steps, which is relatively slow compared to
+the time scales of inference and behavior. That is,~$T_I < T_L$.
+This allows the learning algorithm to generalize from many
+input rather than overfitting to a single example.
+
+The log of the unary
+potential corresponds to an activation bias that sets the baseline
+firing rate. We assume that each neuron has a dynamic state
+variable,~$\alpha_{t,n}$, that roughly computes a moving
+average of its firing rate,
+\begin{align}
+  \alpha_{t,n} &= \alpha + (\gamma T_L)^{-1} \cdot \sum_{\Delta = 1}^{T_L} s_{t-\Delta ,n} \\
+  &\approx \alpha + \widehat{\pi}_{t,k_n}^{(h_n)}
+\end{align}
+This state variable governs the instantaneous activation bias,
+\begin{align}
+  b_{t,n} &= \psi(\alpha_{t,n}) - \log \beta.
+\end{align}
+If a neuron tends to have a high firing rate, reflecting a high 
+marginal posterior probability, this will eventually be learned and
+incorporated into the activation bias. 
+
+We want the synaptic weights to equal the expected log parameter
+value, as in Eq.~\ref{eq:expected_log_theta}.  In theory, the weights
+should be identical for all synapses between neurons
+representing~$(z_h=k)$ and neurons representing~$(z_{h'}=k')$.  It is
+unreasonable to assume this in practice, since these synapses exist on
+different neurons and are updated independently. However, we can
+specify a simple learning rule that would give rise to the same
+weights in expectation.
+
+Assume that each synapse has a latent state,~$\alpha_{t, n \from m}$,
+that will correspond to the variational
+parameter,~$\alpha_{t,k_n, k_m}^{(h_n,h_m)}$.
+This state obeys the following learning rule, which approximates the
+desired variational parameter,
+\begin{align}
+  \alpha_{t, n \from m} &=
+  \alpha +
+  (\gamma^2 T_L)^{-1}  \sum_{\Delta = 1}^{T_L} s_{t-\Delta ,n} \cdot s_{t-\Delta,m} \\
+  &\approx \alpha + \widehat{\pi}_{t-1,k_n}^{(h_n)} \cdot \widehat{\pi}_{t-1,k_m}^{(h_m)}. 
+\end{align}
+The synaptic weight is a deterministic function of this state variable,
+\begin{align}
+  w_{t, n \from m} &= \psi(\alpha_{t, n \from m}) - \log \beta.
+\end{align}
+This state-based learning rule is Hebbian in that correlated spiking
+activity leads to increases in~$\alpha_{t,n\from m}$, which in turn
+lead to larger weights (since the digamma function is increasing on
+the non-negative reals). Moreover, this learning rule could instead
+be written as a dynamical system where the change in state is a
+function of the difference between instantaneous spike correlation
+and predicted correlation. This in turn could be written as a nonlinear
+dynamical system on the weights alone since the digamma function is
+also invertible on this range. We leave this for future work.
+
+
+\clearpage
 \section{Introduction} 
 Consider a simple inference task that may be performed by hippocampal circuits. 
 As a rat navigates an environment, it must constantly update its internal 

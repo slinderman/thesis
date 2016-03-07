@@ -24,6 +24,7 @@
 \RequirePackage{setspace}
 \RequirePackage{verbatim}
 \RequirePackage{subcaption}
+\RequirePackage{paralist}
 
 % Fonts.
 \RequirePackage{color}
@@ -39,6 +40,8 @@
 \newtheorem{lemma}{Lemma}
 \newtheorem{theorem}{Theorem}
 \newtheorem{corollary}{Corollary}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
 
 
 %\RequirePackage{gensymb}
