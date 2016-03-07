@@ -514,6 +514,31 @@ and predicted correlation. This in turn could be written as a nonlinear
 dynamical system on the weights alone since the digamma function is
 also invertible on this range. We leave this for future work.
 
+\section{Examples}
+
+
+\subsection{Simultaneous Localization and Mapping}
+
+Model:
+\begin{itemize}
+\item Latent locations,~$z_i \in \{1, \ldots, K\}$ for time indices~$-D, \ldots, 0$.
+\item Sensory cues,~$x_{i,j} \in \{0,1\}$ for~$j \in \{1, \ldots, J\}$.
+\item Transition probability~$\phi(z_{i-1}, z_i)$. How could these weights be shared?
+\item Observation probability~$\phi(z_{i}, x_{i,j})$. And how could these be shared?
+\end{itemize}
+
+\subsection{Olfactory Scene Parsing}
+
+
+Model:
+\begin{itemize}
+\item Presence or absence of odorant~$n$ in scene~$d$:~$w_{d,n} \in \{0,1\}$
+\item Presnce or absence of object~$k$ in scene~$d$:~$\eta_{d,k} \in \{0,1\}$
+\item Object that caused odorant~$n$ in scene~$d$: $z_{d,n} \in \{1, \ldots, K\}$ 
+\item Baseline probability of object~$k$:~$\phi(\eta_{d,k})$
+\item Probability of object~$k$ in scene~$d$ causing odorant~$n$:~$\phi(z_{d,n}=k, \eta_{d,k})$
+\item Probability of odorant~$n$ given object~$k$:~$\phi(w_{d,n}, z_{d,n})$
+\end{itemize}
 
 \clearpage
 \section{Introduction} 
