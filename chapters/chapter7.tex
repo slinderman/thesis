@@ -149,7 +149,7 @@ are best described in terms of a \emph{factor graph},
 \begin{align}
   \label{eq:probabilistic_model}
   p(\bx, \bz \given \btheta) &=
-  \frac{1}{Z}
+  \frac{1}{Z(\btheta)}
   \prod_{h \in \mcG} \phi(z_h \given \btheta) \,
   \prod_{v \in \mcG} \phi(x_v \given \btheta) \,
   \prod_{h,h' \in \mcG} \phi(z_h, z_{h'} \given \btheta) \,
@@ -1194,3 +1194,143 @@ the principal eigenvector of~$\bA$.
 Can we design a system with~$b>0$ and~$\rho(\bA)<1$ that closely 
 approximates this steady state distribution? 
 \end{comment}
+
+\section{Unsupervised Learning via Synaptic Plasticity}
+\label{sec:learning}
+The parameters of the model,~$\btheta$, specify the values of the 
+unary and pairwise factors. Rather than
+treating the parameters as given, we now treat them as part of the
+model.
+\begin{align}
+  p(\bx, \bz, \btheta) &= p(\bx, \bz \given \btheta) \, p(\btheta).
+\end{align}
+We make this explicit with the following notation,
+\begin{align}
+  \theta_{k}^{(h)} &= \phi(z_h=k \given \btheta), \\
+  \theta_{k, k'}^{(h,h')} &= \phi(z_h=k, \, z_{h'}=k'\given \btheta), \\
+  \theta_{k, k'}^{(v,h)}  &= \phi(x_v=k, \, z_h=k' \given \btheta).
+\end{align}
+The only strict constraint on these parameters is that they 
+must be non-negative. 
+To incorporate them into the model, we introduce gamma priors
+over these non-negative values,
+\begin{align}
+  \theta_{k}^{(h)} &\sim \distGamma(\alpha, \beta), & & &
+  \theta_{k,k'}^{(h,h')} &\sim \distGamma(\alpha, \beta), & & &
+  \theta_{k,k'}^{(v,h)} &\sim \distGamma(\alpha, \beta).
+\end{align}
+
+Learning in a Bayesian framework corresponds to performing posterior
+inference over the parameters. Thus, we introduce a variational factor
+for~$\btheta$ as well,
+\begin{align}
+  q(\btheta) &=
+  \prod_{h}\prod_{k} q(\theta_{k}^{(h)})
+  \prod_{h,h' \in \mcG} \prod_{k} \prod_{k'} q(\theta_{k,k'}^{(h,h')})
+  \prod_{v,h \in \mcG} \prod_{k} \prod_{k'} q(\theta_{k,k'}^{(v,h)} ).
+\end{align}
+Now consider the mean field consistency equation governing a parameter
+of a unary potential,
+\begin{align}
+  \log q_t(\theta_k^{(h)}) &\simeq
+  \bbE_{q_{t-1}(\bz)}\left[ \log p(\bx, \bz, \btheta) \right] \\
+  &\simeq \bbE_{q_{t-1}(\bz)} \left[\bbI[z_h=k] \log \phi(z_h=k \given \btheta)\right]
+  + (\alpha-1) \log \theta_k^{(h)} - \beta \theta_k^{(h)} \\
+  &\simeq  (\widehat{\pi}_{t-1,k}^{(h)} + \alpha-1) \log \theta_k^{(h)}
+  - \beta \theta_k^{(h)}
+\end{align}
+This is the form of a gamma distribution, which implies,
+\begin{align}
+  q_t(\theta_k^{(h)})
+  &= \distGamma(\theta_k^{(h)} \given  \alpha_{t,k}^{(h)}, \, \beta) \\
+  \alpha_{t,k}^{(h)} &= \alpha + \widehat{\pi}_{t-1,k}^{(h)}
+\end{align}
+Similarly, the variational factors for the parameters of the pairwise
+potentials follow gamma distributions as well,
+\begin{align}
+  q_t(\theta_{k,k'}^{(h,h')}) &=
+  \distGamma(\theta_{k,k'}^{(h,h')} \given
+  \alpha_{t,k,k'}^{(h,h')},
+  \, \beta), \\
+  \alpha_{t,k,k'}^{(h,h')} &= \alpha + \widehat{\pi}_{t-1,k}^{(h)} \cdot \widehat{\pi}_{t-1,k'}^{(h')}.
+  %q_t(\theta_{k,k'}^{(v,h)}) &=
+  %\distGamma(\theta_{k,k'}^{(v,h)} \given
+  %\alpha + \widehat{\pi}_{t-1,k}^{(v)} \cdot \widehat{\pi}_{t-1,k'}^{(h)},
+  %\, \beta).
+\end{align}
+
+Returning to the task of inferring the posterior distribution over
+hidden variables, we see that the updates for~$q(z_h)$ must now
+be derived with respect to the expectation of~$q(\btheta)$ as well,
+\begin{align}
+  \log q(z_h) &\simeq \bbE_{q(\bz_{\neg h})} \bbE_{q(\btheta)} \left[ p(\bx, \bz, \btheta) \right].
+\end{align}
+Instead of working directly with~$\log \phi(z_h, z_{h'} \given \btheta)$,
+the updates must work with its expectation under the gamma
+variational factor,
+\begin{align}
+  \bbE_{q_t(\btheta)} \left[\log \phi(z_h=k, z_{h'}=k' \given \btheta)\right]
+  &= \bbE_{q_t(\btheta)} \left[\log \theta_{k,k'}^{(h,h')} \right] \\
+  \label{eq:expected_log_theta}
+  &= \psi(\alpha_{t,k,k'}^{(h,h')}) - \log \beta,
+\end{align}
+where~$\psi(\cdot)$ is the digamma function. Likewise for the connections
+between hidden and visible variables.
+
+How could this be implemented biologically?
+First, we assume that learning occurs on a 
+timescale of~$T_L$ time steps, which is relatively slow compared to
+the time scales of inference and behavior. That is,~$T_I < T_L$.
+This allows the learning algorithm to generalize from many
+input rather than overfitting to a single example.
+
+The log of the unary
+potential corresponds to an activation bias that sets the baseline
+firing rate. We assume that each neuron has a dynamic state
+variable,~$\alpha_{t,n}$, that roughly computes a moving
+average of its firing rate,
+\begin{align}
+  \alpha_{t,n} &= \alpha + (\gamma T_L)^{-1} \cdot \sum_{\Delta = 1}^{T_L} s_{t-\Delta ,n} \\
+  &\approx \alpha + \widehat{\pi}_{t,k_n}^{(h_n)}
+\end{align}
+This state variable governs the instantaneous activation bias,
+\begin{align}
+  b_{t,n} &= \psi(\alpha_{t,n}) - \log \beta.
+\end{align}
+If a neuron tends to have a high firing rate, reflecting a high 
+marginal posterior probability, this will eventually be learned and
+incorporated into the activation bias. 
+
+We want the synaptic weights to equal the expected log parameter
+value, as in Eq.~\ref{eq:expected_log_theta}.  In theory, the weights
+should be identical for all synapses between neurons
+representing~$(z_h=k)$ and neurons representing~$(z_{h'}=k')$.  It is
+unreasonable to assume this in practice, since these synapses exist on
+different neurons and are updated independently. However, we can
+specify a simple learning rule that would give rise to the same
+weights in expectation.
+
+Assume that each synapse has a latent state,~$\alpha_{t, n \from m}$,
+that will correspond to the variational
+parameter,~$\alpha_{t,k_n, k_m}^{(h_n,h_m)}$.
+This state obeys the following learning rule, which approximates the
+desired variational parameter,
+\begin{align}
+  \alpha_{t, n \from m} &=
+  \alpha +
+  (\gamma^2 T_L)^{-1}  \sum_{\Delta = 1}^{T_L} s_{t-\Delta ,n} \cdot s_{t-\Delta,m} \\
+  &\approx \alpha + \widehat{\pi}_{t-1,k_n}^{(h_n)} \cdot \widehat{\pi}_{t-1,k_m}^{(h_m)}. 
+\end{align}
+The synaptic weight is a deterministic function of this state variable,
+\begin{align}
+  w_{t, n \from m} &= \psi(\alpha_{t, n \from m}) - \log \beta.
+\end{align}
+This state-based learning rule is Hebbian in that correlated spiking
+activity leads to increases in~$\alpha_{t,n\from m}$, which in turn
+lead to larger weights (since the digamma function is increasing on
+the non-negative reals). Moreover, this learning rule could instead
+be written as a dynamical system where the change in state is a
+function of the difference between instantaneous spike correlation
+and predicted correlation. This in turn could be written as a nonlinear
+dynamical system on the weights alone since the digamma function is
+also invertible on this range. We leave this for future work.
