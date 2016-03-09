@@ -218,6 +218,7 @@ distributions,
 \end{align}
 
 \begin{theorem}
+\label{thm:fixed_count}
 Given a fixed probability vector~$\bpi_t$,
 firing rates~$\lambda_{t,n} = \gamma \pi_{t,k_n}^{(j_n)}$, a fixed 
 error level~$\epsilon < 1$, and a desired confidence~$\delta < 1$, 
@@ -299,7 +300,6 @@ or a large population could be measured over a single time bin. Moreover, the
 population gain,~$\gamma$, could be varied to adjust the number of spikes 
 per time bin. 
 
-
 In practice, the number of spikes cannot be set directly. It, is a
 Poisson random variable whose mean, from Eq.~\ref{eq:S_t_rate},
 is~$\gamma R$: the population gain times the number of neurons per
@@ -341,12 +341,149 @@ extremely rapidly as~$\epsilon$ goes to zero.
 So far we have considered the estimated probability distribution
 obtained by ``reading out'' the entire population of neurons. What if
 we only observe a fraction of the population, as a neuron in a
-downstream population might? The next corollary shows that as long as
-the observed neurons are randomly chosen in a way that is independent
-of the locations they encode, the previously derived bounds on the required 
-number of observed spikes, or alternatively, the expected number of 
-spikes as a function of the gain and the number of observed neurons, 
-still hold. 
+downstream population might? Assume each neuron in the population is 
+``observed'' with probability~$\rho$. The expected number of observed 
+neurons for a given variable-value pair is~$R\rho$, and if we see 
+exactly the expected number of neurons for each value, the estimated 
+probability distribution will have the correct expectation. However, 
+in practice we will incur some bias from seeing a different number of 
+neurons for each value. Bounding the error theoretically is challenging 
+due to this additional source of randomness, so we instead consider 
+the simple case in which we see exactly~$R \rho$ neurons for each value.
+Then, following the same logic as above, we have the following 
+corollary.
+
+\begin{corollary}
+  \label{cor:sparse_bounds}
+  Given a fixed probability vector~$\bpi_t$, firing
+  rates~$\lambda_{t,n} = \gamma \pi_{t,k_n}^{(j_n)}$, a fixed error
+  level~$\epsilon < 1$, and a desired confidence~$\delta < 1$, 
+  and~$\rho R$ observed neurons for each of the~$K$ values,
+  the probability of error is bounded
+  by~$\Pr(\dtv(\widehat{\bpi}_t, \bpi_t) > \epsilon) < \delta$
+  if
+  \begin{align}
+    \gamma \rho R \geq \lambda^*,
+  \end{align} 
+  where~$\lambda^*$ is at most,
+  \begin{align}
+    \lambda^* &\leq \frac{1}{1-e^{-2\epsilon^2}} \ln \frac{2K}{\delta}.  
+  \end{align}
+\end{corollary}
+
+\begin{proof}
+  This follows directly from Theorem~\ref{thm:rate_bounds} with $\rho R$ substituted for~$R$.
+\end{proof}
+
+
+% Figure: empirical and theoretical total variation distance
+\begin{figure}[t!]
+  \centering
+  \begin{subfigure}[b]{2.75in}
+    \centering
+    %\caption{}
+    \includegraphics[width=\textwidth]{figures/ch7/error_vs_S_K2}
+    \label{fig:error_vs_S_K2}
+ \end{subfigure}
+ \begin{subfigure}[b]{2.75in}
+   \centering
+   %\caption{}
+   \includegraphics[width=\textwidth]{figures/ch7/error_vs_S_K10}
+   \label{fig:error_vs_S_K10}
+ \end{subfigure}
+ \\
+ \vspace{-.25in}
+ \begin{subfigure}[b]{2.75in}
+   \centering
+   %\caption{}
+   \includegraphics[width=\textwidth]{figures/ch7/error_vs_R_K2}
+   \label{fig:error_vs_R_K2}
+ \end{subfigure}
+ \begin{subfigure}[b]{2.75in}
+   \centering
+   %\caption{}
+   \includegraphics[width=\textwidth]{figures/ch7/error_vs_R_K10}
+   \label{fig:error_vs_R_K10}
+ \end{subfigure}
+ \\
+ \vspace{-.25in}
+ \begin{subfigure}[b]{2.75in}
+   \centering
+   %\caption{}
+   \includegraphics[width=\textwidth]{figures/ch7/error_vs_rho_K2}
+   \label{fig:error_vs_rho_K2}
+ \end{subfigure}
+ \begin{subfigure}[b]{2.75in}
+   \centering
+   %\caption{}
+   \includegraphics[width=\textwidth]{figures/ch7/error_vs_rho_K10}
+   \label{fig:error_vs_rho_K10}
+ \end{subfigure}
+ \vspace{-.3in}
+ \caption[Empirical and Theoretical Total Variation Distance]
+ {Empirical and theoretical total variation distance under a variety 
+   of parameter regimes. Whiskers show the empirical~$10$th 
+   and~$90$th percentiles. Yellow line shows the theoretical
+   upper bound on the $90$th percentile. 
+   \textbf{Left} column:~$K=2$. \textbf{Right} column:~$K=10$. 
+   \textbf{Top} row: fixed population spike count,~$S$. 
+   \textbf{Middle} row: varying the number of neurons per variable.
+   \textbf{Bottom} row: varying the connection probability.
+   See text for full description.
+ }
+ \label{fig:complexity}
+\end{figure}
+
+Figure~\ref{fig:complexity} shows the results of an empirical 
+assessment of the total variation distance between the true and 
+estimated probability vectors under a variety of parameter regimes.
+For each regime, we show the results for discrete distributions over
+~$K=2$ values (left column) and~$K=10$ values (right column). We 
+sample~$1000$ discrete distributions from a Dirichlet 
+prior,~${\bpi \sim \distDirichlet(\bone_K)}$, and then we encode each true 
+distribution with Poisson spiking neurons and measure the total 
+variation distance between the true and encoded distributions. 
+
+In the top row, we consider the case where the total population 
+spike count is set explicitly, as in Theorem~\ref{thm:fixed_count}.
+In this case, the spikes are attributed to each value according 
+to a multinomial distribution. We plot the theoretical bound from
+Theorem~\ref{thm:fixed_count} in yellow.
+
+In the middle row we measure the error as a function of the representation
+size,~$R$, under the assumption that spikes are counted in one millisecond bins 
+for~$10$ milliseconds, and the gain is set to~$0.1$, which corresponds to a maximum firing 
+rate of~$100$Hz. Thus, in expectation the population will emit~$R$ spikes, 
+allowing the top and middle rows to be directly compared. That is, in the top row, the 
+population fires exactly the number of spikes expected in the middle row.
+We see that the stochastic population spike counts does indeed introduce
+extra variability in the error, as predicted by Theorem~\ref{thm:rate_bounds},
+though the median error is not substantially different from that of the 
+fixed-$S$ case.
+
+Finally, the bottom row shows the empirical and predicted error as 
+we vary the observation probability,~$\rho$. Here, the representation 
+size is fixed to~$R=25$, and the gain and integration time are 
+set as in the middle row. While a strict upper bound is difficult 
+to derive theoretically, the approximation from 
+Corollary~\ref{cor:sparse_bounds} provides a reasonable 
+approximation for this parameter regime.
+
+These complexity-theoretic bounds relate the number of spikes to the 
+total variation distance between the true and estimated distributions.
+From the number of spikes, we can deduce constraints on the representation
+size, integration time, and connection probability, for realistic gain levels.
+While the theoretical bounds do not exactly match the empirical error 
+distributions, they appear to be roughly correct up to a multiplicative 
+factor. Thus, if we can estimate some biophysical properties like 
+connection probabilities, integration times, and firing rates, 
+and we can constrain the error 
+tolerances of the algorithms that consume these probability estimates, 
+then we can estimate the number of neurons that must represent 
+each variable-value pair. This will prove useful in guiding our 
+bottom-up search, and serve as an important constraint for assessing 
+the viability of a direct representation of probability.
+
 
 % Inference section
 \section{Bayesian Inference with Neural Dynamics}
