@@ -115,13 +115,22 @@ instantaneous spike count,~$s_{t,n}$ according to a Poisson distribution,
 \begin{align}
 s_{t,n} &\sim \distPoisson(\lambda_{t,n}).
 \end{align}
-These spike counts encode
-instantaneous probability distributions for each variable,
+
+In a direct representation, the relative spike counts encode
+instantaneous probability distributions for each variable. 
+If neurons representing a particular value fire twice as many 
+spikes as neurons representing a competing value, then the first 
+value is twice as likely. We introduce the notion of an 
+\emph{integration time},~$T_I$, over which spikes are counted 
+to estimate the probability distribution. Then, the empirical 
+distribution,~$\widehat{\bpi}_t^{(j)}$, is defined by,
 \begin{align}
   \widehat{\pi}_{t,k}^{(j)} &=
-  \frac{\sum_{n=1}^N \bbI[j_n=j] \, \bbI[k_n=k] \, s_{t,n}}
-       {\sum_{n=1}^N \bbI[j_n=j] \, s_{t,n}}.
+  \frac{\sum_{\Delta = 1}^{T_I} \sum_{n=1}^N \bbI[j_n=j] \, \bbI[k_n=k] \, s_{t-\Delta,n}}
+       {\sum_{\Delta = 1}^{T_I} \sum_{n=1}^N \bbI[j_n=j] \, s_{t-\Delta,n}}.
 \end{align}
+The numerator counts spikes from neurons representing the particular value,~$z_j=k$;
+the denominator counts all spikes from neurons representing~$z_j$.
 
 Even without any knowledge of the dynamics that gave rise
 to these instantaneous firing rates and to the
@@ -138,28 +147,29 @@ The stochasticity of the spike counts means that any instant in
 time, the probability distribution that is represented by the population will 
 be a random variable.  First, we will show that this representation 
 is unbiased. That is, if the firing rates,~$\lambda_{t, n}$, 
-are proportional to the probability,~$\pi_{t,k_n}^{(j_n)}$, then the 
+are proportional to the probability,~$\pi_{k_n}^{(j_n)}$, then the 
 represented probability,~$\widehat{\bpi}_{t}^{(j)}$, will have the  
 correct expectation.
 
 \begin{lemma}
 \label{lem:consistency}
-If the firing rates are proportional to a given
-probability distribution then the probability distribution represented by the 
-population will have expectation equal to the given probability distribution.
-That is, if~$\lambda_{t, n}=\gamma \pi_{t,k_n}^{(j_n)}$, 
-then~$\bbE[\widehat{\pi}_{t,k}^{(j)}] = \pi_{t,k}^{(j)}$.
+If the firing rates are proportional to a given probability
+distribution over the integration time window then the probability
+distribution represented by the population will have expectation equal
+to the given probability distribution.  That is,
+if~$\lambda_{t, n}=\lambdamax \pi_{k_n}^{(j_n)}$,
+then~$\bbE[\widehat{\pi}_{t,k}^{(j)}] = \pi_{k}^{(j)}$.
 \end{lemma}
 
 \begin{proof}
   Since we are focusing on the representation of a single random variable
   $z_j$, we drop the superscript~$(j)$ for this section. Let,
   \begin{align}
-    S_{t,k} &= \sum_{n=1}^N \bbI[j_n=j] \, \bbI[k_n=k] \, s_{t,n},
+    S_{t,k} &= \sum_{\Delta = 1}^{T_I} \sum_{n=1}^N \bbI[j_n=j] \, \bbI[k_n=k] \, s_{t-\Delta,n},
   \end{align}
   and
   \begin{align}
-    S_{t} &= \sum_{n=1}^N \bbI[j_n=j] \,  s_{t,n} = \sum_{k=1}^K S_{t,k}.
+    S_{t} &= \sum_{\Delta = 1}^{T_I} \sum_{n=1}^N \bbI[j_n=j] \,  s_{t,n} = \sum_{k=1}^K S_{t,k}.
   \end{align}
   Iterating expectations, we have,
   \begin{align}
@@ -173,19 +183,19 @@ then~$\bbE[\widehat{\pi}_{t,k}^{(j)}] = \pi_{t,k}^{(j)}$.
   Since~$s_{t, n}$ are independent Poisson random variables, their partial
   sums are as well. Specifically,
   \begin{align}
-    S_t &\sim \distPoisson \left( \sum_{n} \bbI[j_n=j] \lambda_{t,n} \right) \\
-    &= \distPoisson \left(\gamma \sum_n \bbI[j_n=j] \sum_{k} \bbI[k_n=k] \, \pi_{t,k} \right) \\
+    S_t &\sim \distPoisson \left( \sum_{\Delta = 1}^{T_I} \sum_{n} \bbI[j_n=j] \lambda_{t,n} \right) \\
+    &= \distPoisson \left(\lambdamax T_I \sum_n \bbI[j_n=j] \sum_{k} \bbI[k_n=k] \, \pi_{t,k} \right) \\
     \label{eq:S_t_rate}
-    &= \distPoisson(\gamma R),
+    &= \distPoisson(\lambdamax \, T_I \, R),
   \end{align}
   and, similarly,
   \begin{align}
-        S_{t,k} &\sim \distPoisson \left( \gamma \, R \, \pi_{t, k} \right).
+        S_{t,k} &\sim \distPoisson \left( \lambdamax \, T_I \, R \, \pi_{t, k} \right).
   \end{align}
   Moreover, their conditional distribution is binomial.
   \begin{align}
     S_{t,k} \given S_t &\sim
-    \distBinomial \left( S_t, \frac{\gamma \, R \, \pi_{t,k}}{\gamma \, R} \right)
+    \distBinomial \left( S_t, \frac{\lambdamax \, T_I \, R \, \pi_{t,k}}{\lambdamax \, T_I \, R} \right)
     =\distBinomial(S_t, \pi_{t,k}),
   \end{align}
   which has expectation~$\pi_{t,k} \, S_t$.
@@ -213,19 +223,20 @@ the true probability by more than~$\epsilon$. We measure this
 difference with the total variation distance between the
 distributions,
 \begin{align}
-  \dtv(\widehat{\bpi}_t, \bpi_t) &= 
+  \dtv(\widehat{\bpi}_t, \bpi) &= 
   \max_{\ell} |\widehat{\pi}_{t,k} - \pi_{t,k}|.
 \end{align}
 
 \begin{theorem}
 \label{thm:fixed_count}
-Given a fixed probability vector~$\bpi_t$,
-firing rates~$\lambda_{t,n} = \gamma \pi_{t,k_n}^{(j_n)}$, a fixed 
-error level~$\epsilon < 1$, and a desired confidence~$\delta < 1$, 
-there exists a minimum number of spikes~$S^*$ such that if~$S_t \geq S^*$,
-the conditional probability of error is bounded 
-by~$\Pr(\dtv(\widehat{\bpi}_t, \bpi_t) > \epsilon \given S_t) < \delta$.
-Furthermore, this minimum number of spikes is at most,
+Given a fixed probability vector~$\bpi$, firing
+rates~$\lambda_{t,n} = \lambdamax \pi_{k_n}^{(j_n)}$ over the integration
+time window, a fixed error level~$\epsilon < 1$, and a desired
+confidence~$\delta < 1$, there exists a minimum number of spikes~$S^*$
+such that if~$S_t \geq S^*$, the conditional probability of error is
+bounded
+by~$\Pr(\dtv(\widehat{\bpi}_t, \bpi_t) > \epsilon \given S_t) <
+\delta$.  Furthermore, this minimum number of spikes is at most,
 \begin{align}
 S^* &\leq \frac{1}{2\epsilon^2} \ln \frac{2K}{\delta},  
 \end{align}
@@ -297,12 +308,12 @@ Notably, the relevant quantity is the number of spikes~$S_t$, rather than
 the number of neurons. Thus, there is some flexibility in how the probability 
 is estimated: a small population of neurons could be measured over many time bins,
 or a large population could be measured over a single time bin. Moreover, the 
-population gain,~$\gamma$, could be varied to adjust the number of spikes 
+population gain,~$\lambdamax$, could be varied to adjust the number of spikes 
 per time bin. 
 
 In practice, the number of spikes cannot be set directly. It, is a
 Poisson random variable whose mean, from Eq.~\ref{eq:S_t_rate},
-is~$\gamma R$: the population gain times the number of neurons per
+is~$\bbE[S_t] = \lambdamax T_I R$: the expected number of spikes per neuron times the number of neurons per
 outcome. This leads to the following theorem, which specifies a upper bound 
 on the gain and number of neurons required to guarantee that the 
 total variation distance is less than~$\epsilon$ with probability~$1-\delta$.
@@ -310,13 +321,13 @@ total variation distance is less than~$\epsilon$ with probability~$1-\delta$.
 \begin{theorem}
   \label{thm:rate_bounds}
   Given a fixed probability vector~$\bpi_t$, firing
-  rates~$\lambda_{t,n} = \gamma \pi_{t,k_n}^{(j_n)}$, a fixed error
+  rates~$\lambda_{t,n} = \lambdamax \pi_{t,k_n}^{(j_n)}$, a fixed error
   level~$\epsilon < 1$, and a desired confidence~$\delta < 1$, the
   probability of error is bounded
   by~$\Pr(\dtv(\widehat{\bpi}_t, \bpi_t) > \epsilon) < \delta$
-  if~$\gamma R \geq \lambda^*$, where~$\lambda^*$ is at most,
+  if~$\lambdamax T_I R \geq \mu^*$, where~$\mu^*$ is at most,
   \begin{align}
-    \lambda^* &\leq \frac{1}{1-e^{-2\epsilon^2}} \ln \frac{2K}{\delta}.  
+    \mu^* &\leq \frac{1}{1-e^{-2\epsilon^2}} \ln \frac{2K}{\delta}.  
   \end{align}
 \end{theorem}
 
@@ -327,16 +338,16 @@ total variation distance is less than~$\epsilon$ with probability~$1-\delta$.
     &= \sum_{m=0}^\infty \Pr(S_t=m) \Pr(\dtv(\widehat{\bpi}_t, \bpi_t) > \epsilon \given S_t=m) \\
     &\leq \sum_{m=0}^\infty  \Pr(S_t=m) \times 2K \exp \left \{-2m\epsilon^2 \right\} \\
     &= 2K \bbE_{S_t} \left[ \exp \left \{ -2S_t \epsilon^2 \right \} \right] \\
-    &= 2K \exp \left \{\lambda^* (e^{-2\epsilon^2}-1) \right\},
+    &= 2K \exp \left \{\mu^* (e^{-2\epsilon^2}-1) \right\},
   \end{align}
-  where the last line follows from moment generating function of~${S_t \sim \distPoisson(\lambda^*)}$.
-  Setting this equal to~$\delta$ and solving for~$\lambda^*$ yields the stated bound.
+  where the last line follows from moment generating function of~${S_t \sim \distPoisson(\mu^*)}$.
+  Setting this equal to~$\delta$ and solving for~$\mu^*$ yields the stated bound.
 \end{proof}
 
-This bound states that for a fixed gain factor, the number of neurons
-required to guarantee that the total variation distance between the
-true and estimated distributions is bounded by~$\epsilon$ could grow
-extremely rapidly as~$\epsilon$ goes to zero.
+% This bound states that for a fixed gain factor, the number of neurons
+% required to guarantee that the total variation distance between the
+% true and estimated distributions is bounded by~$\epsilon$ could grow
+% extremely rapidly as~$\epsilon$ goes to zero.
 
 So far we have considered the estimated probability distribution
 obtained by ``reading out'' the entire population of neurons. What if
@@ -356,24 +367,77 @@ corollary.
 \begin{corollary}
   \label{cor:sparse_bounds}
   Given a fixed probability vector~$\bpi_t$, firing
-  rates~$\lambda_{t,n} = \gamma \pi_{t,k_n}^{(j_n)}$, a fixed error
-  level~$\epsilon < 1$, and a desired confidence~$\delta < 1$, 
-  and~$\rho R$ observed neurons for each of the~$K$ values,
-  the probability of error is bounded
-  by~$\Pr(\dtv(\widehat{\bpi}_t, \bpi_t) > \epsilon) < \delta$
-  if
+  rates~$\lambda_{t,n} = \lambdamax \pi_{t,k_n}^{(j_n)}$ over the
+  integration time window, a fixed error level~$\epsilon < 1$, and a
+  desired confidence~$\delta < 1$, and~$\rho R$ observed neurons for
+  each of the~$K$ values, the probability of error is bounded
+  by~$\Pr(\dtv(\widehat{\bpi}_t, \bpi_t) > \epsilon) < \delta$ if
   \begin{align}
-    \gamma \rho R \geq \lambda^*,
+    (\lambdamax T_I) (\rho R) \geq \mu^*,
   \end{align} 
-  where~$\lambda^*$ is at most,
+  where~$\mu^*$ is at most,
   \begin{align}
-    \lambda^* &\leq \frac{1}{1-e^{-2\epsilon^2}} \ln \frac{2K}{\delta}.  
+    \mu^* &\leq \frac{1}{1-e^{-2\epsilon^2}} \ln \frac{2K}{\delta}.  
   \end{align}
 \end{corollary}
 
 \begin{proof}
   This follows directly from Theorem~\ref{thm:rate_bounds} with $\rho R$ substituted for~$R$.
 \end{proof}
+
+Corollary~\ref{cor:sparse_bounds} provides theoretical connection
+between the fidelity of the representation, measured in terms of the
+error~$\epsilon$ and confidence~$\delta$ for a given number of
+values~$K$, and parameters of the neural implementation, namely the
+maximum firing rate, the integration time, the connection probability,
+and the representation size.  The expected spike count is the product
+of the effective number of neurons,~$\rho R$, and the expected number
+of spikes per neuron,~$\lambdamax T_I$.  Together, these allow us to
+deduce a manifold of trade-offs between population size and
+integration time that will achieve a desired error level and
+confidence. 
+
+
+% Figure: Theoretical bounds on error and physiological parameters
+\begin{figure}[t!]
+  \centering
+  \begin{subfigure}[b]{2.75in}
+   \centering
+   \caption{}
+   \vspace{-.4in}
+   \includegraphics[width=\textwidth]{figures/ch7/error_vs_expected_spike_count}
+   \label{fig:error_vs_expected_spike_count}
+ \end{subfigure}
+ \begin{subfigure}[b]{2.75in}
+   \centering
+   \caption{}
+   \vspace{-.4in}
+   \includegraphics[width=\textwidth]{figures/ch7/mu_for_R_T}
+   \label{fig:mu_vs_R_T}
+ \end{subfigure}
+ \vspace{-.3in}
+ \caption[Theoretical bounds on expected spike count and physiological parameters]
+ { Theoretical relationship between between total variation distance, expected spike
+   count, and physiological parameters. 
+   \textbf{(a)} Theoretical 
+   upper bound on the 95th percentile of the total variation distance,~$\epsilon$, 
+   as a function of the expected spike count,~$\mu = (\rho R) (\lambdamax T_I)$,
+   for increasing values of~$K$. 
+   \textbf{(b)} The expected spike count is the product of the effective number 
+   of neurons,~$\rho R$, and the effective number of spikes per neuron,~$\lambdamax T_I$.
+   This shows how time and number of neurons can be balanced to obtain the desired 
+   expected spike count.
+ }
+ \label{fig:theoretical_complexity}
+\end{figure}
+
+Figure~\ref{fig:theoretical_complexity} plots these theoretical 
+bounds. Fig.~\ref{fig:error_vs_expected_spike_count} shows the theoretical
+upper bound on the 95th percentile of the total variation distance as a
+function of the expected spike count for a range of distribution sizes,~$K$.
+Fig.~\ref{fig:mu_vs_R_T} illustrates the trade-offs between effective 
+number of neurons and expected number of spikes per neuron necessary 
+to achieve a desired expected spike count.
 
 
 % Figure: empirical and theoretical total variation distance
@@ -422,9 +486,9 @@ corollary.
  \vspace{-.3in}
  \caption[Empirical and Theoretical Total Variation Distance]
  {Empirical and theoretical total variation distance under a variety 
-   of parameter regimes. Whiskers show the empirical~$10$th 
-   and~$90$th percentiles. Yellow line shows the theoretical
-   upper bound on the $90$th percentile. 
+   of parameter regimes. Whiskers show the empirical~5th 
+   and~95th percentiles. Yellow line shows the theoretical
+   upper bound on the 95th percentile. 
    \textbf{Left} column:~$K=2$. \textbf{Right} column:~$K=10$. 
    \textbf{Top} row: fixed population spike count,~$S$. 
    \textbf{Middle} row: varying the number of neurons per variable.
@@ -435,8 +499,7 @@ corollary.
 \end{figure}
 
 Figure~\ref{fig:complexity} shows the results of an empirical 
-assessment of the total variation distance between the true and 
-estimated probability vectors under a variety of parameter regimes.
+assessment of this theory under a variety of parameter regimes.
 For each regime, we show the results for discrete distributions over
 ~$K=2$ values (left column) and~$K=10$ values (right column). We 
 sample~$1000$ discrete distributions from a Dirichlet 
@@ -450,16 +513,17 @@ In this case, the spikes are attributed to each value according
 to a multinomial distribution. We plot the theoretical bound from
 Theorem~\ref{thm:fixed_count} in yellow.
 
-In the middle row we measure the error as a function of the representation
-size,~$R$, under the assumption that spikes are counted in one millisecond bins 
-for~$10$ milliseconds, and the gain is set to~$0.1$, which corresponds to a maximum firing 
-rate of~$100$Hz. Thus, in expectation the population will emit~$R$ spikes, 
-allowing the top and middle rows to be directly compared. That is, in the top row, the 
-population fires exactly the number of spikes expected in the middle row.
-We see that the stochastic population spike counts does indeed introduce
-extra variability in the error, as predicted by Theorem~\ref{thm:rate_bounds},
-though the median error is not substantially different from that of the 
-fixed-$S$ case.
+In the middle row we measure the error as a function of the
+representation size,~$R$, for~$\rho=1.0$, under the assumption that
+spikes are counted in one millisecond bins for~$T_I=10$ milliseconds,
+and a maximum firing rate of~$100$Hz (i.e.~$\lambdamax=0.1$). Thus, in
+expectation the population will emit~$R$ spikes, allowing the top and
+middle rows to be directly compared. That is, in the top row, the
+population fires exactly the number of spikes expected in the middle
+row.  We see that the stochastic population spike counts does indeed
+introduce extra variability in the error, as predicted by
+Theorem~\ref{thm:rate_bounds}, though the median error is not
+substantially different from that of the fixed-$S$ case.
 
 Finally, the bottom row shows the empirical and predicted error as 
 we vary the observation probability,~$\rho$. Here, the representation 
@@ -603,16 +667,16 @@ Explicitly writing the additive constant, we have,
 \begin{align}
   \nonumber
   \log \widehat{\pi}_{t,k}^{(j)} 
-  &= -\log c_t^{(j)} + \log \phi(z_j=k \given \btheta) \\
+  &= -\log \nu_t^{(j)} + \log \phi(z_j=k \given \btheta) \\
   &\hspace{4em} + \bbE_{q_{t-1}(\bz_{\neg j})} \bigg[
   \sum_{i \in \neigh(j)} \log \phi(z_{i}, z_j=k \given \btheta) \bigg] \\
   % In terms of firing rates
   & \nonumber = 
-     - \log c_t^{(j)} + \log \phi(z_j=k \given \btheta) \\
+     - \log \nu_t^{(j)} + \log \phi(z_j=k \given \btheta) \\
   & \label{eq:variational_rate}
   \hspace{4em} + \sum_{i \in \neigh(j)} \sum_{k'=1}^K
   \bigg[\log \phi(z_{i}=k', z_j=k \given \btheta) \,\cdot  \widehat{\pi}_{t-1,k'}^{(i)} \bigg] \\
-  &= -\log c_t^{(j)} + \psi_{t,k}^{(j)}.
+  &= -\log \nu_t^{(j)} + \psi_{t,k}^{(j)}.
 \end{align}
 where we have combined the terms from the unary and pairwise factors
 into the activation,~$\psi_{t,k}^{(j)}$.
@@ -624,7 +688,7 @@ ensure this normalization.  Thus,
   \widehat{\pi}_{t,k}^{(j)} &=
   \exp \left \{\psi_{t,k}^{(j)} -\log c_{t}^{(j)} \right \},
   & & &
-  c_t^{(j)} &= \sum_{k'} \exp \left \{\psi_{t,k'}^{(j)} \right \}.
+  \nu_t^{(j)} &= \sum_{k'} \exp \left \{\psi_{t,k'}^{(j)} \right \}.
 \end{align}
 
 %Note that the pairwise factor functions are not necessarily symmetric.
@@ -644,10 +708,10 @@ to~$\widehat{\pi}_{t,k}^{(j)}$, then in expectation, the empirical
 distribution represented by the spike counts will be equal to the
 desired distribution. Thus, we aim to set,
 \begin{align}
-  \lambda_{t,n} &= \gamma \, \widehat{\pi}_{t,k_n}^{(j_n)}
-  = \gamma \exp \left \{\psi_{t,k_n}^{(j_n)} -\log c_{t}^{(j_n)} \right \},
+  \lambda_{t,n} &= \lambdamax \, \widehat{\pi}_{t,k_n}^{(j_n)}
+  = \lambdamax \exp \left \{\psi_{t,k_n}^{(j_n)} -\log \nu_{t}^{(j_n)} \right \},
 \end{align}
-for fixed \emph{gain},~$\gamma$. While this rate function is
+for fixed \emph{gain},~$\lambdamax$. While this rate function is
 nearly a linear-nonlinear cascade, as we studied in previous
 chapters, there is one major impediment to realizing this
 calculation in biological neurons. Specifically, to compute
@@ -657,13 +721,13 @@ a neuron only observes the spike counts, which are
 unnormalized probabilities. This motivates our next assumption,
 
 \begin{assumption}
-  All neurons in the population share the same gain,~$\gamma$.
+  All neurons in the population share the same gain,~$\lambdamax$.
   Thus,
   \begin{align}
     \bbE \left[ \sum_{n=1}^N \bbI[j_n=j] \, s_{t,n} \right]
     &= \bbE \left[ \sum_{n=1}^N \sum_{k=1}^K \bbI[j_n=j] \, \bbI[k_n=k] \,s_{t,n} \right] \\
-    &= \gamma \sum_{n=1}^N \sum_{k=1}^K \bbI[j_n=j] \, \bbI[k_n=k] \, \widehat{\pi}_{t,k}^{(j)} \\
-    &= \gamma R.
+    &= \lambdamax \sum_{n=1}^N \sum_{k=1}^K \bbI[j_n=j] \, \bbI[k_n=k] \, \widehat{\pi}_{t,k}^{(j)} \\
+    &= \lambdamax R.
   \end{align}
 
   Moreover, the instantaneous probability is well-approximated by,
@@ -671,7 +735,7 @@ unnormalized probabilities. This motivates our next assumption,
       \widehat{\pi}_{t,k}^{(j)} &=
   \frac{\sum_{\Delta=1}^{T_I} \sum_{n=1}^N \bbI[j_n=j] \, \bbI[k_n=k] \, s_{t-\Delta ,n}}
        {\sum_{\Delta=1}^{T_I} \sum_{n=1}^N \bbI[j_n=j] \, s_{t-\Delta ,n}} \\
-       &\approx (\gamma T_I R)^{-1} \sum_{\Delta=1}^{T_I} \sum_{n=1}^N \bbI[j_n=j] \, \bbI[k_n=k] \, s_{t-\Delta,n}.
+       &\approx (\lambdamax T_I R)^{-1} \sum_{\Delta=1}^{T_I} \sum_{n=1}^N \bbI[j_n=j] \, \bbI[k_n=k] \, s_{t-\Delta,n}.
   \end{align}
   In other words, the total spike count is concentrated around its mean.
 \end{assumption}
@@ -681,8 +745,8 @@ desired dynamics in~Eq.~\ref{eq:variational_rate}
 simplify to,
 \begin{align}
   \label{eq:mf_log_probs}
-  \lambda_{t,n} &= \gamma
-  \exp \left \{b_n + (\gamma T_I R)^{-1} \sum_{\Delta=1}^{T_I} \sum_{m=1}^N w_{n \from m} \cdot s_{t-\Delta,m}
+  \lambda_{t,n} &= \lambdamax
+  \exp \left \{b_n + (\lambdamax T_I R)^{-1} \sum_{\Delta=1}^{T_I} \sum_{m=1}^N w_{n \from m} \cdot s_{t-\Delta,m}
   - \log c_t^{(j_n)} \right \}
 \end{align}
 where
@@ -701,13 +765,13 @@ and
 
 \TODO{Show a figure of inference dynamics for a simple model}
 
-The last step is to compute the normalizing input,~$c_t^{(j)}$.
+The last step is to compute the normalizing input,~$\nu_t^{(j)}$.
 This requires summing the instantaneous rates of all neurons representing the
 random variable,~$z_j$. While this is clearly implausible, we may derive
 a gain controller from an alternative perspective. Normalizing the
 probability distribution ensures that the expected spike count at
 any time step for
-neurons representing~$z_j$ is equal to~$R\gamma$. If the distribution
+neurons representing~$z_j$ is equal to~$R\lambdamax$. If the distribution
 is not properly normalized, the expected spike count will deviate.
 Thus, a reasonable gain controller can estimate the population
 can estimate the population rate,
@@ -716,7 +780,7 @@ can estimate the population rate,
 \end{align}
 and set the control input to,
 \begin{align}
-  c_{t}^{(j)} &= \frac{\widehat{\lambda}_{t}^{(j)}}{\gamma T_G R}.
+  \nu_{t}^{(j)} &= \frac{\widehat{\lambda}_{t}^{(j)}}{\lambdamax T_G R}.
 \end{align}
 The time scale of the gain controller is typically set to be
 less than the time scale of inference, that is~$T_G < T_I$.
@@ -870,7 +934,7 @@ the baseline firing rate. We assume that these neurons have a dynamic
 state variable,~$\alpha_{t,n}$, that roughly computes a moving average
 of its firing rate,
 \begin{align}
-  \alpha_{t,n} &= \alpha + (\gamma T_L)^{-1} \cdot \sum_{\Delta = 1}^{T_L} s_{t-\Delta ,n} \\
+  \alpha_{t,n} &= \alpha + (\lambdamax T_L)^{-1} \cdot \sum_{\Delta = 1}^{T_L} s_{t-\Delta ,n} \\
   &\approx \alpha + \widehat{\pi}_{t,k_n}^{(j_n)}
 \end{align}
 This state variable governs the instantaneous activation bias,
@@ -899,7 +963,7 @@ We propose the following learning rule for the first state,
 \begin{align}
   \alpha_{t, n \from m} &=
   \alpha +
-  (\gamma^2 T_L)^{-1}  \sum_{\Delta = 1}^{T_L} s_{t-\Delta ,n} \cdot s_{t-\Delta,m} \\
+  (\lambdamax^2 T_L)^{-1}  \sum_{\Delta = 1}^{T_L} s_{t-\Delta ,n} \cdot s_{t-\Delta,m} \\
   &\approx \alpha + \widehat{\pi}_{t-1,k_n}^{(j_n)} \cdot \widehat{\pi}_{t-1,k_m}^{(h_m)}. 
 \end{align}
 The tricky, asymmetric part comes in whether the is on the
@@ -907,12 +971,12 @@ child neuron,~$z_{h_m} = \pa(z_{j_n})$, or the parent
 neuron,~$z_{j_n}= \pa(z_{h_m})$. This determines how the second
 state must be computed. If~$z_{j_n}$ is the child, then
 \begin{align}
-  \beta_{t,n \from m} &= K\alpha + (\gamma T_L)^{-1} \sum_{\Delta = 1}^{T_L} s_{t -\Delta, m} \\
+  \beta_{t,n \from m} &= K\alpha + (\lambdamax T_L)^{-1} \sum_{\Delta = 1}^{T_L} s_{t -\Delta, m} \\
   &\approx K\alpha + \widehat{\pi}_{t-1,k_m}^{(z_{h_m})}.
 \end{align}
 Otherwise, if~$z_{j_n} = \pa(z_{h_m})$,
 \begin{align}
-  \beta_{t,n \from m} &= K\alpha + (\gamma T_L)^{-1} \sum_{\Delta = 1}^{T_L} s_{t -\Delta, n} \\
+  \beta_{t,n \from m} &= K\alpha + (\lambdamax T_L)^{-1} \sum_{\Delta = 1}^{T_L} s_{t -\Delta, n} \\
   &\approx K\alpha + \widehat{\pi}_{t-1,k_n}^{(z_{j_n})}.
 \end{align}
 The difference is in whether the second state counts pre- or post-synaptic
