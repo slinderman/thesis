@@ -266,28 +266,38 @@ of the theorem.
 Now suppose~$S_t=S^*$. Since a binomial random variable,~$S_{t}$, can be seen
 as a sum of independent coin flips, we can use a Chernoff bound to
 upper bound the probability of deviating from the mean by a
-multiplicative factor. We
+multiplicative factor. Leveraging the fact that~$\pi_{t,k} \leq 1$, we
 have,
+% \begin{align}
+%   \Pr \left(S_{t,k} > \bbE[S_{t,k} \given S^*] \left(1+\frac{\epsilon}{\pi_{t,k}} \right) \right) 
+%   &\leq \exp \left \{- \frac{S^* \epsilon^2}{3 \pi_{t,k}} \right \},
+% \end{align}
+% and
+% \begin{align}
+%   \Pr \left(S_{t,k} < \bbE[S_{t,k} \given S^*] \left(1-\frac{\epsilon}{\pi_{t,k}} \right) \right) 
+%   &\leq \exp \left \{- \frac{S^* \epsilon^2}{2 \pi_{t,k}} \right \}.
+% \end{align}
+% Combining these, and leveraging the fact that~$\pi_{t,k} \leq 1$, we get,
+% \begin{align}
+%   \Pr(|\widehat{\pi}_{t,k} - \pi_{t,k} |  > \epsilon \given S^*) 
+%   & \leq 2 \exp \left \{- \frac{S_t \epsilon^2}{3} \right \}.
+% \end{align}
+% In fact, we can do even better (c.f. M\&U Exercise 4.13) and show,
+% \begin{align}
+%   \Pr(|\widehat{\pi}_{t,k} - \pi_{t,k} |  > \epsilon \given S^*) 
+%   &\leq 2 \exp \left \{-2S_t \epsilon^2 \right \}.
+% \end{align}
 \begin{align}
   \Pr \left(S_{t,k} > \bbE[S_{t,k} \given S^*] \left(1+\frac{\epsilon}{\pi_{t,k}} \right) \right) 
-  &\leq \exp \left \{- \frac{S^* \epsilon^2}{3 \pi_{t,k}} \right \},
-\end{align}
-and
-\begin{align}
+  &\leq \exp \left \{-2S_t \epsilon^2 \right \}, \\
   \Pr \left(S_{t,k} < \bbE[S_{t,k} \given S^*] \left(1-\frac{\epsilon}{\pi_{t,k}} \right) \right) 
-  &\leq \exp \left \{- \frac{S^* \epsilon^2}{2 \pi_{t,k}} \right \}.
+  &\leq \exp \left \{-2S_t \epsilon^2 \right \},
 \end{align}
-Combining these, and leveraging the fact that~$\pi_{t,k} \leq 1$, we get,
-\begin{align}
-  \Pr(|\widehat{\pi}_{t,k} - \pi_{t,k} |  > \epsilon \given S^*) 
-  & \leq 2 \exp \left \{- \frac{S_t \epsilon^2}{3} \right \}.
-\end{align}
-In fact, we can do even better (c.f. M\&U Exercise 4.13) and show,
+which together imply,
 \begin{align}
   \Pr(|\widehat{\pi}_{t,k} - \pi_{t,k} |  > \epsilon \given S^*) 
   &\leq 2 \exp \left \{-2S_t \epsilon^2 \right \}.
 \end{align}
-
 We bound the maximum deviation of any entry in~$\widehat{\bpi}$ with a union bound,
 \begin{align}
   \Pr(\dtv(\widehat{\bpi}_t, \bpi_t) > \epsilon \given S^*) 
@@ -663,7 +673,7 @@ To perform inference, the neuronal dynamics must be such that at each
 time step, the relative spike counts satisfy~Eq.~\ref{eq:mf_consistency}. 
 %For discrete random variables, this implies that the rate of a neuron~$n$
 %that represents the variable-value pair~(${j_n=j,\,k_n=k}$) should obey,
-Explicitly writing the additive constant, we have,
+Explicitly writing the additive constant,~$-\log \nu_t^{(j)}$, we have,
 \begin{align}
   \nonumber
   \log \widehat{\pi}_{t,k}^{(j)} 
@@ -686,7 +696,7 @@ know it must sum to one. Thus the additive constant must be set to
 ensure this normalization.  Thus,
 \begin{align}
   \widehat{\pi}_{t,k}^{(j)} &=
-  \exp \left \{\psi_{t,k}^{(j)} -\log c_{t}^{(j)} \right \},
+  \exp \left \{\psi_{t,k}^{(j)} -\log \nu_{t}^{(j)} \right \},
   & & &
   \nu_t^{(j)} &= \sum_{k'} \exp \left \{\psi_{t,k'}^{(j)} \right \}.
 \end{align}
@@ -711,14 +721,18 @@ desired distribution. Thus, we aim to set,
   \lambda_{t,n} &= \lambdamax \, \widehat{\pi}_{t,k_n}^{(j_n)}
   = \lambdamax \exp \left \{\psi_{t,k_n}^{(j_n)} -\log \nu_{t}^{(j_n)} \right \},
 \end{align}
-for fixed \emph{gain},~$\lambdamax$. While this rate function is
+for maximum firing rate,~$\lambdamax$. While this rate function is
 nearly a linear-nonlinear cascade, as we studied in previous
 chapters, there is one major impediment to realizing this
 calculation in biological neurons. Specifically, to compute
 the activation, a neuron must have access to the \emph{normalized}
 probabilities of other hidden and visible variables. In practice,
-a neuron only observes the spike counts, which are
-unnormalized probabilities. This motivates our next assumption,
+a neuron only observes the spike counts of the neurons it receives 
+input from. However, these can be used to estimate the desired probabilities.
+
+\TODO{introduce the sparse adjacency matrix}
+
+This motivates our next assumption,
 
 \begin{assumption}
   All neurons in the population share the same gain,~$\lambdamax$.
