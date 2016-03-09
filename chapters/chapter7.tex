@@ -729,27 +729,38 @@ the activation, a neuron must have access to the \emph{normalized}
 probabilities of other hidden and visible variables. In practice,
 a neuron only observes the spike counts of the neurons it receives 
 input from. However, these can be used to estimate the desired probabilities.
-
-\TODO{introduce the sparse adjacency matrix}
-
-This motivates our next assumption,
+This motivates our next assumptions,
 
 \begin{assumption}
-  All neurons in the population share the same gain,~$\lambdamax$.
-  Thus,
+  Neurons are sparsely connected to one another. For each directed
+  pair of neurons, $(n,m)$, the variable~$a_{n \from m} \in \{0,1\}$
+  indicates whether or not there exists a synaptic connection from
+  neuron~$m$ to neuron~$n$. These connections are modeled as
+  independent and identically distributed Bernoulli random variables,
   \begin{align}
-    \bbE \left[ \sum_{n=1}^N \bbI[j_n=j] \, s_{t,n} \right]
-    &= \bbE \left[ \sum_{n=1}^N \sum_{k=1}^K \bbI[j_n=j] \, \bbI[k_n=k] \,s_{t,n} \right] \\
-    &= \lambdamax \sum_{n=1}^N \sum_{k=1}^K \bbI[j_n=j] \, \bbI[k_n=k] \, \widehat{\pi}_{t,k}^{(j)} \\
-    &= \lambdamax R.
+    a_{n \from m} &\sim \distBernoulli(\rho).
+  \end{align}
+  We combine these variables into a binary adjacency 
+  matrix,~$\bA \in \{0,1\}^{N \times N}$.
+\end{assumption}
+
+\begin{assumption}
+  All neurons in the population share the same gain,~$\lambdamax$. 
+  Thus, neuron~$n$'s estimate of~$\bpi_t^{(j)}$ is 
+  informed by~$(\lambdamax T_I)(\rho R)$ spikes, in expectation:
+  \begin{align}
+    \bbE_{\bA,\bs} \bigg[ \sum_{\Delta = 1}^{T_I} & \sum_{m=1}^N \bbI[j_m=j] \, a_{n \from m} \cdot s_{t-\Delta,m} \bigg] \\
+    &= \bbE_{\bA,\bs} \left[ \sum_{\Delta = 1}^{T_I} \sum_{m=1}^N \sum_{k=1}^K \bbI[j_m=j] \, \bbI[k_m=k] \, a_{n \from m} \cdot s_{t,m} \right] \\
+    &= \lambdamax T_I \rho \sum_{m=1}^N \sum_{k=1}^K \bbI[j_m=j] \, \bbI[k_m=k] \, \widehat{\pi}_{t,k}^{(j)} \\
+    &= (\lambdamax T_I) (\rho R).
   \end{align}
 
   Moreover, the instantaneous probability is well-approximated by,
   \begin{align}
       \widehat{\pi}_{t,k}^{(j)} &=
-  \frac{\sum_{\Delta=1}^{T_I} \sum_{n=1}^N \bbI[j_n=j] \, \bbI[k_n=k] \, s_{t-\Delta ,n}}
-       {\sum_{\Delta=1}^{T_I} \sum_{n=1}^N \bbI[j_n=j] \, s_{t-\Delta ,n}} \\
-       &\approx (\lambdamax T_I R)^{-1} \sum_{\Delta=1}^{T_I} \sum_{n=1}^N \bbI[j_n=j] \, \bbI[k_n=k] \, s_{t-\Delta,n}.
+  \frac{\sum_{\Delta=1}^{T_I} \sum_{m=1}^N \bbI[j_m=j] \, \bbI[k_m=k] \, a_{n \from m} \cdot s_{t-\Delta, m}}
+       {\sum_{\Delta=1}^{T_I} \sum_{m=1}^N \bbI[j_m=j] \, a_{n \from m} \cdot s_{t-\Delta, m}} \\
+       &\approx (\lambdamax T_I \rho R)^{-1} \sum_{\Delta=1}^{T_I} \sum_{m=1}^N \bbI[j_m=j] \, \bbI[k_m=k] \, a_{n \from m} s_{t-\Delta, m}.
   \end{align}
   In other words, the total spike count is concentrated around its mean.
 \end{assumption}
@@ -760,8 +771,8 @@ simplify to,
 \begin{align}
   \label{eq:mf_log_probs}
   \lambda_{t,n} &= \lambdamax
-  \exp \left \{b_n + (\lambdamax T_I R)^{-1} \sum_{\Delta=1}^{T_I} \sum_{m=1}^N w_{n \from m} \cdot s_{t-\Delta,m}
-  - \log c_t^{(j_n)} \right \}
+  \exp \left \{b_n + (\lambdamax T_I \rho R)^{-1} \sum_{\Delta=1}^{T_I} \sum_{m=1}^N a_{n \from m} \cdot w_{n \from m} \cdot s_{t-\Delta,m}
+  - \log \nu_t^{(j_n)} \right \}
 \end{align}
 where
 \begin{align}
@@ -785,7 +796,7 @@ random variable,~$z_j$. While this is clearly implausible, we may derive
 a gain controller from an alternative perspective. Normalizing the
 probability distribution ensures that the expected spike count at
 any time step for
-neurons representing~$z_j$ is equal to~$R\lambdamax$. If the distribution
+neurons representing~$z_j$ is equal to~$\lambdamax R$. If the distribution
 is not properly normalized, the expected spike count will deviate.
 Thus, a reasonable gain controller can estimate the population
 can estimate the population rate,
