@@ -181,7 +181,9 @@ then~$\bbE[\widehat{\pi}_{t,k}^{(j)}] = \pi_{k}^{(j)}$.
       \right] \right].
   \end{align}
   Since~$s_{t, n}$ are independent Poisson random variables, their partial
-  sums are as well. Specifically,
+  sums are as well.
+  \todo{flip the order of this}
+  Specifically,
   \begin{align}
     S_t &\sim \distPoisson \left( \sum_{\Delta = 1}^{T_I} \sum_{n} \bbI[j_n=j] \lambda_{t,n} \right) \\
     &= \distPoisson \left(\lambdamax T_I \sum_n \bbI[j_n=j] \sum_{k} \bbI[k_n=k] \, \pi_{t,k} \right) \\
@@ -788,8 +790,6 @@ and
   \end{cases}
 \end{align}
 
-\TODO{Show a figure of inference dynamics for a simple model}
-
 The last step is to compute the normalizing input,~$\nu_t^{(j)}$.
 This requires summing the instantaneous rates of all neurons representing the
 random variable,~$z_j$. While this is clearly implausible, we may derive
@@ -1032,8 +1032,97 @@ also invertible on this range. We leave this for future work.
 
 \section{Examples}
 
+\subsection{Simple mixture model}
 
-\subsection{Simultaneous Localization and Mapping}
+% Figure: Example of neural inference in a simple mixture model
+\begin{figure}[t!]
+  \centering
+  \begin{subfigure}[b]{5.5in}
+   \centering
+   \caption{}
+   \vspace{-.3in}
+   \includegraphics[width=\textwidth]{figures/ch7/neural_mixture_probs}
+   \label{fig:mixture_probs}
+ \end{subfigure} \\
+ \begin{subfigure}[b]{5.5in}
+   \centering
+   \caption{}
+   \vspace{-.4in}
+   \includegraphics[width=\textwidth]{figures/ch7/neural_mixture_spiketrains}
+   \label{fig:mixture_spiketrains}
+ \end{subfigure}
+ \vspace{-.3in}
+ \caption[Demo of neural inference in a simple mixture model]
+         {Example of neural inference  a simple mixture model with one
+           latent variable,~$z \in \{1, 2, 3\}$, indicating which of the
+           three mixture components gave rise to the data. The observations
+           consist of 5 conditionally independent binary
+           variables,~$x_1, \ldots, x_5$, whose values change every second. 
+           %Each variable-value pair is represented by~$R=10$ neurons.
+           \textbf{(a)} The empirical probabilities (solid lines) decoded
+           from the spike train, and the true posterior (dashed line).
+           Stochasticity arises from noisy inputs and Poisson spike counts.
+           \textbf{(b)} The underlying spike trains of the neurons representing
+           ~$z$ and~$x_i$. Horizontal gray lines distinguish subpopulations of~$R=10$ neurons for
+           each value; vertical lines denote times of stimulus change.
+ }
+ \label{fig:mixture}
+\end{figure}
+
+
+First, we consider a simple mixture model with a single
+latent variable denoting the mixture component,~$z \in \{1, \ldots, K\}$,
+and a set of conditionally independent observations,~$\{x_j\}_{j=1}^J$.
+In this example, we let the observations be Bernoulli
+random variables. The model is parameterized by a marginal
+class probability vector,~$\balpha$, which we assume is uniform,
+and class-conditional probabilities for each observation,
+${\rho_{j,k} = \Pr(x_j=1 \given z=k)}$. Together, these
+specify the probabilistic model,
+\begin{align}
+  \balpha &= \tfrac{1}{K} \bone, & & &
+    z &\sim \distCategorical(\balpha), \\
+  \rho_{j,k} &\sim \distBeta(\tfrac{1}{2},\tfrac{1}{2}),  & & &
+  x_j &\sim \distBernoulli(\rho_{j,z}).  
+\end{align}
+This can be easily transformed into a factor graph with,
+\begin{align}
+  \phi(z=k) &= \alpha_k, \\
+  \phi(x_j=1 \given z=k) &= \rho_{j,k}, \\
+  \phi(x_j=0 \given z=k) &= 1-\rho_{j,k}.
+\end{align}
+
+We simulate inference in this model with a population of neurons.
+Each variable-value pair is represented by~$R=10$ neurons, and each
+pair of neurons is connected with probability~$\rho=0.5$. The maximum
+firing rate is set to~$\lambdamax=100\text{Hz}$, and the integration
+time window is set to~$T_I=100\text{ms}$. Hence, the expected spike
+count used to estimate probabilities is~$(\rho R)(\lambdamax T_I)
+= 50$ spikes. The neurons representing the observed variable assignment
+~$x_j=k$ are externally driven at a rate of~$0.95 \lambdamax$ if~$x_j=k$,
+and a rate of~$0.05 \lambdamax$ if~$x_j=\neg k$. We assume that the
+synaptic weights have already been learned and reflect the exact
+log of the pairwise factors. 
+
+Figure~\ref{fig:mixture} illustrates inference dynamics for a
+changing stimulus. Every second, the observed variables are driven with
+a new pattern, which leads to a new posterior distribution over the
+latent variable. With each change in input, the neurons representing the
+latent variable adjust their firing rates to reflect this new probability.
+Fig.~\ref{fig:mixture_probs} shows the decoded probabilities over time
+(solid lines) along with the true posterior (dashed lines). Despite many
+sources of stochasticity, the decoded probabilities do converge to
+the correct posterior values. The $100$ms integration time is reflected in
+the delayed convergence upon each change in stimulus.
+Fig.~\ref{fig:mixture_spiketrains} shows the spike trains from which these
+probabilities were decoded. The neurons are ordered according to
+the value they encode and the subpopulations of~$R$ neurons are
+separated by horizontal light gray lines. Vertical lines indicate changes
+in input. Overall, the neurons fire at between $30$ and $40$Hz, with a
+dynamic range of about $0$ to $100$Hz, as expected.
+
+
+\subsection{Localization with Hippocampal Place Cells}
 
 Model:
 \begin{itemize}
@@ -1055,3 +1144,11 @@ Model:
 \item Probability of object~$k$ in scene~$d$ causing odorant~$n$:~$\phi(z_{d,n}=k, \eta_{d,k})$
 \item Probability of odorant~$n$ given object~$k$:~$\phi(w_{d,n}, z_{d,n})$
 \end{itemize}
+
+
+\section{Discovering the Probabilistic Model from Spike Trains}
+
+\TODO{Idea use an independent Bernoulli model for the adjacency
+  matrix and a stochastic block model for the weights. Show that
+  block assignments correspond to variable-value pairs and that
+  the mean weights reflect the factor strengths.}
