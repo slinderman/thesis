@@ -16,7 +16,10 @@
    id="svg2"
    version="1.1"
    inkscape:version="0.91 r13725"
-   sodipodi:docname="example_population2.svg">
+   sodipodi:docname="example_population2.svg"
+   inkscape:export-filename="/home/scott/Projects/thesis/figures/ch7/example_population2.png"
+   inkscape:export-xdpi="600"
+   inkscape:export-ydpi="600">
   <defs
      id="defs4">
     <marker
@@ -770,7 +773,8 @@
      inkscape:window-height="1026"
      inkscape:window-x="57"
      inkscape:window-y="24"
-     inkscape:window-maximized="1" />
+     inkscape:window-maximized="1"
+     showguides="false" />
   <metadata
      id="metadata7">
     <rdf:RDF>

@@ -1,52 +1,62 @@
-\chapter{Bayesian Computation in Neural Circuits}
+\chapter{Reverse Engineering Bayesian Computations in Neural Circuits}
 
-The final chapter will take a different view on Bayesian computation.
-Rather than using probabilistic models and Bayesian inference to 
-discover structure in neural recordings, we will consider the 
-hypothesis that the neural circuits under study are actually 
-implementing Bayesian computations. This ``Bayesian brain'' hypothesis 
-is by no means novel --- it has been the subject of much recent 
-research and debate in the computational neuroscience community. 
-Under this hypothesis, the brain uses a probabilistic model 
-of the world, and implements Bayesian inference algorithms to 
-infer latent or missing variables under noisy observations. 
-The probabilistic model is learned through experience, supervised 
-training, or evolution, though the mechanisms of learning are 
-less thoroughly explored. 
+The preceding chapters have developed a range of probabilistic models
+for neural spike trains based on the low-dimensional nature of neural
+activity. These models have captured our intuitions about neural types,
+features, and states as latent variables that inform a strong prior 
+distribution over dynamical patterns of neural spiking. In this chapter, we
+take a first step toward reconciling these intutive models with the
+host of theoretical models of neural computation. From a Bayesian
+perspective, these theoretical models are just prior distributions on
+activity --- albeit highly sophisticated ones. By connecting theory
+to observation in a hierarchical probabilistic model, we provide the
+crucial link necessary to test, evaluate, and revise our theories
+in an automated fashion.
 
-\clearpage
-\section{Outline}
-Why be probabilistic? Distinguish between explicit representation and
-computation of probability distributions and methods which learn
-mappings from inputs to decisions without representing uncertainty. 
-
-A theory of probabilistic computation must address at least three questions?
-\begin{enumerate}
-\item How do we represent probability distributions?
-\item How do we perform inference? That is, how do we update these
-  probabilities based on evidence?
-\item How do we learn the probabilistic dependencies between random variables?
-\end{enumerate}
-
-
-What are the constraints facing this theory? Can we evaluate the
-theoretical complexity in terms of number of neurons, number of
-connections, etc?
-
-What does neural activity look like? How can we use the work of
-previous chapters to discover neurons for each variable and value?
+As an exercise in meta-reasoning, the theory we test with this Bayesian
+approach is that neural populations are themselves performing Bayesian
+inference.
+First, we briefly review the ``Bayesian brain'' hypothesis, the
+various lines of evidence supporting this hypothesis, and some of
+the suggestions of how neurons could represent probability distributions
+and carry out Bayesian calculations. 
+Then, we provide a novel analysis of the complexity of one
+representation scheme, which provides important constraints on 
+biological plausibility of this scheme and the number of neurons we
+must observe in order to test this theory.
+We then adapt existing theories of expectation-maximization and show how 
+neural circuits could perform mean-field variational inference in
+a restricted class of graphical models.
+Finally, we consider the dynamics implied by this theory and show that
+they are equivalent to a generalized linear model with weights drawn
+from a stochastic block model, thus providing a ``top-down,'' theoretical
+justification for the intuitive models developed in Chapter 4.
+With this insight, we show how simple probabilistic models can
+be reverse engineered from spike trains using Bayesian inference for
+generalized linear models and a Bayesian theory of neural computation. 
 
 \section{Introduction}
 Bayesian theories of neural computation address a fundamental
 question: how do organisms reason, act, and make decisions given only
 limited, noisy information about the world around them?  Bayes' rule
 tells us how an optimal agent should combine noisy information with
-prior knowledge to make inferences and decisions under uncertainty. A
-burgeoning body of evidence shows that organisms perform
-near-optimally in many behavioral tasks that require reasoning under
-uncertainty \todo{cite}, which suggests that the brain may be performing, or at
-least approximating, Bayesian inference.  Given this evidence, it is
-natural to ask what algorithms and neural implementations underly this
+prior knowledge to make inferences and decisions under uncertainty.
+That the brain may employ or approximate Bayesian methods is an idea
+that dates back as far as \citet{helmholtz1925treatise}.
+At the cognitive level, Bayesian models have proven extraordinarily
+useful for understanding and explaining human and animal
+behavior~\cite{tenenbaum2011grow, griffiths2008bayesian}. These cognitive models span
+a variety of domains, from lower level systems like visual
+perception~\cite{knill1996perception, brainard1997bayesian, weiss2002motion, yuille2006vision, Stocker2006, Simoncelli2009}
+and motor control~\cite{Kording2004} to higher level systems of
+sensory integration~\cite{ernst2002humans}, 
+language processing~\cite{chater2006probabilistic} and
+learning~\cite{tenenbaum2006theory, courville2006bayesian}
+This burgeoning body of evidence suggests that the brain may be
+performing, or at least approximating, Bayesian inference.
+
+Given this cognitive and behavioral evidence, it is
+natural to ask what algorithms and neural implementations may underly this
 capability. 
 
 Any theory that claims to answer to this question must address four
@@ -188,13 +198,15 @@ viability of this approach and aid in our search for neural
 susbtrates of inference. 
 
 \section{Complexity of Direct Representations}
-The stochasticity of the spike counts means that any instant in 
-time, the probability distribution that is represented by the population will 
-be a random variable.  First, we will show that this representation 
-is unbiased. That is, if the firing rates,~$\lambda_{t, n}$, 
-are proportional to the probability,~$\pi_{k_n}^{(j_n)}$, then the 
-represented probability,~$\widehat{\bpi}_{t}^{(j)}$, will have the  
-correct expectation.
+The stochasticity of the spike counts means that any instant in time,
+the probability distribution that is represented by the population
+will be a random variable.  First, we will show that this
+representation is unbiased. That is, if the firing rates,~$\lambda_{t,
+  n}$, are proportional to the probability,~$\pi_{k_n}^{(j_n)}$, then
+the represented probability,~$\widehat{\bpi}_{t}^{(j)}$, will have the
+correct expectation.  Since we will be focusing on the representation
+of a single random variable $z_j$, we drop the superscript~$(j)$ for
+the remainder of this section.
 
 \begin{lemma}
 \label{lem:consistency}
@@ -202,13 +214,12 @@ If the firing rates are proportional to a given probability
 distribution over the integration time window then the probability
 distribution represented by the population will have expectation equal
 to the given probability distribution.  That is,
-if~$\lambda_{t, n}=\lambdamax \pi_{k_n}^{(j_n)}$,
-then~$\bbE[\widehat{\pi}_{t,k}^{(j)}] = \pi_{k}^{(j)}$.
+if~$\lambda_{t, n}=\lambdamax \pi_{k_n}$,
+then~$\bbE[\widehat{\pi}_{t,k}] = \pi_{k}$.
 \end{lemma}
 
 \begin{proof}
-  Since we are focusing on the representation of a single random variable
-  $z_j$, we drop the superscript~$(j)$ for this section. Let,
+  Let,
   \begin{align}
     S_{t,k} &= \sum_{\Delta = 1}^{T_I} \sum_{n=1}^N \bbI[j_n=j] \, \bbI[k_n=k] \, s_{t-\Delta,n},
   \end{align}
@@ -226,26 +237,24 @@ then~$\bbE[\widehat{\pi}_{t,k}^{(j)}] = \pi_{k}^{(j)}$.
       \right] \right].
   \end{align}
   Since~$s_{t, n}$ are independent Poisson random variables, their partial
-  sums are as well.
-  \todo{flip the order of this}
-  Specifically,
+  sums are as well.  Specifically,
   \begin{align}
-    S_t &\sim \distPoisson \left( \sum_{\Delta = 1}^{T_I} \sum_{n} \bbI[j_n=j] \lambda_{t,n} \right) \\
-    &= \distPoisson \left(\lambdamax T_I \sum_n \bbI[j_n=j] \sum_{k} \bbI[k_n=k] \, \pi_{t,k} \right) \\
+    S_{t,k} &\sim \distPoisson \left( \sum_{\Delta = 1}^{T_I} \sum_{n} \bbI[j_n=j] \bbI[k_n=k] \lambda_{t,n} \right) \\
+    &= \distPoisson \left(\lambdamax T_I \sum_n \bbI[j_n=j] \bbI[k_n=k] \, \pi_{k} \right) \\
     \label{eq:S_t_rate}
-    &= \distPoisson(\lambdamax \, T_I \, R),
+    &= \distPoisson(\lambdamax \, T_I \, R \, \pi_{k}),
   \end{align}
-  and, similarly,
+  which implies,
   \begin{align}
-        S_{t,k} &\sim \distPoisson \left( \lambdamax \, T_I \, R \, \pi_{t, k} \right).
+    S_{t} = \sum_{k} S_{t,k} &\sim \distPoisson(\lambdamax \, T_I \, R).
   \end{align}
   Moreover, their conditional distribution is binomial.
   \begin{align}
     S_{t,k} \given S_t &\sim
-    \distBinomial \left( S_t, \frac{\lambdamax \, T_I \, R \, \pi_{t,k}}{\lambdamax \, T_I \, R} \right)
-    =\distBinomial(S_t, \pi_{t,k}),
+    \distBinomial \left( S_t, \frac{\lambdamax \, T_I \, R \, \pi_{k}}{\lambdamax \, T_I \, R} \right)
+    =\distBinomial(S_t, \pi_{k}),
   \end{align}
-  which has expectation~$\pi_{t,k} \, S_t$.
+  which has expectation~$\pi_{k} \, S_t$.
   Plugging this into the iterated expectation above, 
   \begin{align}
     \bbE[\widehat{\pi}_{t,k}]
@@ -253,8 +262,8 @@ then~$\bbE[\widehat{\pi}_{t,k}^{(j)}] = \pi_{k}^{(j)}$.
       \bbE \left[
         \frac{S_{t,k}}{S_t} \, \bigg|\, S_t  \right] \right] \\
     &= \bbE \left[ 
-      \frac{\pi_{t,k} S_t}{S_t} \right]\\
-    &= \pi_{t,k}.
+      \frac{\pi_{k} S_t}{S_t} \right]\\
+    &= \pi_{k}.
   \end{align}
   Thus, this procedure is unbiased.
 \end{proof}
@@ -271,18 +280,18 @@ difference with the total variation distance between the
 distributions,
 \begin{align}
   \dtv(\widehat{\bpi}_t, \bpi) &= 
-  \max_{\ell} |\widehat{\pi}_{t,k} - \pi_{t,k}|.
+  \max_{\ell} |\widehat{\pi}_{t,k} - \pi_{k}|.
 \end{align}
 
 \begin{theorem}
 \label{thm:fixed_count}
 Given a fixed probability vector~$\bpi$, firing
-rates~$\lambda_{t,n} = \lambdamax \pi_{k_n}^{(j_n)}$ over the integration
+rates~$\lambda_{t,n} = \lambdamax \pi_{k_n}$ over the integration
 time window, a fixed error level~$\epsilon < 1$, and a desired
 confidence~$\delta < 1$, there exists a minimum number of spikes~$S^*$
 such that if~$S_t \geq S^*$, the conditional probability of error is
 bounded
-by~$\Pr(\dtv(\widehat{\bpi}_t, \bpi_t) > \epsilon \given S_t) <
+by~$\Pr(\dtv(\widehat{\bpi}_t, \bpi) > \epsilon \given S_t) <
 \delta$.  Furthermore, this minimum number of spikes is at most,
 \begin{align}
 S^* &\leq \frac{1}{2\epsilon^2} \ln \frac{2K}{\delta},  
@@ -295,14 +304,14 @@ First, consider the probability that a particular entry differs from its mean by
   &\Pr(|\widehat{\pi}_k - \pi_k |  > \epsilon \given S_t) \\
   &\qquad= \Pr(\widehat{\pi}_k - \pi_k  > \epsilon \given S_t) + 
   \Pr(\widehat{\pi}_k - \pi_k  < -\epsilon \given S_t) \\
-  &\qquad= \Pr \left(S_{t, k} > S_t \pi_{t, k} \left(1+\frac{\epsilon}{\pi_{t, k}} \right) \, \bigg| \, S_t \right) 
-  +\Pr \left(S_{t, k} < S_t \pi_{t, k} \left(1-\frac{\epsilon}{\pi_{t, k}} \right) \, \bigg| \, S_t\right) \\
-  &\qquad= \Pr \left(S_{t, k} > \bbE[S_{t,k} \given S_t] \left(1+\frac{\epsilon}{\pi_{t, k}} \right) \right) 
-   +\Pr \left(S_{t, k} < \bbE[S_{t,k} \given S_t] \left(1-\frac{\epsilon}{\pi_{t, k}} \right) \right)
+  &\qquad= \Pr \left(S_{t, k} > S_t \pi_{ k} \left(1+\frac{\epsilon}{\pi_{ k}} \right) \, \bigg| \, S_t \right) 
+  +\Pr \left(S_{t, k} < S_t \pi_{ k} \left(1-\frac{\epsilon}{\pi_{ k}} \right) \, \bigg| \, S_t\right) \\
+  &\qquad= \Pr \left(S_{t, k} > \bbE[S_{t,k} \given S_t] \left(1+\frac{\epsilon}{\pi_{ k}} \right) \right) 
+   +\Pr \left(S_{t, k} < \bbE[S_{t,k} \given S_t] \left(1-\frac{\epsilon}{\pi_{ k}} \right) \right)
 \end{align}
 As in Lemma~\ref{lem:consistency}, we have used the fact
-that~$S_{t, k} \given S_t \sim \distBinomial(S_t, \pi_{t, k})$,
-and hence has expectation~$S_t \pi_{t, k}$. 
+that~$S_{t, k} \given S_t \sim \distBinomial(S_t, \pi_{ k})$,
+and hence has expectation~$S_t \pi_{ k}$. 
 The probability of this binomial random variable exceeding its mean 
 by a multiplicative constant is a decreasing function of the 
 number of spikes,~$S_t$. This implies that there exists a minimum 
@@ -310,44 +319,24 @@ number of trials~$S^*$ such that for~$S_t \geq S^*$, this probability
 of error is bounded above by~$\delta$, hence proving the first part 
 of the theorem.
 
-Now suppose~$S_t=S^*$. Since a binomial random variable,~$S_{t}$, can be seen
-as a sum of independent coin flips, we can use a Chernoff bound to
-upper bound the probability of deviating from the mean by a
-multiplicative factor. Leveraging the fact that~$\pi_{t,k} \leq 1$, we
-have,
-% \begin{align}
-%   \Pr \left(S_{t,k} > \bbE[S_{t,k} \given S^*] \left(1+\frac{\epsilon}{\pi_{t,k}} \right) \right) 
-%   &\leq \exp \left \{- \frac{S^* \epsilon^2}{3 \pi_{t,k}} \right \},
-% \end{align}
-% and
-% \begin{align}
-%   \Pr \left(S_{t,k} < \bbE[S_{t,k} \given S^*] \left(1-\frac{\epsilon}{\pi_{t,k}} \right) \right) 
-%   &\leq \exp \left \{- \frac{S^* \epsilon^2}{2 \pi_{t,k}} \right \}.
-% \end{align}
-% Combining these, and leveraging the fact that~$\pi_{t,k} \leq 1$, we get,
-% \begin{align}
-%   \Pr(|\widehat{\pi}_{t,k} - \pi_{t,k} |  > \epsilon \given S^*) 
-%   & \leq 2 \exp \left \{- \frac{S_t \epsilon^2}{3} \right \}.
-% \end{align}
-% In fact, we can do even better (c.f. M\&U Exercise 4.13) and show,
-% \begin{align}
-%   \Pr(|\widehat{\pi}_{t,k} - \pi_{t,k} |  > \epsilon \given S^*) 
-%   &\leq 2 \exp \left \{-2S_t \epsilon^2 \right \}.
-% \end{align}
+Now suppose~$S_t=S^*$.  We use a Chernoff bound to upper bound the
+probability that the binomial random variable,~$S_{t,k}$, deviates
+from its mean by more than a multiplicative factor. Leveraging the
+fact that~$\pi_{k} \leq 1$, we have,
 \begin{align}
-  \Pr \left(S_{t,k} > \bbE[S_{t,k} \given S^*] \left(1+\frac{\epsilon}{\pi_{t,k}} \right) \right) 
-  &\leq \exp \left \{-2S_t \epsilon^2 \right \}, \\
-  \Pr \left(S_{t,k} < \bbE[S_{t,k} \given S^*] \left(1-\frac{\epsilon}{\pi_{t,k}} \right) \right) 
-  &\leq \exp \left \{-2S_t \epsilon^2 \right \},
+  \Pr \left(S_{t,k} > \bbE[S_{t,k} \given S^*] \left(1+\frac{\epsilon}{\pi_{k}} \right) \right) 
+  &\leq \exp \left \{-2S^* \epsilon^2 \right \}, \\
+  \Pr \left(S_{t,k} < \bbE[S_{t,k} \given S^*] \left(1-\frac{\epsilon}{\pi_{k}} \right) \right) 
+  &\leq \exp \left \{-2S^* \epsilon^2 \right \},
 \end{align}
 which together imply,
 \begin{align}
-  \Pr(|\widehat{\pi}_{t,k} - \pi_{t,k} |  > \epsilon \given S^*) 
-  &\leq 2 \exp \left \{-2S_t \epsilon^2 \right \}.
+  \Pr(|\widehat{\pi}_{t,k} - \pi_{k} |  > \epsilon \given S^*) 
+  &\leq 2 \exp \left \{-2S^* \epsilon^2 \right \}.
 \end{align}
 We bound the maximum deviation of any entry in~$\widehat{\bpi}$ with a union bound,
 \begin{align}
-  \Pr(\dtv(\widehat{\bpi}_t, \bpi_t) > \epsilon \given S^*) 
+  \Pr(\dtv(\widehat{\bpi}_t, \bpi) > \epsilon \given S^*) 
   & \leq 2K \exp \left\{-2S^* \epsilon^2 \right\}.
 \end{align}
 Setting this probability equal to~$\delta$ yields the desired bound on~$S^*$,
@@ -377,11 +366,11 @@ total variation distance is less than~$\epsilon$ with probability~$1-\delta$.
 
 \begin{theorem}
   \label{thm:rate_bounds}
-  Given a fixed probability vector~$\bpi_t$, firing
-  rates~$\lambda_{t,n} = \lambdamax \pi_{t,k_n}^{(j_n)}$, a fixed error
+  Given a fixed probability vector~$\bpi$, firing
+  rates~$\lambda_{t,n} = \lambdamax \pi_{k_n}$, a fixed error
   level~$\epsilon < 1$, and a desired confidence~$\delta < 1$, the
   probability of error is bounded
-  by~$\Pr(\dtv(\widehat{\bpi}_t, \bpi_t) > \epsilon) < \delta$
+  by~$\Pr(\dtv(\widehat{\bpi}_t, \bpi) > \epsilon) < \delta$
   if~$\lambdamax T_I R \geq \mu^*$, where~$\mu^*$ is at most,
   \begin{align}
     \mu^* &\leq \frac{1}{1-e^{-2\epsilon^2}} \ln \frac{2K}{\delta}.  
@@ -391,8 +380,8 @@ total variation distance is less than~$\epsilon$ with probability~$1-\delta$.
 \begin{proof}
   We have, 
   \begin{align}
-    \Pr(\dtv(\widehat{\bpi}_t, \bpi_t) > \epsilon) 
-    &= \sum_{m=0}^\infty \Pr(S_t=m) \Pr(\dtv(\widehat{\bpi}_t, \bpi_t) > \epsilon \given S_t=m) \\
+    \Pr(\dtv(\widehat{\bpi}_t, \bpi) > \epsilon) 
+    &= \sum_{m=0}^\infty \Pr(S_t=m) \Pr(\dtv(\widehat{\bpi}_t, \bpi) > \epsilon \given S_t=m) \\
     &\leq \sum_{m=0}^\infty  \Pr(S_t=m) \times 2K \exp \left \{-2m\epsilon^2 \right\} \\
     &= 2K \bbE_{S_t} \left[ \exp \left \{ -2S_t \epsilon^2 \right \} \right] \\
     &= 2K \exp \left \{\mu^* (e^{-2\epsilon^2}-1) \right\},
@@ -423,12 +412,12 @@ corollary.
 
 \begin{corollary}
   \label{cor:sparse_bounds}
-  Given a fixed probability vector~$\bpi_t$, firing
-  rates~$\lambda_{t,n} = \lambdamax \pi_{t,k_n}^{(j_n)}$ over the
+  Given a fixed probability vector~$\bpi$, firing
+  rates~$\lambda_{t,n} = \lambdamax \pi_{k_n}$ over the
   integration time window, a fixed error level~$\epsilon < 1$, and a
   desired confidence~$\delta < 1$, and~$\rho R$ observed neurons for
   each of the~$K$ values, the probability of error is bounded
-  by~$\Pr(\dtv(\widehat{\bpi}_t, \bpi_t) > \epsilon) < \delta$ if
+  by~$\Pr(\dtv(\widehat{\bpi}_t, \bpi) > \epsilon) < \delta$ if
   \begin{align}
     (\lambdamax T_I) (\rho R) \geq \mu^*,
   \end{align} 
@@ -794,7 +783,7 @@ This motivates our next assumptions,
 
 \begin{assumption}
   All neurons in the population share the same gain,~$\lambdamax$. 
-  Thus, neuron~$n$'s estimate of~$\bpi_t^{(j)}$ is 
+  Thus, neuron~$n$'s estimate of~$\bpi^{(j)}$ is 
   informed by~$(\lambdamax T_I)(\rho R)$ spikes, in expectation:
   \begin{align}
     \bbE_{\bA,\bs} \bigg[ \sum_{\Delta = 1}^{T_I} & \sum_{m=1}^N \bbI[j_m=j] \, a_{n \from m} \cdot s_{t-\Delta,m} \bigg] \\
@@ -862,9 +851,8 @@ Here, synaptic weights reflect the conditional log probabilities
 for the variable-value pairs represented by the pre- and post-synaptic
 neurons.
 
-\section{Examples}
-
-\subsection{Simple mixture model}
+\section{Example of a Simple Mixture Model}
+\label{sec:mixture_example}
 
 % Figure: Example of neural inference in a simple mixture model
 \begin{figure}[t!]
@@ -957,6 +945,65 @@ dynamic range of about $0$ to $100$Hz, as expected.
 
 \section{Reverse Engineering the Probabilistic Model from Spike Trains}
 
+Given this ``top-down'' theory of neural computation, can we reverse
+engineer the probabilistic model from neural recordings? To do so, we
+need to infer the subpopulations of neurons that encode each
+variable-value pair, as well as the characteristic weights that
+connect each subpopulation.  We show that this is possible using the
+generalized linear models and structured network priors described in
+Chapter 4.
+
+
+Recall the theoretical dynamics proposed in Section~\ref{sec:inference},
+ reproduced here in slightly simplified form,
+\begin{align}
+  \lambda_{t,n} &= \lambdamax
+  \exp \left \{b_n + \gamma \sum_{\Delta=1}^{T_I} \sum_{m=1}^N a_{n \from m} \cdot w_{n \from m} \cdot s_{t-\Delta,m}
+  - \log \nu_t^{(j_n)} \right \}.
+\end{align}
+The instantaneous firing rate take the form of a generalized linear model.
+Each neuron has a baseline rate that is a function of~$b_n$ and~$\lambdamax$.
+Moreover, the rate is influenced by recent spiking activity through
+the network,~$\bA \odot \bW$, and through the local normalization,~$\nu$. 
+
+According to our theory of neural inference, the sparsity pattern of
+the network should follow an independent Bernoulli model. That is,
+each edge is present with the same probability,~${a_{n \from m} \sim
+  \distBernoulli(\rho)}$.  Moreover, the weights of network should
+encode the pairwise log probabilities,~${\log \phi(z_i=k, z_j=k')}$,
+and the weights from the~$R$ neurons representing~${z_i=k}$ to the~$R$
+neurons representing~${z_j=k'}$ should all be approximately
+equal. This corresponds to stochastic block structure in the weight
+matrix. Thus, to reverse engineer the probabilistic model from the
+observed spike train, we fit a generalized linear model with a
+spike-and-slab network prior that has an independent Bernoulli model
+for the adjacency matrix, and a stochastic block model (SBM) for the
+weight matrix. The SBM has latent variables for each neuron that
+indicate the cluster assignment, and parameters that specify the
+average weight between each pair of clusters:
+\begin{align}
+  c_n & \sim \distCategorical(\alpha \bone), \\
+  \mu_{c \from c'} &\sim \distGaussian(0, \sigma_0^2), \\
+  w_{n \from m} &\sim \distGaussian(\mu_{c_n \from c_m}, \sigma^2).
+\end{align}
+By performing Bayesian inference in this model, we recover a posterior
+distribution over biases,~$\{b_n\}_{n=1}^N$; weighted adjacency
+matrices,~$\bA$ and~$\bW$; latent variables,~$\{c_n\}_{n=1}^N$; and
+parameters,~$\{\mu_{c \from c'}\}_{c,c'=1}^C$.
+
+The normalization presents a minor complication. According to the
+theory, this is most likely computed by local inhibitory neurons
+that estimate the population rate of neurons representing~$z_j$
+and deliver a common, normalizing input to stabilize the rate
+at the desired level. This can be roughly approximated with
+direct, excitatory connections between neurons representing the same
+variable-value pair, and inhibitory connections between neurons
+representing competing values of the same variable. In other words,
+if we focus solely on the activity of neurons representing the variable-value
+pairs, we should expect additional \emph{functional} connections
+that encode the mutually exclusive nature of the distinct values
+of a given variable.
+
 % Figure: Example of neural inference in a simple mixture model
 \begin{figure}[t!]
   \centering
@@ -1002,30 +1049,73 @@ dynamic range of about $0$ to $100$Hz, as expected.
  \label{fig:mixture_recovery}
 \end{figure}
 
-Given this ``top-down'' theory of neural computation, can we reverse
-engineer the probabilistic model from neural recordings? To do so, we
-need to infer the subpopulations of neurons that encode each
-variable-value pair, as well as the characteristic weights that
-connect each subpopulation.  We show that this is possible using the
-generalized linear models and structured network priors described in
-Chapter 4.
+We demonstrate this approach by 
+fitting the hierarchical model to a neural spike train simulated
+from the population described in
+Section~\ref{sec:mixture_example}. The population performs inference
+in a simple mixture model with three latent mixture components,
+and five binary observations. An observation consists of an assignment
+of the five observations, indicated
+by the variables~$\{x_j\}_{j=1}^5$, and given an observation, the dynamics
+perform posterior inference of~$z$, the latent variable indicating the
+underlying mixture component. The population consists of 130 neurons, 10 for
+each variable-value pair.
 
 
-Recall the theoretical dynamics proposed in Section~\ref{sec:inference},
-which we have reproduced here in simplified form,
-\begin{align}
-  \lambda_{t,n} &= \lambdamax
-  \exp \left \{b_n + \gamma \sum_{\Delta=1}^{T_I} \sum_{m=1}^N a_{n \from m} \cdot w_{n \from m} \cdot s_{t-\Delta,m}
-  - \log \nu_t^{(j_n)} \right \}.
-\end{align}
 
-correspond to a generalized linear model (GLM) of neural activity. The
-instantaneous firing rate is 
+Figure~\ref{fig:mixture_recovery} shows the inferred parameters of the
+hierarchical model. The posterior mean of the weighted adjacency
+matrix is shown in Figure~\ref{fig:mixture_network}, with neurons sorted
+by variable and then by value. The block diagonal strucutre shows
+the normalizing connections betewen neurons representing the same variable,
+and the region highlighted in yellow shows the inferred connections from
+neurons representing~$x_j$ to neurons reprsenting~$z$. These encode
+the pairwise log probabilities of the mixture model.
 
+Figure~\ref{fig:mixture_cocluster} shows the inferred posterior probability
+of two neurons belonging to the same cluster. While the true model has
+13 clusters, we allowed our model to use as many as 20 clusters.
+If the variable-value subpopulations
+were recovered perflectly, this matrix would be block diagonal. We
+see that it is nearly so; only a handful of neurons are misclassified
+and some blocks are split in two.
 
-\section{ideas}
+Finally, Figure~\ref{fig:mixture_prob_weights} shows the true and inferred
+mean weights under the stochastic block model. First, we found the permutation
+of inferred cluster labels that best matched the true cluster labels. Then we found the
+linear transformation that best matched the true and inferred weights.
+The result shows that the true pattern of weights from~$x_j$ to~$z$ are
+recovered with high fidelity.
 
-\subsection{Localization with Hippocampal Place Cells}
+While this procedure for reverse engineering probabilistic models
+from observed spike trains is not foolproof, this simple example
+illustrates that much can be learned by combining top-down theories
+with bottom-up analysis. To further improve this inference procedure,
+we should include two sets of latent cluster assignments in our
+hierarchical model: one set of variables that specifies the
+variable that a cluster of neurons represents (i.e.~$j_n$ in our
+theory), and another that indicates the value (i.e.~$k_n$).
+Incorporating the knowledge that different values of the same variable
+are mututally exclusive, we can build a strong prior distribution
+over weights given these two variables. 
+
+What else can be learned from the results of this approach? In
+practice, we only observe a fraction of the neurons in a particular
+region If our recording method samples~$N$ neurons out
+of~$N_{\mathsf{total}}$, then given an inferred block
+size,~$\widehat{R}$, we can estimate the true representation size to
+be roughly,~$R\approx \widehat{R} N_{\mathsf{total}} / N$. If variable-value
+subpopulations are truly disjoint, this provides an estimate of the
+number of subpopulations the region could encode. Combined with the
+complexity theoretic bounds developed in Section~\ref{sec:complexity},
+these top-down and bottom-up approaches provide two tacks  by which we may 
+converge on a theory of probabilistic inference in neural circuits.
+
+\section{Discussion}
+
+\subsection{More ideas}
+
+\subsubsection{Localization with Hippocampal Place Cells}
 
 Model:
 \begin{itemize}
@@ -1035,7 +1125,7 @@ Model:
 \item Observation probability~$\phi(z_{i}, x_{i,j})$. And how could these be shared?
 \end{itemize}
 
-\subsection{Olfactory Scene Parsing}
+\subsubsection{Olfactory Scene Parsing}
 
 
 Model:
