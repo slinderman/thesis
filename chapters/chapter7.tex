@@ -1,17 +1,16 @@
-\chapter{Reverse Engineering Bayesian Computations in Neural Circuits}
+\chapter{Reverse Engineering Bayesian Computations from Neural Spike Trains}
 
 The preceding chapters have developed a range of probabilistic models
-for neural spike trains based on the low-dimensional nature of neural
-activity. These models have captured our intuitions about neural types,
-features, and states as latent variables that inform a strong prior 
-distribution over dynamical patterns of neural spiking. In this chapter, we
-take a first step toward reconciling these intutive models with the
-host of theoretical models of neural computation. From a Bayesian
-perspective, these theoretical models are just prior distributions on
-activity --- albeit highly sophisticated ones. By connecting theory
-to observation in a hierarchical probabilistic model, we provide the
-crucial link necessary to test, evaluate, and revise our theories
-in an automated fashion.
+for neural spike trains that leverage our intuitions about neural
+types, features, and states to inform structured prior distributions over
+the dynamics of neural activity. In this chapter, we take a
+first step toward reconciling these intutive models with the host of
+theoretical models of neural computation. From a Bayesian perspective,
+these theoretical models are just prior distributions on activity ---
+albeit highly sophisticated ones. By connecting theory to observation
+in a hierarchical probabilistic model, we provide the crucial link
+necessary to test, evaluate, and revise our theories in a principled
+fashion.
 
 As an exercise in meta-reasoning, the theory we test with this Bayesian
 approach is that neural populations are themselves performing Bayesian
@@ -42,56 +41,155 @@ limited, noisy information about the world around them?  Bayes' rule
 tells us how an optimal agent should combine noisy information with
 prior knowledge to make inferences and decisions under uncertainty.
 That the brain may employ or approximate Bayesian methods is an idea
-that dates back as far as \citet{helmholtz1925treatise}.
-At the cognitive level, Bayesian models have proven extraordinarily
-useful for understanding and explaining human and animal
-behavior~\cite{tenenbaum2011grow, griffiths2008bayesian}. These cognitive models span
-a variety of domains, from lower level systems like visual
-perception~\cite{knill1996perception, brainard1997bayesian, weiss2002motion, yuille2006vision, Stocker2006, Simoncelli2009}
-and motor control~\cite{Kording2004} to higher level systems of
-sensory integration~\cite{ernst2002humans}, 
-language processing~\cite{chater2006probabilistic} and
-learning~\cite{tenenbaum2006theory, courville2006bayesian}
-This burgeoning body of evidence suggests that the brain may be
-performing, or at least approximating, Bayesian inference.
+that dates back as far as \citet{helmholtz1925treatise}.  At the
+cognitive level, Bayesian models have proven extraordinarily useful
+for understanding and explaining human and animal
+behavior~\cite{tenenbaum2011grow, griffiths2008bayesian}. These
+cognitive models span a variety of domains, from lower level systems
+like visual perception~\cite{knill1996perception,
+  brainard1997bayesian, weiss2002motion, yuille2006vision,
+  Stocker2006, Simoncelli2009} and motor control~\cite{Kording2004} to
+higher level systems of sensory integration~\cite{ernst2002humans},
+time interval estimation~\cite{jazayeri2010temporal}, 
+language processing~\cite{chater2006probabilistic},
+attention~\cite{whiteley2012attention, chikkerur2010,
+  dayan2010selective}, and learning~\cite{tenenbaum2006theory,
+  courville2006bayesian} The success of these models in explaining
+behavior suggests that the brain may be performing, or at least
+approximating, Bayesian computations.
 
-Given this cognitive and behavioral evidence, it is
-natural to ask what algorithms and neural implementations may underly this
-capability. 
+Further buttressing the Bayesian brain hypothesis, some experiments
+have shown not only Bayes-optimal behavior, but also neural responses
+that are strongly correlated with relevant probabilistic quantities.
+For example, \citet{Yang2007} trained monkeys to make an eye movement
+to either the left or the right based on an observed set of shapes.
+Each shape contributed an additive ``weight'' to the log probability
+that reward would be given for leftward movements rather than
+rightward, so the optimal strategy (once these weights have been
+learned) is to sum the weights and compute the log probability of left
+versus right, and choose the direction that is most likely to yield a
+reward.  In effect, the monkeys had to perform inference in a simple
+mixture model. The monkeys learned to perform this task optimally, and
+\citet{Yang2007} found that the firing rates of neurons in parietal
+cortex were proportional to the log likelihood ratio of left versus
+right. While it is possible that the monkeys simply learned a
+discriminative mapping from shapes to decisions, subsequent work
+showed that when the paradigm is extended to allow the monkey to
+opt-out of making a decision and obtain a smaller but guaranteed
+reward, the monkey chooses to opt out only when the probability of
+left versus right is below a threshold \cite{Kiani2009}.
 
-Any theory that claims to answer to this question must address four
-interrelated concerns.  First, it must specify how posterior
-probabilities are represented, and how the conditional probability
-distributions that constitute the probabilistic model are encoded.
-Second, it must describe a set of neural dynamics that compute the
-desired posterior distribution for a given set of observations. That
-is, it must define an algorithm for probabilistic inference. These
-dynamics must respect the natural constraints of neural systems, for
-example, that neural connectivity is sparse and that neurons have
-limited computational power. Finally, a theory is incomplete without a
-description of how the parameters that define the conditional
-probability distributions are learned, and how new variables of
-interest are incorporated into an existing model.
+Further evidence of neural probabilistic inference has been found in
+other simple tasks. In a time interval reproduction task, non-human
+primates exhibited behavior consistent with a Bayesian model, and
+simultaneous recordings in parietal cortex found that some neurons
+encode interval estimates that could support this behavior
+\cite{jazayeri2015neural}. In another line of work, neural correlates
+of multisensory cue integration were found in macaque monkeys
+performing a heading discrimination task. These neurons combined both
+visual and vestibular inputs in a manner consistent with Bayesian
+theory \cite{gu2008neural, morgan2008multisensory, fetsch2009dynamic,
+  fetsch2012neural}.  While these experiments provide some compelling
+evidence in favor of a simple probabilistic computations in neural
+circuits, there is a large gap between these experiments and the rich
+array of cognitive phenomena surveyed above. To bridge this gap, we
+need a broader theory of Bayesian inference in neural circuits, and
+more powerful tools to link these theories to neural activity.
 
-\TODO{Discuss ways of evaluating theories: complexity and consistency
-  with neural data.}
+The past decade has witnessed a surge of interest in theoretical
+models of Bayesian inference with spiking neurons, and this work has
+been the subject of a number of recent surveys~\cite{Simoncelli2009,
+  fiser2010statistically, pouget2013probabilistic, ma2014neural}.
+These theories can be broadly characterized by their answers to three
+successive questions:
+\begin{enumerate}
+\item How are probabilities are represented, and how are the conditional
+  probability distributions that constitute the probabilistic model
+  encoded?
+\item Given a representation, how do neural dynamics compute the
+  desired posterior distribution? In other words, what is the
+  algorithm of probabilistic inference, and how is it realized by a
+  population of neurons? These dynamics must respect the natural
+  constraints of neural systems, for example, that neural connectivity
+  is sparse and that neurons have limited computational power.
+\item Finally, how are the parameters of the probabilistic model
+  learned, and how are new variables of interest incorporated into
+  an existing model?
+\end{enumerate}
+% Direct vs Log vs Leveraging neuronal variability vs Predictive coding
+The simplest and most common answer to the first question is that
+neural firing rates are proportional to probability~\cite{Hinton1983,
+  Hinton1992, Anderson1994, Barber2003, Buesing2011, Berkes2011,
+  nessler2013bayesian, legenstein2014ensembles} or some function of
+the probability, like its log~\cite{Rao2004, beck2007exact, Rao2007,
+  litvak2009cortical}. Others have suggested that probability
+distributions are encoded implicitly by the stochasticity of neurons
+\cite{Zemel1998, Sahani2003, Ma2006}. Still others have contended that
+neurons employ a predictive coding scheme to convey probabilistic
+information~\cite{Rao1999, Deneve2008a, Huang2011}.  An interesting
+alternative deserving of more attention is that distributions may be
+implicitly encoded in the number of neurons representing a particular
+value or, similarly, in the width of neural tuning
+curves~\cite{Shi2009, Ganguli2010}. 
 
-The purpose of this work is not to present a radically novel
-  way of representing distributions, performing inference, or even
-  learning probabilistic relationships. Indeed, the theory we present
-  borrows much from existing work on these topics. Instead, our main contributions
-  are
-  \begin{enumerate}
-    \item an analysis of the complexity of the proposed representation
-  and algorithms, which provides nontrivial constraints on the
-  biological realizations of this theory; 
-  and \item a study of the observable consequences of this theory and
-  a method for testing this theory with neural recordings. 
-  \end{enumerate}
+% Exact, Belief Propagation, Variational inference, importance sampling,
+% MCMC, particle filtering
+Along with this host of representational hypotheses has come an
+equally broad set of proposed inference algorithms. Typically, these
+proposals are tied to a specific assumption about representation.  In
+the simplest models, like mixture models with a single latent
+variable, inference can be performed exactly in a single step.  For
+more complicated models, some dynamic inference and often approximate
+algorithm is necessary. Of these, belief propagation and related
+message passing algorithms~\cite{Rao2007, litvak2009cortical},
+variational inference \cite{Friston2010, nessler2013bayesian},
+and sampling based methods like Markov chain Monte Carlo (MCMC)
+\cite{hoyer2003interpreting, Buesing2011, 
+  Berkes2011, gershman2012multistability, legenstein2014ensembles},
+Hamiltonian Monte Carlo~\cite{aitchison2014hamiltonian},
+importance sampling~\cite{Shi2009}, 
+and particle filtering \cite{lee2003hierarchical} have
+all been suggested. This amazing diversity speaks both to the
+computational power of neural populations as well as the
+enormous challenge in winnowing the field of contending theories.
+
+% Learning via maximization of variational lower bound, synaptic sampling
+The question of learning has received less attention; indeed, many
+theories have ignored it completely. Those that have not tend to
+equate learning with synaptic plasticity. In some cases, synaptic
+plasticity rules like spike-timing dependent plasticity can be seen as
+maximizing a lower bound on the marginal log likelihood
+\cite{Friston2010, nessler2013bayesian, rezende2011variational}. In
+others, the stochasticity of synapses (e.g. stochastic vesicle
+release) is seen as sampling from a distribution over weights
+\cite{aitchison2015synaptic, kappel2015synaptic, kappel2015network}.
+These theories address unsupervised learning of model parameters, but
+the larger question of learning model structure, via either supervised
+or unsupervised means, remains largely a mystery.
 
 
-\section{Representation of probability distributions}
-\TODO{Quickly survey previous approaches. Leave the longer conversation for the discussion.}
+Given the breadth and depth of existing theories of neural inference,
+our intention here is not to present a radically novel theory. Instead,
+our focus is on how we may assess the viability of a theory of neural
+inference. To that end, we first provide a detailed description of a
+distributed representation of probability, which is based on a great
+deal of previous work.  We then analyze the complexity of this
+representational scheme in terms of the support of the distribution,
+number of neurons, integration time, firing rate, and degree of
+connectivity required to represent a distribution with both low error
+and high confidence. These complexity-theoretic analyses inform our
+assessment of the biological plausibility of the theory, as well as
+the number of neurons we must measure in order to test the
+theory. Given this representation, we show how Bayesian inference can
+be performed in a subset of probabilistic models using mean-field
+variational inference. Then, we show how the dynamics of inference
+correspond to exactly the generalized linear model dynamics studied in
+Chapter 4, thereby enabling us to use those tools to reverse engineer
+a probabilistic model from a neural spike train recording.  In the
+closing discussion, we consider how these techniques could be extended
+to other theories and to the study of probabilistic learning as well.
+
+\section{A Direct Distributed Representation of Probability Distributions}
 
 % Figure: Example of neural inference in a simple mixture model
 \begin{figure}[t!]
@@ -146,12 +244,14 @@ representating the distribution over values that a set of random
 variables may take on. We denote this set of variables 
 by,~${\bz = \{z_1, \ldots, z_J\}}$.  For
 simplicity, assume for now that these variables can only assume a
-discrete set of values,~${\{1, \ldots, K\}}$.  \todo{example} Our
+discrete set of values,~${\{1, \ldots, K\}}$.  Our
 neural population is thus tasked with representing probabilty
 vectors,~$\bpi^{(j)}$, for each 
 variable. The entries of these vectors are,~${\pi^{(j)}_k = \Pr(z_j=k)}$.
-\TODO{Later, we will discuss how this representation could be extended
-  to allow continuous random variables.}
+While we do not discuss this matter here, this representation could
+be extended to continuous probability density functions by assigning
+each neuron a basis function or tuning curve over the support of the
+distribution, as in~\cite{Barber2003, Ma2006, beck2007exact}. 
 
 In a direct representation, each variable-value pair,~$(z_j,k)$, is associated with a population of neurons. The firing
 rate of these neurons reflect the instantaneous probability of the
