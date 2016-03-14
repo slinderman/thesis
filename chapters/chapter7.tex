@@ -9,8 +9,8 @@ theoretical models of neural computation. From a Bayesian perspective,
 these theoretical models are just prior distributions on activity ---
 albeit highly sophisticated ones. By connecting theory to observation
 in a hierarchical probabilistic model, we provide the crucial link
-necessary to test, evaluate, and revise our theories in a principled
-fashion.
+necessary to test, evaluate, and revise our theories in a principled,
+data-driven fashion.
 
 As an exercise in meta-reasoning, the theory we test with this Bayesian
 approach is that neural populations are themselves performing Bayesian
@@ -162,32 +162,34 @@ maximizing a lower bound on the marginal log likelihood
 \cite{Friston2010, nessler2013bayesian, rezende2011variational}. In
 others, the stochasticity of synapses (e.g. stochastic vesicle
 release) is seen as sampling from a distribution over weights
-\cite{aitchison2015synaptic, kappel2015synaptic, kappel2015network}.
+\cite{aitchison2015synaptic, kappel2015synaptic, kappel2015network, tully2014synaptic}.
 These theories address unsupervised learning of model parameters, but
 the larger question of learning model structure, via either supervised
 or unsupervised means, remains largely a mystery.
 
 
 Given the breadth and depth of existing theories of neural inference,
-our intention here is not to present a radically novel theory. Instead,
-our focus is on how we may assess the viability of a theory of neural
-inference. To that end, we first provide a detailed description of a
-distributed representation of probability, which is based on a great
-deal of previous work.  We then analyze the complexity of this
-representational scheme in terms of the support of the distribution,
-number of neurons, integration time, firing rate, and degree of
-connectivity required to represent a distribution with both low error
-and high confidence. These complexity-theoretic analyses inform our
-assessment of the biological plausibility of the theory, as well as
-the number of neurons we must measure in order to test the
-theory. Given this representation, we show how Bayesian inference can
-be performed in a subset of probabilistic models using mean-field
-variational inference. Then, we show how the dynamics of inference
-correspond to exactly the generalized linear model dynamics studied in
-Chapter 4, thereby enabling us to use those tools to reverse engineer
-a probabilistic model from a neural spike train recording.  In the
+our intention here is not to present a radically novel
+theory. Instead, our focus is on how we may assess the viability of a
+theory of neural inference. To that end, we first provide a detailed
+description of a distributed representation of probability, which is
+based on a great deal of previous work.  We then analyze the
+complexity of this representational scheme in terms of the support of
+the distribution, number of neurons, integration time, firing rate,
+and degree of connectivity required to represent a distribution with
+both low error and high confidence, in the spirit of
+\citet{valiant1994circuits, valiant2005memorization}.  As shown by~\citet{gao2015simplicity},
+these complexity-theoretic analyses inform our assessment of the
+biological plausibility of the theory, as well as the number of
+neurons we must measure in order to test the theory. Given this
+representation, we show how Bayesian inference can be performed in a
+subset of probabilistic models using mean-field variational
+inference. Then, we show how the dynamics of inference correspond to
+exactly the generalized linear model dynamics studied in Chapter 4,
+thereby enabling us to use those tools to reverse engineer a
+probabilistic model from a neural spike train recording.  In the
 closing discussion, we consider how these techniques could be extended
-to other theories and to the study of probabilistic learning as well.
+beyond the relatively simple theory of inference studied here.
 
 \section{A Direct Distributed Representation of Probability Distributions}
 
@@ -237,7 +239,7 @@ to other theories and to the study of probabilistic learning as well.
 
 
 \sloppy
-Perhaps the simplest representation of probability is a \emph{direct}
+As described above, the simplest representation of probability is a \emph{direct}
 representation in which neural firing rates reflect instantaneous
 probabilities. Assume a population of neurons is responsible for
 representating the distribution over values that a set of random
@@ -253,16 +255,35 @@ be extended to continuous probability density functions by assigning
 each neuron a basis function or tuning curve over the support of the
 distribution, as in~\cite{Barber2003, Ma2006, beck2007exact}. 
 
-In a direct representation, each variable-value pair,~$(z_j,k)$, is associated with a population of neurons. The firing
-rate of these neurons reflect the instantaneous probability of the
-variable taking on that particular value.  Suppose that each
-pair, is represented by~$R$ neurons. Moreover, suppose
-these representations are \emph{non-overlapping} such that each neuron
-can be represented with at most one variable-value pair.
-Let~${j_n \in \{1, \ldots, H\}}$
-denote the index of the specific variable.
-Then, let~$k_n \in \{1, \ldots K\}$ denote the particular value that neuron~$n$ represents.
+In a \emph{distributed} representation, each variable-value
+pair,~$(z_j,k)$, is associated with a subpopulation of~$R$
+neurons. This is inspired by \citet{valiant1994circuits,
+  valiant2005memorization}, and is similar to the ensemble based
+neural sampling code of \citet{legenstein2014ensembles}.  We further
+assume that these subpopulations are \emph{non-overlapping} such that
+each neuron can be represented with at most one variable-value pair.
+Let~${j_n \in \{1, \ldots, J\}}$ denote the index of the specific
+variable and~$k_n \in \{1, \ldots K\}$ denote the particular
+value that neuron~$n$ represents.
 %A representation size of~$R$ implies that~$\sum_{n=1}^N \bbI[j_n=h] \, \bbI[k_n=k] = R$.
+
+
+Now let~$s_{t,n}$ denote the number of spikes fired by neuron ~$n$ in
+the~$t$-th time bin. The relative spike counts encode instantaneous
+probability distributions for each variable.  If neurons representing
+a particular value fire twice as many spikes as neurons representing a
+competing value, then the first value is twice as likely. We introduce
+the notion of an \emph{integration time},~$T_I$, over which spikes are
+counted to estimate the probability distribution. With this notation,
+the empirical distribution,~$\widehat{\bpi}_t^{(j)}$, is defined by,
+\begin{align}
+  \widehat{\pi}_{t,k}^{(j)} &=
+  \frac{\sum_{\Delta = 1}^{T_I} \sum_{n=1}^N \bbI[j_n=j, k_n=k] \, s_{t-\Delta,n}}
+       {\sum_{\Delta = 1}^{T_I} \sum_{n=1}^N \bbI[j_n=j] \, s_{t-\Delta,n}}.
+\end{align}
+The numerator counts spikes from neurons representing the particular value,~$z_j=k$;
+the denominator counts all spikes from neurons representing~$z_j$.
+
 
 We assume these neurons are stochastic, each endowed
 with an instantaneous firing rate,~$\lambda_{t,n}$, which gives rise to an
@@ -270,22 +291,21 @@ instantaneous spike count,~$s_{t,n}$ according to a Poisson distribution,
 \begin{align}
 s_{t,n} &\sim \distPoisson(\lambda_{t,n}).
 \end{align}
+Thus, while the firing rate may encode one distribution, the distribution
+that is read out from a finite number of spikes will differ. 
 
-In a direct representation, the relative spike counts encode
-instantaneous probability distributions for each variable. 
-If neurons representing a particular value fire twice as many 
-spikes as neurons representing a competing value, then the first 
-value is twice as likely. We introduce the notion of an 
-\emph{integration time},~$T_I$, over which spikes are counted 
-to estimate the probability distribution. Then, the empirical 
-distribution,~$\widehat{\bpi}_t^{(j)}$, is defined by,
-\begin{align}
-  \widehat{\pi}_{t,k}^{(j)} &=
-  \frac{\sum_{\Delta = 1}^{T_I} \sum_{n=1}^N \bbI[j_n=j] \, \bbI[k_n=k] \, s_{t-\Delta,n}}
-       {\sum_{\Delta = 1}^{T_I} \sum_{n=1}^N \bbI[j_n=j] \, s_{t-\Delta,n}}.
-\end{align}
-The numerator counts spikes from neurons representing the particular value,~$z_j=k$;
-the denominator counts all spikes from neurons representing~$z_j$.
+To summarize, the direct distributed representation entails the following
+assumption:
+
+\begin{assumption}
+  Neurons represent discrete probability distributions with a direct
+  distributed code. Each variable-value pair is alloted~$R$ neurons,
+  which emit spikes according to a Poisson distribution.
+  Spikes are integrated over the subpopulation and over an integration
+  time window,~$T_I$, to get an unnormalized probability for the
+  variable-value pair. By normalizing across subpopulations, we can decode
+  the probability distribution. 
+\end{assumption}
 
 Even without any knowledge of the dynamics that gave rise
 to these instantaneous firing rates and to the
@@ -297,7 +317,8 @@ to this question can provide some important constraints on the
 viability of this approach and aid in our search for neural
 susbtrates of inference. 
 
-\section{Complexity of Direct Representations}
+\section{Complexity of the Direct Distributed Representation}
+\label{sec:complexity}
 The stochasticity of the spike counts means that any instant in time,
 the probability distribution that is represented by the population
 will be a random variable.  First, we will show that this
@@ -305,8 +326,8 @@ representation is unbiased. That is, if the firing rates,~$\lambda_{t,
   n}$, are proportional to the probability,~$\pi_{k_n}^{(j_n)}$, then
 the represented probability,~$\widehat{\bpi}_{t}^{(j)}$, will have the
 correct expectation.  Since we will be focusing on the representation
-of a single random variable $z_j$, we drop the superscript~$(j)$ for
-the remainder of this section.
+of a single random variable $z_j$, we drop the superscripts~${}^{(j)}$
+and ${}^{(j_n)}$ for the remainder of this section.
 
 \begin{lemma}
 \label{lem:consistency}
@@ -321,7 +342,7 @@ then~$\bbE[\widehat{\pi}_{t,k}] = \pi_{k}$.
 \begin{proof}
   Let,
   \begin{align}
-    S_{t,k} &= \sum_{\Delta = 1}^{T_I} \sum_{n=1}^N \bbI[j_n=j] \, \bbI[k_n=k] \, s_{t-\Delta,n},
+    S_{t,k} &= \sum_{\Delta = 1}^{T_I} \sum_{n=1}^N \bbI[j_n=j, k_n=k] \, s_{t-\Delta,n},
   \end{align}
   and
   \begin{align}
@@ -339,8 +360,8 @@ then~$\bbE[\widehat{\pi}_{t,k}] = \pi_{k}$.
   Since~$s_{t, n}$ are independent Poisson random variables, their partial
   sums are as well.  Specifically,
   \begin{align}
-    S_{t,k} &\sim \distPoisson \left( \sum_{\Delta = 1}^{T_I} \sum_{n} \bbI[j_n=j] \bbI[k_n=k] \lambda_{t,n} \right) \\
-    &= \distPoisson \left(\lambdamax T_I \sum_n \bbI[j_n=j] \bbI[k_n=k] \, \pi_{k} \right) \\
+    S_{t,k} &\sim \distPoisson \left( \sum_{\Delta = 1}^{T_I} \sum_{n} \bbI[j_n=j, k_n=k] \lambda_{t,n} \right) \\
+    &= \distPoisson \left(\lambdamax T_I \sum_n \bbI[j_n=j, k_n=k] \, \pi_{k} \right) \\
     \label{eq:S_t_rate}
     &= \distPoisson(\lambdamax \, T_I \, R \, \pi_{k}),
   \end{align}
@@ -348,13 +369,14 @@ then~$\bbE[\widehat{\pi}_{t,k}] = \pi_{k}$.
   \begin{align}
     S_{t} = \sum_{k} S_{t,k} &\sim \distPoisson(\lambdamax \, T_I \, R).
   \end{align}
-  Moreover, their conditional distribution is binomial.
+  Moreover, by the Poisson superposition principle, their conditional
+  distribution is binomial,
   \begin{align}
     S_{t,k} \given S_t &\sim
     \distBinomial \left( S_t, \frac{\lambdamax \, T_I \, R \, \pi_{k}}{\lambdamax \, T_I \, R} \right)
     =\distBinomial(S_t, \pi_{k}),
   \end{align}
-  which has expectation~$\pi_{k} \, S_t$.
+  with expectation~$\pi_{k} \, S_t$.
   Plugging this into the iterated expectation above, 
   \begin{align}
     \bbE[\widehat{\pi}_{t,k}]
@@ -738,7 +760,7 @@ a specific assumption about the types of dependency structures
 neural populations can represent.
 
 \begin{assumption}
-  Neural populations only perform inference in probabilistic models
+  Neural populations perform inference in probabilistic models
   that factor into the product of unary and pairwise dependencies. 
 \end{assumption}
 
@@ -887,17 +909,17 @@ This motivates our next assumptions,
   informed by~$(\lambdamax T_I)(\rho R)$ spikes, in expectation:
   \begin{align}
     \bbE_{\bA,\bs} \bigg[ \sum_{\Delta = 1}^{T_I} & \sum_{m=1}^N \bbI[j_m=j] \, a_{n \from m} \cdot s_{t-\Delta,m} \bigg] \\
-    &= \bbE_{\bA,\bs} \left[ \sum_{\Delta = 1}^{T_I} \sum_{m=1}^N \sum_{k=1}^K \bbI[j_m=j] \, \bbI[k_m=k] \, a_{n \from m} \cdot s_{t,m} \right] \\
-    &= \lambdamax T_I \rho \sum_{m=1}^N \sum_{k=1}^K \bbI[j_m=j] \, \bbI[k_m=k] \, \widehat{\pi}_{t,k}^{(j)} \\
+    &= \bbE_{\bA,\bs} \left[ \sum_{\Delta = 1}^{T_I} \sum_{m=1}^N \sum_{k=1}^K \bbI[j_m=j, k_m=k] \, a_{n \from m} \cdot s_{t,m} \right] \\
+    &= \lambdamax T_I \rho \sum_{m=1}^N \sum_{k=1}^K \bbI[j_m=j, k_m=k] \, \widehat{\pi}_{t,k}^{(j)} \\
     &= (\lambdamax T_I) (\rho R).
   \end{align}
 
   Moreover, the instantaneous probability is well-approximated by,
   \begin{align}
       \widehat{\pi}_{t,k}^{(j)} &=
-  \frac{\sum_{\Delta=1}^{T_I} \sum_{m=1}^N \bbI[j_m=j] \, \bbI[k_m=k] \, a_{n \from m} \cdot s_{t-\Delta, m}}
+  \frac{\sum_{\Delta=1}^{T_I} \sum_{m=1}^N \bbI[j_m=j, k_m=k] \, a_{n \from m} \cdot s_{t-\Delta, m}}
        {\sum_{\Delta=1}^{T_I} \sum_{m=1}^N \bbI[j_m=j] \, a_{n \from m} \cdot s_{t-\Delta, m}} \\
-       &\approx (\lambdamax T_I \rho R)^{-1} \sum_{\Delta=1}^{T_I} \sum_{m=1}^N \bbI[j_m=j] \, \bbI[k_m=k] \, a_{n \from m} s_{t-\Delta, m}.
+       &\approx (\lambdamax T_I \rho R)^{-1} \sum_{\Delta=1}^{T_I} \sum_{m=1}^N \bbI[j_m=j, k_m=k] \, a_{n \from m} \cdot s_{t-\Delta, m}.
   \end{align}
   In other words, the total spike count is concentrated around its mean.
 \end{assumption}
