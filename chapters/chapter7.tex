@@ -298,7 +298,7 @@ To summarize, the direct distributed representation entails the following
 assumption:
 
 \begin{assumption}
-  Neurons represent discrete probability distributions with a direct
+  Neurons represent discrete probability distributions with a direct,
   distributed code. Each variable-value pair is alloted~$R$ neurons,
   which emit spikes according to a Poisson distribution.
   Spikes are integrated over the subpopulation and over an integration
@@ -307,24 +307,70 @@ assumption:
   the probability distribution. 
 \end{assumption}
 
-Even without any knowledge of the dynamics that gave rise
-to these instantaneous firing rates and to the
-encoded probability distribution, we can evaluate the complexity
-of this representation. How many neurons, time steps, or spikes
-are required to guarantee that the encoded distribution is within
-some tolerable error of the underlying ground truth? The answer
-to this question can provide some important constraints on the
-viability of this approach and aid in our search for neural
-susbtrates of inference. 
-
 \section{Complexity of the Direct Distributed Representation}
 \label{sec:complexity}
-The stochasticity of the spike counts means that any instant in time,
-the probability distribution that is represented by the population
-will be a random variable.  First, we will show that this
+
+In pioneering work, \citet{valiant1994circuits} suggested that
+the tools of computational learning theory, which provide
+rigorous computational limits on statistical learning, may
+apply equally well to learning in biological systems. All
+that is needed is a model of biological computation and a
+precisely stated learning algorithm. If the resources
+required by this algorithm (e.g. number of neurons or spikes)
+grow exponentially quickly with the size of learning problem,
+then it is highly unlikely that the algorithm is employed
+by the brain. In other words, biology is bound by the same
+limits of computational tractability as our silicon devices,
+but the natural measure of complexity may be spikes and
+synapses rather than FLOPs and bytes.
+
+\citet{valiant1994circuits} laid the groundwork for a model of neural
+computation that emphasizes a few key features: especially distributed
+representations, and sparse, random connectivity. In this and
+follow-up work~\cite{valiant2005memorization,
+  valiant2006quantitative}, he showed that simple tasks, like learning
+an association between two variables and learning a linear classifier,
+could be performed efficiently within this model. Since the problem of
+approximate Bayesian inference is NP-hard in the worst case
+\cite{dagum1993approximating, roth1996hardness}, a provably tractable
+algorithm for neural inference is out of the question. Instead, we
+focus on the complexity of a prerequisite problem: simply representing
+a distribution with a population of stochastic neurons. If this is
+tractable, then we may consider the question of inference and the
+scenarios in which it may be possible.
+
+Interestingly, the question of complexity has recently arisen in a
+somewhat different context. \citet{gao2015simplicity} have developed a
+theory of ``task complexity'' that predicts the dimensionality of
+neuronal dynamics as well as the number of neurons that must be
+measured in order to accurately recover the dynamics. In their case,
+the quantities of interest are the total number of neurons, number of
+observed neurons, number of stimuli, length of recording, and the
+unknown dimensionality of neural data. By fixing some of these
+parameters, they can obtain bounds on the remainder such that the
+dimensionality can be recovered. In our case, we derive similar
+results that govern the accuracy with which an encoded probability
+distribution can be recovered, either by a downstream population of
+neurons, or by an experimental observer.
+
+%Even without any knowledge of the dynamics that gave rise
+%to these instantaneous firing rates and to the
+%encoded probability distribution, we can evaluate the complexity
+%of this representation.
+In our case, we are concerned with the complexity, in terms of the
+number of neurons, time steps, or spikes, of stochastically encoding a
+distribution such that the decoded distribution is, with high
+confidence, within some tolerable error of the true distribution.
+%The answer
+%to this question can provide some important constraints on the
+%viability of this approach and aid in our search for neural
+%susbtrates of inference. 
+The stochasticity of the spike counts implies that at any instant in
+time, the probability distribution that is represented by the
+population will be a random variable.  First, we will show that this
 representation is unbiased. That is, if the firing rates,~$\lambda_{t,
   n}$, are proportional to the probability,~$\pi_{k_n}^{(j_n)}$, then
-the represented probability,~$\widehat{\bpi}_{t}^{(j)}$, will have the
+the decoded probability,~$\widehat{\bpi}_{t}^{(j)}$, will have the
 correct expectation.  Since we will be focusing on the representation
 of a single random variable $z_j$, we drop the superscripts~${}^{(j)}$
 and ${}^{(j_n)}$ for the remainder of this section.
