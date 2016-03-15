@@ -59,14 +59,14 @@ behavior suggests that the brain may be performing, or at least
 approximating, Bayesian computations.
 
 Further buttressing the Bayesian brain hypothesis, some experiments
-have shown not only Bayes-optimal behavior, but also neural responses
+have shown Bayes-optimal behavior along with simultaneous neural responses
 that are strongly correlated with relevant probabilistic quantities.
 For example, \citet{Yang2007} trained monkeys to make an eye movement
 to either the left or the right based on an observed set of shapes.
 Each shape contributed an additive ``weight'' to the log probability
 that reward would be given for leftward movements rather than
-rightward, so the optimal strategy (once these weights have been
-learned) is to sum the weights and compute the log probability of left
+rightward, so the optimal strategy (once the weights were
+learned) was to sum the weights, compute the log probability of left
 versus right, and choose the direction that is most likely to yield a
 reward.  In effect, the monkeys had to perform inference in a simple
 mixture model. The monkeys learned to perform this task optimally, and
@@ -74,16 +74,16 @@ mixture model. The monkeys learned to perform this task optimally, and
 cortex were proportional to the log likelihood ratio of left versus
 right. While it is possible that the monkeys simply learned a
 discriminative mapping from shapes to decisions, subsequent work
-showed that when the paradigm is extended to allow the monkey to
+showed that when the paradigm was extended to allow the monkey to
 opt-out of making a decision and obtain a smaller but guaranteed
-reward, the monkey chooses to opt out only when the probability of
-left versus right is below a threshold \cite{Kiani2009}.
+reward, the monkey chose to opt out only when the probability of
+left versus right was below a threshold \cite{Kiani2009}.
 
 Further evidence of neural probabilistic inference has been found in
 other simple tasks. In a time interval reproduction task, non-human
 primates exhibited behavior consistent with a Bayesian model, and
 simultaneous recordings in parietal cortex found that some neurons
-encode interval estimates that could support this behavior
+encoded interval estimates that could support this behavior
 \cite{jazayeri2015neural}. In another line of work, neural correlates
 of multisensory cue integration were found in macaque monkeys
 performing a heading discrimination task. These neurons combined both
@@ -139,7 +139,7 @@ equally broad set of proposed inference algorithms. Typically, these
 proposals are tied to a specific assumption about representation.  In
 the simplest models, like mixture models with a single latent
 variable, inference can be performed exactly in a single step.  For
-more complicated models, some dynamic inference and often approximate
+more complicated models, some dynamic and often approximate inference 
 algorithm is necessary. Of these, belief propagation and related
 message passing algorithms~\cite{Rao2007, litvak2009cortical},
 variational inference \cite{Friston2010, nessler2013bayesian},
@@ -149,7 +149,7 @@ and sampling based methods like Markov chain Monte Carlo (MCMC)
 Hamiltonian Monte Carlo~\cite{aitchison2014hamiltonian},
 importance sampling~\cite{Shi2009}, 
 and particle filtering \cite{lee2003hierarchical} have
-all been suggested. This amazing diversity speaks both to the
+all been suggested. This amazing diversity speaks to both the
 computational power of neural populations as well as the
 enormous challenge in winnowing the field of contending theories.
 
@@ -173,25 +173,26 @@ our intention here is not to present a radically novel
 theory. Instead, our focus is on how we may assess the viability of a
 theory of neural inference. To that end, we first provide a detailed
 description of a distributed representation of probability, which is
-based on a great deal of previous work.  We then analyze the
-complexity of this representational scheme in terms of the support of
-the distribution, number of neurons, integration time, firing rate,
-and degree of connectivity required to represent a distribution with
-both low error and high confidence, in the spirit of
-\citet{valiant1994circuits, valiant2005memorization}.  As shown by~\citet{gao2015simplicity},
-these complexity-theoretic analyses inform our assessment of the
-biological plausibility of the theory, as well as the number of
-neurons we must measure in order to test the theory. Given this
-representation, we show how Bayesian inference can be performed in a
-subset of probabilistic models using mean-field variational
-inference. Then, we show how the dynamics of inference correspond to
-exactly the generalized linear model dynamics studied in Chapter 4,
-thereby enabling us to use those tools to reverse engineer a
-probabilistic model from a neural spike train recording.  In the
+largely inspired by previous work.  Then we analyze the complexity of
+this representational scheme in terms of the support of the
+distribution, number of neurons, integration time, firing rate, and
+degree of connectivity required to represent a distribution with both
+low error and high confidence, in the spirit of
+\citet{valiant1994circuits, valiant2005memorization}.  As shown
+by~\citet{gao2015simplicity}, these complexity-theoretic analyses
+inform our assessment of the biological plausibility of the theory, as
+well as the number of neurons we must measure in order to test the
+theory. Given this representation, we show how Bayesian inference can
+be performed in a subset of probabilistic models using mean-field
+variational inference. Then, we show how the dynamics of inference
+correspond to exactly the generalized linear model dynamics studied in
+Chapter 4, thereby enabling us to use those tools to reverse engineer
+a probabilistic model from a neural spike train recording.  In the
 closing discussion, we consider how these techniques could be extended
 beyond the relatively simple theory of inference studied here.
 
 \section{A Direct Distributed Representation of Probability Distributions}
+\label{sec:representation}
 
 % Figure: Example of neural inference in a simple mixture model
 \begin{figure}[t!]
@@ -1281,35 +1282,26 @@ converge on a theory of probabilistic inference in neural circuits.
 
 \section{Discussion}
 
-\subsection{More ideas}
+This chapter has illustrated how theoretical models of neural computation
+may be assessed from a ``top-down'' perspective by analyzing the complexity
+and comparing it to biological parameters, and from the ``bottom-up'' perspective,
+by incorporating theoretical dynamics into probabilistic models of neural
+population activity. This is only a first step toward closing the gap
+between these two perspectives, and it opens many important questions.
+We enumerate and partially answer a few of them here.
 
-\subsubsection{Localization with Hippocampal Place Cells}
-
-Model:
-\begin{itemize}
-\item Latent locations,~$z_i \in \{1, \ldots, K\}$ for time indices~$-D, \ldots, 0$.
-\item Sensory cues,~$x_{i,j} \in \{0,1\}$ for~$j \in \{1, \ldots, J\}$.
-\item Transition probability~$\phi(z_{i-1}, z_i)$. How could these weights be shared?
-\item Observation probability~$\phi(z_{i}, x_{i,j})$. And how could these be shared?
-\end{itemize}
-
-\subsubsection{Olfactory Scene Parsing}
-
-
-Model:
-\begin{itemize}
-\item Presence or absence of odorant~$n$ in scene~$d$:~$w_{d,n} \in \{0,1\}$
-\item Presnce or absence of object~$k$ in scene~$d$:~$\eta_{d,k} \in \{0,1\}$
-\item Object that caused odorant~$n$ in scene~$d$: $z_{d,n} \in \{1, \ldots, K\}$ 
-\item Baseline probability of object~$k$:~$\phi(\eta_{d,k})$
-\item Probability of object~$k$ in scene~$d$ causing odorant~$n$:~$\phi(z_{d,n}=k, \eta_{d,k})$
-\item Probability of odorant~$n$ given object~$k$:~$\phi(w_{d,n}, z_{d,n})$
-\end{itemize}
-
-
-\begin{comment}
-\section{Unsupervised Learning via Synaptic Plasticity}
+\subsection{Unsupervised Learning via Synaptic Plasticity}
 \label{sec:learning}
+Perhaps the most pressing question is that of learning: how are these
+subpopulations of neurons and their weighted connections established?
+While we do not have a concrete answer to this question, we
+speculate that subpopulations are primarily allocated in a supervised
+fashion by a process like those of~\citet{valiant1994circuits}.
+Once the neurons have been allocated, their weights may be tuned
+in an unsupervised manner. We suggest one way in which this unsupervised
+learning may be related to the process of spike-timing dependent
+plasticity, based on the work of \citet{nessler2013bayesian}.
+
 The parameters of the model,~$\btheta$, specify the conditional
 probabilities for pairs of hidden and visible variables. Rather than
 treating the parameters as given, we now treat them as part of the
@@ -1320,7 +1312,7 @@ model.
 \end{align}
 The challenge with learning is that the parameters appear in the
 normalizing constant,~$Z(\btheta)$, which is typically an intractable
-summation over variable assignments. For the purposes of this chapter,
+summation over variable assignments. For this simple example,
 we will only consider learning in a subset of models that can
 formulated as directed graphical models.
 
@@ -1339,8 +1331,9 @@ formulated as directed graphical models.
   which implies that the joint distribution is normalized as well.
 \end{assumption}
 
-While this is clearly a strict assumption, we will see that it allows
-for some realistic models. The advantage is that, here, the
+While this is clearly a strict assumption, it allows
+for some realistic models like mixtures and hidden Markov models.
+The advantage is that, here, the
 distribution is normalized such that the parameters appear only
 in their prior and in the conditional distributions, which depend
 on at most two variables. This will map nicely onto synaptic plasticity
@@ -1387,7 +1380,7 @@ of a root variable (with no parent),
   + \sum_{k=1}^K (\alpha-1) \log \theta_k^{(j)}  \\
   &\simeq  \sum_{k=1}^K (\widehat{\pi}_{t-1,k}^{(j)} + \alpha-1) \log \theta_k^{(j)}
 \end{align}
-This is the form of a gamma distribution, which implies,
+This is the form of a Dirichlet distribution, which implies,
 \begin{align}
   q_t(\btheta^{(j)})
   &= \distDirichlet(\btheta^{(j)} \given  \balpha_{t}^{(j)}) \\
@@ -1466,7 +1459,7 @@ incorporated into the activation bias.
 We want the synaptic weights to equal the expected log parameter
 value, as in Eq.~\ref{eq:expected_log_theta}.  In theory, the weights
 should be identical for all synapses between neurons
-representing~$(z_j=k)$ and neurons representing~$(z_{h'}=k')$.  It is
+representing~$(z_j=k)$ and neurons representing~$(z_{j'}=k')$.  It is
 unreasonable to assume this in practice, since these synapses exist on
 different neurons and are updated independently. However, we can
 specify a simple learning rule that would give rise to the same
@@ -1516,7 +1509,157 @@ implies a low probability and a strongly negative weight.
 Moreover, this learning rule is nonlinear. While the state variables
 are linear functions of pre- and post-synaptic spike counts, their
 effect on the weight is highly nonlinear due to the digamma functions.
-Finally, we could instead write this learning rule as a nonlinear
-dynamical system on the weights alone since the digamma function is
-also invertible on this range. We leave this for future work.
+We could instead write this learning rule as a nonlinear dynamical
+system on the weights alone since the digamma function is also
+invertible on this range. Using the tools developed in Chapter 5, this
+dynamic learning process could potentially be incorporated in a
+probabilistic model for neural activity as well.  We leave this for
+future work.
+
+\subsection{Representing Continuous Random Variables}
+While this chapter has focused on representing discrete random variables,
+many of the quantities we need to infer and reason about are continuous
+in nature. 
+Suppose that we wish to represent a random variable~$z \in \reals^D$.
+Rather than representing the parameters of a standard distribution, like the
+mean and variance of a Gaussian, the brain may use a nonparametric
+representation like a kernel density estimate for the variational factors.
+Suppose,
+\begin{align}
+  q_t(z_j) &\propto
+  \sum_{k=1}^K \eta_{t,k}^{(j)} \, \zeta(z_j; \mu_k),
+\end{align}
+where~$\{\eta_{t,k}^{(j)}\}_{k=1}^K$ is a set of non-negative weights that
+sum to one, ~$\zeta(z; \mu)$ is a non-negative ``kernel function''
+that integrates to one and has mean~$\mu$, and~$\{\mu_k\}$ is the set of
+means at which these kernels are located. This defines a proper
+density function because~$q_t(z_j)$ is non-negative and integrates to one,
+\begin{align}
+  \int q_t(z_j) \, \mathrm{d}z_j &=
+  \sum_{k=1}^K  \int \eta_{t,k}^{(j)} \, \zeta(z; \mu_k) \, \mathrm{d}z_j
+  = \sum_{k=1}^K \eta_{t,k} = 1.
+\end{align}
+To implement this with a distributed population of neurons, let
+\begin{align}
+  \eta_{t,k}^{(j)} &=
+  \frac{\sum_{n=1}^N \sum_{k=1}^K \bbI[j_n=j, k_n=k] \, s_{t,n}}
+       {\sum_{n=1}^N \bbI[j_n=j] s_{t,n}}.
+\end{align}
+%While the kernel function is relatively unconstrained, a simple choice 
+%is a spherical Gaussian,
+%\begin{align}
+%  \zeta(z_k; \mu_k) &= \distNormal(z \given \mu_k, \sigma^2 \bI).
+%\end{align}
+
+The mean field variational inference algorithm is no longer as simple as in
+Section~\ref{sec:inference}, but the key quantities of the variational
+lower bound, namely the entropy of the variational factor and the
+expected log probability, are still tractable. Using an approach similar
+to that of \citet{gershman2012nonparametric}, we have,
+\begin{align}
+  \bbE_{q_t(\bz)} &\left[ \log p(\bz \given \btheta) \right] 
+  = \bbE_{q_t(\bz)} \left[ \sum_{j \in \mcG}\log \phi(z_j \given \btheta) +
+    \sum_{i,j \in \mcG} \log \phi(z_i, z_j \given \btheta) \right] \\
+  \nonumber
+  &= \sum_{j \in \mcG} \sum_{k=1}^K \eta_{t,k}^{(j)} \int \log \phi(z_j \given \btheta) \zeta(z_j; \mu_k) \, \mathrm{d}z_j \\
+  &\qquad +
+  \sum_{i,j \in \mcG} \sum_{k=1}^K \sum_{k'=1}^K \eta_{t,k}^{(i)} \, \eta_{t,k'}^{(j)}
+  \iint \log \phi(z_i, z_j \given \btheta) \, \zeta(z_i; \mu_k) \, \zeta(z_j; \mu_{k'}) \, \mathrm{d}z_i \, \mathrm{d}z_j  \\
+  &= \sum_{j \in \mcG} \sum_{k=1}^K \eta_{t,k}^{(j)} \, \widetilde{b}_k^{(j)} +
+  \sum_{i,j \in \mcG} \sum_{k'=1}^K \sum_{k=1}^K \eta_{t,k'}^{(i)} \, \eta_{t,k}^{(j)} \,
+  \widetilde{w}_{k,k'}^{(i,j)}
+\end{align}
+
+The second term of the variational lower bound is the entropy of the
+variational distribution,
+\begin{align}
+  \mcH[q_t(z_j)] &= -\int q_t(z_j) \log q_t(z_j) \, \mathrm{d}z_j \\
+  &= -\int q_t(z_j) \log \sum_{k=1}^K \eta_{t,k}^{(j)} \, \zeta(z_j; \mu_k) \, \mathrm{d}z_j.
+\end{align}
+We can lower bound this with Jensen's inequality to get,
+\begin{align}
+  \mcH[q_t(z_j)] &\geq \sum_{k=1}^K \log \int q_t(z_j) \, \eta_{t,k}^{(j)} \, \zeta(z_j; \mu_k) \, \mathrm{d} z_j \\
+  &= \sum_{k=1}^K \log \left( \eta_{t,k}^{(j)} \sum_{k'=1}^K \eta_{t,k'}^{(j)} \int  \zeta(z_j; \mu_{k'}) \, \zeta(z_j; \mu_k) \, \mathrm{d} z_j \right) \\
+  &= \sum_{k=1}^K \log \left( \eta_{t,k}^{(j)} \sum_{k'=1}^K \eta_{t,k'}^{(j)} \, \zeta_{k,k'}^\ast \right) \\
+\end{align}
+where we have defined~${\zeta_{k,k'}^\ast = \zeta_{k',k}^\ast = \int  \zeta(z_j; \mu_{k'}) \, \zeta(z_j; \mu_k) \, \mathrm{d} z_j}$ as the convolution of a pair of kernel functions.
+
+Now, to perform inference, we can perform gradient ascent directly on the
+\emph{evidence lower bound} (ELBO) on the log marginal likelihood,
+which is just the sum of these two terms. That is, we drive firing
+rates such that,
+\begin{align}
+  \eta_{t,k}^{(j)} %&= \eta_{t-1,k}^{(j)} + \alpha \nabla_{\boldsymbol{\eta}} \mcL \\
+  &= \eta_{t-1,k}^{(j)} +
+  \alpha \nabla_{\boldsymbol{\eta}} \left( \bbE_{q_{t-1}(\bz)} \left[ \log p(\bz \given \btheta) \right] + \mcH[q_{t-1}(z_j)] \right).
+\end{align}
+
+The gradient of the ELBO has two components, the first from the
+expected log probability and the second from the entropy. The first is
+quite intuitive,
+\begin{align}
+  \frac{\partial}{\partial \eta_{t,k}^{(j)}} \bbE_{q_t(\bz)} \left[ \log p(\bz \given \btheta) \right]
+  &=
+  \widetilde{b}_k^{(j)} +
+  \sum_{i \in \neigh(j)} \sum_{k'=1}^K \eta_{t,k'}^{(i)} \, \widetilde{w}_{k,k'}^{(i,j)}.
+\end{align}
+As in the discrete random variable case, the firing rates of neurons representing
+the pair~$(j,k)$, are driven by a bias and a weighted sum of activity from
+connected neurons. Now, however, the bias and the weights reflect integrations
+with respect to the basis functions.
+
+The second term comes from the lower bound on the entropy, 
+\begin{align}
+  \frac{\partial}{\partial \eta_{t,k}^{(j)}} \mcH[q_t(z_j)] 
+  &=
+  \frac{1}{\eta_{t,k}^{(j)}}
+  + \sum_{k' \neq k} \frac{\partial}{\partial \eta_{t,k}^{(j)}}
+  \log \left( \eta_{t,k}^{(j)} \, \zeta_{k',k}^\ast
+  + \sum_{k''\neq k} \eta_{t,k''}^{(j)} \, \zeta_{k',k''}^\ast \right) \\
+  \label{eq:entropy_gradient}
+  &= \frac{1}{\eta_{t,k}^{(j)}}
+  + \sum_{k'\neq k}
+  {\zeta^{\ast}_{k',k}} \,
+  \Big({\textstyle{\sum}_{k''=1}^K \, \eta_{t,k''}^{(j)} \, \zeta_{k',k''}^\ast} \Big)^{-1}.
+\end{align}
+While less intuitive, this term effectively provides a damping 
+signal that prevents one kernel from dominating the rest. As the
+rates approach one, the first term in Eq.~\ref{eq:entropy_gradient}
+diminishes. We leave more detailed studies of the biological plausibility
+of this approach to future work.
+
+\subsection{Alternative Representations of Probability}
+
+
+\section{Conclusion}
+
+
+
+% More modeling ideas
+\begin{comment}
+\subsection{More ideas}
+
+\subsubsection{Localization with Hippocampal Place Cells}
+
+Model:
+\begin{itemize}
+\item Latent locations,~$z_i \in \{1, \ldots, K\}$ for time indices~$-D, \ldots, 0$.
+\item Sensory cues,~$x_{i,j} \in \{0,1\}$ for~$j \in \{1, \ldots, J\}$.
+\item Transition probability~$\phi(z_{i-1}, z_i)$. How could these weights be shared?
+\item Observation probability~$\phi(z_{i}, x_{i,j})$. And how could these be shared?
+\end{itemize}
+
+\subsubsection{Olfactory Scene Parsing}
+
+
+Model:
+\begin{itemize}
+\item Presence or absence of odorant~$n$ in scene~$d$:~$w_{d,n} \in \{0,1\}$
+\item Presnce or absence of object~$k$ in scene~$d$:~$\eta_{d,k} \in \{0,1\}$
+\item Object that caused odorant~$n$ in scene~$d$: $z_{d,n} \in \{1, \ldots, K\}$ 
+\item Baseline probability of object~$k$:~$\phi(\eta_{d,k})$
+\item Probability of object~$k$ in scene~$d$ causing odorant~$n$:~$\phi(z_{d,n}=k, \eta_{d,k})$
+\item Probability of odorant~$n$ given object~$k$:~$\phi(w_{d,n}, z_{d,n})$
+\end{itemize}
+
 \end{comment}
