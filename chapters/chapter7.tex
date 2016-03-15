@@ -4,7 +4,7 @@ The preceding chapters have developed a range of probabilistic models
 for neural spike trains that leverage our intuitions about neural
 types, features, and states to inform structured prior distributions over
 the dynamics of neural activity. In this chapter, we take a
-first step toward reconciling these intutive models with the host of
+first step toward reconciling these intuitive models with the host of
 theoretical models of neural computation. From a Bayesian perspective,
 these theoretical models are just prior distributions on activity ---
 albeit highly sophisticated ones. By connecting theory to observation
@@ -194,6 +194,37 @@ beyond the relatively simple theory of inference studied here.
 \section{A Direct Distributed Representation of Probability Distributions}
 \label{sec:representation}
 
+
+\sloppy
+As described above, the simplest representation of probability is a \emph{direct}
+representation in which neural firing rates reflect instantaneous
+probabilities. Assume a population of neurons is responsible for
+representing the distribution over values that a set of random
+variables may take on. We denote this set of variables 
+by,~${\bz = \{z_1, \ldots, z_J\}}$.  For
+simplicity, assume for now that these variables can only assume a
+discrete set of values,~${\{1, \ldots, K\}}$.  Our
+neural population is thus tasked with representing probability
+vectors,~$\bpi^{(j)}$, for each 
+variable. The entries of these vectors are,~${\pi^{(j)}_k = \Pr(z_j=k)}$.
+While we do not discuss this matter here, this representation could
+be extended to continuous probability density functions by assigning
+each neuron a basis function or tuning curve over the support of the
+distribution, as in~\cite{Barber2003, Ma2006, beck2007exact}. 
+
+In a \emph{distributed} representation, each variable-value
+pair,~$(z_j,k)$, is associated with a subpopulation of~$R$
+neurons. This is inspired by \citet{valiant1994circuits,
+  valiant2005memorization}, and is similar to the ensemble based
+neural sampling code of \citet{legenstein2014ensembles}.  We further
+assume that these subpopulations are \emph{non-overlapping} such that
+each neuron can be represented with at most one variable-value pair.
+Let~${j_n \in \{1, \ldots, J\}}$ denote the index of the specific
+variable and~$k_n \in \{1, \ldots K\}$ denote the particular
+value that neuron~$n$ represents.
+%A representation size of~$R$ implies that~$\sum_{n=1}^N \bbI[j_n=h] \, \bbI[k_n=k] = R$.
+
+
 % Figure: Example of neural inference in a simple mixture model
 \begin{figure}[t!]
   \centering
@@ -239,35 +270,6 @@ beyond the relatively simple theory of inference studied here.
 \end{figure}
 
 
-\sloppy
-As described above, the simplest representation of probability is a \emph{direct}
-representation in which neural firing rates reflect instantaneous
-probabilities. Assume a population of neurons is responsible for
-representating the distribution over values that a set of random
-variables may take on. We denote this set of variables 
-by,~${\bz = \{z_1, \ldots, z_J\}}$.  For
-simplicity, assume for now that these variables can only assume a
-discrete set of values,~${\{1, \ldots, K\}}$.  Our
-neural population is thus tasked with representing probabilty
-vectors,~$\bpi^{(j)}$, for each 
-variable. The entries of these vectors are,~${\pi^{(j)}_k = \Pr(z_j=k)}$.
-While we do not discuss this matter here, this representation could
-be extended to continuous probability density functions by assigning
-each neuron a basis function or tuning curve over the support of the
-distribution, as in~\cite{Barber2003, Ma2006, beck2007exact}. 
-
-In a \emph{distributed} representation, each variable-value
-pair,~$(z_j,k)$, is associated with a subpopulation of~$R$
-neurons. This is inspired by \citet{valiant1994circuits,
-  valiant2005memorization}, and is similar to the ensemble based
-neural sampling code of \citet{legenstein2014ensembles}.  We further
-assume that these subpopulations are \emph{non-overlapping} such that
-each neuron can be represented with at most one variable-value pair.
-Let~${j_n \in \{1, \ldots, J\}}$ denote the index of the specific
-variable and~$k_n \in \{1, \ldots K\}$ denote the particular
-value that neuron~$n$ represents.
-%A representation size of~$R$ implies that~$\sum_{n=1}^N \bbI[j_n=h] \, \bbI[k_n=k] = R$.
-
 
 Now let~$s_{t,n}$ denote the number of spikes fired by neuron ~$n$ in
 the~$t$-th time bin. The relative spike counts encode instantaneous
@@ -300,7 +302,7 @@ assumption:
 
 \begin{assumption}
   Neurons represent discrete probability distributions with a direct,
-  distributed code. Each variable-value pair is alloted~$R$ neurons,
+  distributed code. Each variable-value pair is allotted~$R$ neurons,
   which emit spikes according to a Poisson distribution.
   Spikes are integrated over the subpopulation and over an integration
   time window,~$T_I$, to get an unnormalized probability for the
@@ -365,7 +367,7 @@ confidence, within some tolerable error of the true distribution.
 %The answer
 %to this question can provide some important constraints on the
 %viability of this approach and aid in our search for neural
-%susbtrates of inference. 
+%substrates of inference. 
 The stochasticity of the spike counts implies that at any instant in
 time, the probability distribution that is represented by the
 population will be a random variable.  First, we will show that this
@@ -772,11 +774,12 @@ we interact with the world and receive new inputs, the probabilities
 of the visible variables change to reflect the new
 observations. Moreover, even for a fixed set of visible variable
 assignments, the probabilities of hidden variables will change as we
-perform inference. Bayesian inference is the process of computing the
-posterior distribution over latent variables given the values of visible
-inputs. Many inference algorithms are iterative. Thus, as the
-algorithms execute, the instantaneous probability distribution will
-vary. Next, we describe how a simple inference algorithm can be
+perform inference.
+%ayesian inference is the process of computing the
+%posterior distribution over latent variables given the values of visible inputs.
+%Many inference algorithms are iterative, and as they execute,
+%the instantaneous probability distribution will change.
+We show how a simple, iterative inference algorithm can be
 implemented with biologically plausible neural dynamics.
 
 We assume that as an organism receives new inputs from the world, it
@@ -793,15 +796,14 @@ are best described in terms of a \emph{factor graph},
   \prod_{j \in \mcG} \phi(z_j \given \btheta) \,
   \prod_{i,j \in \mcG} \phi(z_i, z_j \given \btheta) \,
 \end{align}
-Here, the graph,~$\mcG$, specifies pairs of variables with
-probabilistic dependencies.  Each unary factor,~$\phi(\cdot \given
+The graph,~$\mcG$, specifies unary and pairwise
+probabilistic dependencies between variables.  Each unary factor,~$\phi(\cdot \given
 \btheta)$ is a function that maps a variable assignment to a
 nonnegative real number, and each pairwise factor,~$\phi(\cdot, \cdot
 \given \btheta)$, is a function that maps a pair of assignments,
 say~${(z_i=k, z_j=k')}$ to a nonnegative real number. The
 normalizing constant,~$Z(\btheta)$, ensures that the joint probability
 distribution sums to one.
-
 The probabilistic model in Eq.~\ref{eq:probabilistic_model} reflects
 a specific assumption about the types of dependency structures
 neural populations can represent.
@@ -811,7 +813,7 @@ neural populations can represent.
   that factor into the product of unary and pairwise dependencies. 
 \end{assumption}
 
-A typical model need not factor into pairwise terms. It may instead
+A general probabilistic model need not factor into pairwise terms. It may instead
 have factors that relate three or more latent variables. As we will
 see, unary and pairwise factors map naturally onto neural biases
 and synaptic weights. In our proposed neural implementation, higher
@@ -826,17 +828,15 @@ given the observed variables~$\bz_O = \bz \setminus \bz_H$ is,
 \begin{align}
   p(\bz_H \given \bz_O, \btheta) &=
   \frac{p(\bz_H, \bz_O \given \btheta)}
-       {\sum_{\bz_H} p(\bz_H, \bz_O \given \btheta)},
+       {\sum_{\bz_H} p(\bz_H, \bz_O \given \btheta)}.
 \end{align}
-cannot be efficiently computed since it requires a sum over all
-possible hidden variable assignments.
-However, as we have seen in previous chapters, there are many methods of
-approximating posterior distributions. Mean field variational
-inference  maps particularly nicely onto the natural constraints
-of neural dynamics. 
-In mean field variational inference, the exact (but intractable)
-posterior distribution is approximated with a factorized
-distribution,
+Typically, this cannot be efficiently computed since it requires a sum
+over all possible hidden variable assignments.  However, as we have
+seen in previous chapters, there are many methods of approximating
+posterior distributions. Mean field variational inference maps
+particularly nicely onto the natural constraints of neural dynamics.
+In mean field variational inference, the intractable exact
+posterior distribution is approximated with a tractable, factorized distribution,
 \begin{align}
   p(\bz_H \given \bz_O, \btheta) &\approx q(\bz_H) \equiv \prod_{z_j \in \bz_H} q(z_j).
 \end{align}
@@ -844,13 +844,13 @@ The terms in this product are called \emph{variational factors}.  We
 solve for the variational factors that minimize KL-divergence between
 the true and approximate posterior,~$\KL(q(\bz_H) \,||\, p(\bz_H
 \given \bz_O, \btheta))$. In minimizing the KL-divergence, we
-simultaneously maximize a lower bound on the marginal log
+simultaneously maximize a lower bound on the log marginal
 likelihood,~$\log p(\bz_O \given \btheta)$.
 
 The simplest method of minimizing this objective is via coordinate
 descent, iteratively updating the probability of one hidden variable
 given the probabilities of the rest. Since our variational
-distribution is factorized, the variational factor for variable~$j$
+distribution is factorized, the variational factor for variable~$z_j$
 must satisfy the mean field consistency equation:
 \begin{align}
   \label{eq:mf_consistency}
@@ -1077,8 +1077,8 @@ specify the probabilistic model,
 This can be easily transformed into a factor graph with,
 \begin{align}
   \phi(z=k) &= \alpha_k, \\
-  \phi(x_j=1 \given z=k) &= \rho_{j,k}, \\
-  \phi(x_j=0 \given z=k) &= 1-\rho_{j,k}.
+  \phi(x_j=1, z=k) &= \rho_{j,k}, \\
+  \phi(x_j=0, z=k) &= 1-\rho_{j,k}.
 \end{align}
 
 We simulate inference in this model with a population of neurons.
@@ -1203,7 +1203,7 @@ of a given variable.
    trains] {The probabilistic model can be reverse engineered from the
    neural spike train.
    \textbf{(a)} Inferred weighted adjacency matrix for the population
-   of 130 neurons. Thin lines dilineate boundaries between subpopulations
+   of 130 neurons. Thin lines delineate boundaries between subpopulations
    for each value of~$z$ and~$x_j$; bold lines separate populations for
    each variable. 
    \textbf{(b)} Inferred probability that each pair of neurons belongs to
@@ -1235,17 +1235,17 @@ each variable-value pair.
 Figure~\ref{fig:mixture_recovery} shows the inferred parameters of the
 hierarchical model. The posterior mean of the weighted adjacency
 matrix is shown in Figure~\ref{fig:mixture_network}, with neurons sorted
-by variable and then by value. The block diagonal strucutre shows
-the normalizing connections betewen neurons representing the same variable,
+by variable and then by value. The block diagonal structure shows
+the normalizing connections between neurons representing the same variable,
 and the region highlighted in yellow shows the inferred connections from
-neurons representing~$x_j$ to neurons reprsenting~$z$. These encode
+neurons representing~$x_j$ to neurons representing~$z$. These encode
 the pairwise log probabilities of the mixture model.
 
 Figure~\ref{fig:mixture_cocluster} shows the inferred posterior probability
 of two neurons belonging to the same cluster. While the true model has
 13 clusters, we allowed our model to use as many as 20 clusters.
 If the variable-value subpopulations
-were recovered perflectly, this matrix would be block diagonal. We
+were recovered perfectly, this matrix would be block diagonal. We
 see that it is nearly so; only a handful of neurons are misclassified
 and some blocks are split in two.
 
@@ -1265,7 +1265,7 @@ hierarchical model: one set of variables that specifies the
 variable that a cluster of neurons represents (i.e.~$j_n$ in our
 theory), and another that indicates the value (i.e.~$k_n$).
 Incorporating the knowledge that different values of the same variable
-are mututally exclusive, we can build a strong prior distribution
+are mutually exclusive, we can build a strong prior distribution
 over weights given these two variables. 
 
 What else can be learned from the results of this approach? In
@@ -1564,11 +1564,11 @@ to that of \citet{gershman2012nonparametric}, we have,
   \nonumber
   &= \sum_{j \in \mcG} \sum_{k=1}^K \eta_{t,k}^{(j)} \int \log \phi(z_j \given \btheta) \zeta(z_j; \mu_k) \, \mathrm{d}z_j \\
   &\qquad +
-  \sum_{i,j \in \mcG} \sum_{k=1}^K \sum_{k'=1}^K \eta_{t,k}^{(i)} \, \eta_{t,k'}^{(j)}
+  \sum_{i,j \in \mcG} \sum_{k=1}^K \sum_{k'=1}^K \eta_{t,k'}^{(i)} \, \eta_{t,k}^{(j)} 
   \iint \log \phi(z_i, z_j \given \btheta) \, \zeta(z_i; \mu_k) \, \zeta(z_j; \mu_{k'}) \, \mathrm{d}z_i \, \mathrm{d}z_j  \\
   &= \sum_{j \in \mcG} \sum_{k=1}^K \eta_{t,k}^{(j)} \, \widetilde{b}_k^{(j)} +
   \sum_{i,j \in \mcG} \sum_{k'=1}^K \sum_{k=1}^K \eta_{t,k'}^{(i)} \, \eta_{t,k}^{(j)} \,
-  \widetilde{w}_{k,k'}^{(i,j)}
+  \widetilde{w}_{k',k}^{(i,j)}
 \end{align}
 
 The second term of the variational lower bound is the entropy of the
@@ -1602,8 +1602,8 @@ quite intuitive,
   \frac{\partial}{\partial \eta_{t,k}^{(j)}} \bbE_{q_t(\bz)} \left[ \log p(\bz \given \btheta) \right]
   &=
   \widetilde{b}_k^{(j)} +
-  \sum_{i \in \neigh(j)} \sum_{k'=1}^K \eta_{t,k'}^{(i)} \, \widetilde{w}_{k,k'}^{(i,j)}.
-\end{align}
+  \sum_{i \in \neigh(j)} \sum_{k'=1}^K \eta_{t,k'}^{(i)} \, \widetilde{w}_{k',k}^{(i,j)}.
+\end{align} 
 As in the discrete random variable case, the firing rates of neurons representing
 the pair~$(j,k)$, are driven by a bias and a weighted sum of activity from
 connected neurons. Now, however, the bias and the weights reflect integrations
@@ -1681,3 +1681,22 @@ connecting theory and experiment.
 
 
 \section{Conclusion}
+This chapter has taken a novel look at the problem of connecting the
+theory of neural computation to experimental recording. While the
+traditional approach of making specific, testable predictions of
+a theory remains invaluable, this is a process we would like to
+automate as much as possible. With the advent of large-scale recording
+technologies, the bottleneck in the scientific process moves from
+collecting evidence to designing experiments and revising theories.
+Here, we have suggested that the scientific loop of theorizing,
+experimenting, and revising may be closed by formulating our theories
+in the language of prior distributions in a Bayesian probabilistic model of
+neural data. With such a model, we could hypothetically
+measure the marginal likelihood of a theory given the data, 
+suggest experiments to refine our estimate of theoretical values, and
+revise our theories in an automated fashion. This chapter has not
+nearly closed this loop, but it has provided a framework for thinking
+about a future in which theoretical, computational, and systems
+neuroscience are tightly tethered.
+
+

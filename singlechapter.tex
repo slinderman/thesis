@@ -5,6 +5,18 @@
 
 \documentclass{Dissertate}
 
+\usepackage{lipsum}% http://ctan.org/pkg/lipsum
+\usepackage{url}% http://ctan.org/pkg/url
+\usepackage{eso-pic}% http://ctan.org/pkg/eso-pic
+
+\AddToShipoutPictureBG{% Add picture to background of every page
+  \AtPageUpperLeft{%
+    \raisebox{-2\baselineskip}{\makebox[\paperwidth]{\begin{minipage}{21cm}\centering
+          {\small Draft --- Scott Linderman, Ph.D. Thesis --- \today}
+    \end{minipage}}}%
+  }
+}
+
 
 \begin{document}
 
@@ -20,6 +32,7 @@
 \clearpage
 \bibliography{references}
 %\bibliographystyle{apalike2}
-\bibliographystyle{unsrtnat}
+%\bibliographystyle{unsrtnat}
+\bibliographystyle{plainnat}
 
 \end{document}
