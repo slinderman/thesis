@@ -1280,7 +1280,7 @@ complexity theoretic bounds developed in Section~\ref{sec:complexity},
 these top-down and bottom-up approaches provide two tacks  by which we may 
 converge on a theory of probabilistic inference in neural circuits.
 
-\section{Discussion}
+\section{Future Work}
 
 This chapter has illustrated how theoretical models of neural computation
 may be assessed from a ``top-down'' perspective by analyzing the complexity
@@ -1523,7 +1523,8 @@ in nature.
 Suppose that we wish to represent a random variable~$z \in \reals^D$.
 Rather than representing the parameters of a standard distribution, like the
 mean and variance of a Gaussian, the brain may use a nonparametric
-representation like a kernel density estimate for the variational factors.
+representation like a kernel density estimate for the variational factors
+\cite{Anderson1994, Barber2003}.
 Suppose,
 \begin{align}
   q_t(z_j) &\propto
@@ -1629,37 +1630,54 @@ diminishes. We leave more detailed studies of the biological plausibility
 of this approach to future work.
 
 \subsection{Alternative Representations of Probability}
+The introduction enumerated a host of potential neural representations
+of probability and corresponding inference algorithms. Eventually, these
+combinations of representation and algorithm lead to some prediction of
+the dynamics of neural spiking. Often, these dynamics follow standard forms,
+like the linear-nonlinear cascade of the GLM. If this is the case, then
+we should be able to derive probabilistic models for neural data that
+incorporate the hypothesized dynamics of Bayesian inference.
+
+One popular theory of representation is the \emph{probabilistic
+  population code} (PPC) \cite{Ma2006}. According to this theory, the
+Poisson-like variability of neurons leads to a likelihood of a random
+variable for any particular spike train,~$p(\bs \given z_j)$.
+Combined with a prior, this yields a posterior distribution,
+~$p(z_j \given \bs)$. In their theory, the encoded distribution is
+exactly this posterior, $\widehat{p}(z_j) = p(z_j \given \bs)$.
+
+This leads to two levels of randomness. While
+the neurons may be driven with firing rates that, in expectation,
+encode the distribution~$\bar{p}(z_j)$, the randomness in~$\bs$ implies
+a distribution over encoded distributions,~$p(\widehat{p}(z_j))$. This doubly
+stochastic nature has been explored by \citet{Zemel1998},
+\citet{Sahani2003}, and others. \citet{Ma2006} skirt this issue by
+assuming that as the number of neurons grows, this distribution over
+distributions collapses to its mode,~$p(\widehat{p}(z_j)) = \delta_{p^*(z_j)}$,
+which is presumed to be approximately equal to the desired distribution.
+That is,~$p^*(z_j) \approx \bar{p}(z_j)$. In their example, a Gaussian
+distribution is encoded by a population of neurons with radial
+basis function tuning curves. The mean is encoded by the relative
+firing rate of the activity, and the precision is encoded by the
+absolute firing rate, or gain, of the population.
+
+Their main contribution is a demonstration of how inference in some
+simple probabilistic models, like a na\"ive Bayes model for cue
+combination, can be performed with simple linear functions on
+PPCs. For example, in simple na\"ive Bayes models, downstream neurons
+only need to sum population activity to combine evidence and compute
+an updated posterior. However, other probabilistic computations, like
+marginalization and variational inference, do require nonlinear
+operations~\cite{Beck2011, Beck2012}.
+
+If neural populations are performing inference with PPCs using linear
+operations, then the neural spike trains recorded from these
+populations should follow linear Hawkes process dynamics.  Thus, the
+tools of Chapters 2 and 3 could provide a mechanism for inferring the
+connection weights.  Given these connection weights and an estimate of
+the tuning curves, it should be possible to reverse engineer the
+underlying probabilistic model. This provides one more avenue toward
+connecting theory and experiment.
 
 
 \section{Conclusion}
-
-
-
-% More modeling ideas
-\begin{comment}
-\subsection{More ideas}
-
-\subsubsection{Localization with Hippocampal Place Cells}
-
-Model:
-\begin{itemize}
-\item Latent locations,~$z_i \in \{1, \ldots, K\}$ for time indices~$-D, \ldots, 0$.
-\item Sensory cues,~$x_{i,j} \in \{0,1\}$ for~$j \in \{1, \ldots, J\}$.
-\item Transition probability~$\phi(z_{i-1}, z_i)$. How could these weights be shared?
-\item Observation probability~$\phi(z_{i}, x_{i,j})$. And how could these be shared?
-\end{itemize}
-
-\subsubsection{Olfactory Scene Parsing}
-
-
-Model:
-\begin{itemize}
-\item Presence or absence of odorant~$n$ in scene~$d$:~$w_{d,n} \in \{0,1\}$
-\item Presnce or absence of object~$k$ in scene~$d$:~$\eta_{d,k} \in \{0,1\}$
-\item Object that caused odorant~$n$ in scene~$d$: $z_{d,n} \in \{1, \ldots, K\}$ 
-\item Baseline probability of object~$k$:~$\phi(\eta_{d,k})$
-\item Probability of object~$k$ in scene~$d$ causing odorant~$n$:~$\phi(z_{d,n}=k, \eta_{d,k})$
-\item Probability of odorant~$n$ given object~$k$:~$\phi(w_{d,n}, z_{d,n})$
-\end{itemize}
-
-\end{comment}
