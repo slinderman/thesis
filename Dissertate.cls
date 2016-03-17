@@ -178,7 +178,10 @@
 
 % TODO Notes
 \RequirePackage[color=SchoolColor3]{todonotes}
-
+\setlength{\marginparwidth}{1.2in}
+\renewcommand{\todo}[2][]{%
+  \@todo[caption={#2}, #1]{\begin{spacing}{0.5}#2\end{spacing}}%
+  } 
 
 % Formatting guidelines found in:
 % http://www.gsas.harvard.edu/publications/form_of_the_phd_dissertation.php
