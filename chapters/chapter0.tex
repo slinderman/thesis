@@ -23,7 +23,6 @@ entire brain volumes, modern calcium imaging techniques and
 microelectrode arrays enable precise measurements of thousands of
 neurons at a time. For some organisms, we can now monitor the activity
 of every single neuron in the brain.
-%at the resolution of individual action potentials.
 At the same time, advances in connectomics --- the
 mapping of synaptic connectivity --- are providing a
 more complete atlas of the wiring diagram that underlies neural
@@ -31,9 +30,11 @@ activity.  Likewise, sophisticated tracking and processing algorithms
 are providing rich descriptions of the overt, natural behavior that
 this activity gives rise to.  These unprecedented technological
 capabilities are leading to a fundamental paradigm shift.
+% Paradigm shift -> data-driven science
+% new datasets contain patterns that can expose where existing theories fall short
+% new data contains patterns that can suggest new hypotheses, model additions
 Questions that were once intractable due to impoverished data,
 questions about the structure and dynamics of neural computation,
-%that only appear in large scale recordings,
 can now be tackled with large-scale recordings.
 %Questions about the structure and dynamics of neural computation, once
 %intractable due to impoverished data, can now be tackled.
@@ -114,6 +115,7 @@ A third challenge of deciphering neural computation is understanding
 the processes of learning that cause neural dynamics to evolve in
 an activity-dependent manner.
 
+\TODO{new section?}
 % Identifying levels of abstraction
 % - Marr levels of analysis
 While neurons, spikes, and synapses are the elementary building blocks
@@ -140,31 +142,67 @@ on interpolating between levels by developing tools that connect
 computational and algorithmic theories to patterns of neural activity.
 
 
-\section{A Bayesian Probabilistic Approach} 
+\section{A Probabilistic Approach} 
 % Solution: a probabilistic approach
-In this thesis, we argue that a Bayesian, probabilistic approach is
-ideally suited to tackling these challenges. Specifically, we argue
-that theories of neural coding, dynamics, and learning should be
-thought of as prior distributions in a probabilistic model of neural
-activity that encode hypotheses about the most likely patterns of
-neural activity. Probabilistic models provide the necessary language
-to connect these priors to the observed neural data, thereby providing
-a formal method of bridging the gap between levels of abstraction.
+% Theories as probabilistic models, generative stories about the data
+% While not explicitly true, these models capture important features 
+% of the data and suggest interpretations that may lead to new knowledge
+% Science as an iterative process of hypothesis formulation, data-driven
+% testing, and model refinement. 
+This thesis advances a Bayesian, probabilistic approach to connecting
+theory and data. Specifically, we argue that theories of neural
+coding, dynamics, and learning should be thought of as stories of how
+neural activity is generated, and formalized with the language of
+probabilistic graphical models.  Theories define parameters, like the
+time constants that govern neural dynamics, and latent variables, like
+discrete population states at each point in time or the cluster to
+which a neuron belongs. The distinction between parameters and latent
+variables is that there are a fixed number of parameters whereas the
+number of latent variables grows with the data.  Moreover, theories
+specify how parameters and latent variables govern the
+observed patterns of neural activity.  The variables and dependencies
+are naturally formalized in terms of a probabilistic graphical model.
+Once formalized, we can use the tools of Bayesian inference to compute
+the posterior distribution over parameters and latent variables, and
+use this posterior to gain insight into the structure of the data, as
+well as the shortcomings of our theories.
 
-% Theories as parameters and latent variables
+Probabilistic models provide an intuitive way of expressing the
+joint probability of parameters, latent variables, and observed 
+data, along with a clear strategy for making statistical inferences 
+about the parameters and latent variables given the data. Bayesian
+inference provides a posterior distribution
+ over parameters and latent variables given the observed data. 
+Recent decades have witnessed the development of suite of computational 
+and algorithmic tools and an established theoretical foundation 
+that have led to the mainstream adoption of probabilistic Bayesian 
+methods \cite{bishop2006pattern, murphy2012probabilistic}. Together with these
+metholodogical advances, the theory of Bayesian data analysis 
+has been firmly established \cite{gelman2014bayesian}, along with its role 
+in the broader context of scientific endeavors \cite{gelman2013philosophy, blei2014build}
 
-% Bayesian inference as a method of exploration,
+% Bayesian inference as a computation that facilitates exploration and 
+% model checking 
+Figure \todo{make it!}  shows how crafting a probabilistic model and
+performing Bayesian inference fit, conceptually, within the iterative
+process of scientific study. \citet{blei2014build}, from whom this
+figure has been adapted, calls this ``Box's loop'' in deference to the
+foundational work of \citet{box1980sampling}. Each iteration is an 
+experiment, and each experiment begins with a hypotbhesis, in the 
+form of a model, and a computation, in the form of Bayesian inference.
+Inferred posterior distributions over variables and parameters may 
+lead to new insights about the data via exploratory analyses, and 
+they may lead to further refinements of the theory via model criticism.
 
-By inverting the
-probabilistic model with the toolkit of Bayesian inference, we can
-compute posterior distributions over the model parameters and,
-more importantly, quantitative, calibrated evaluations of how well
-the model explains the observed neural activity.
 
+% Compositionality, scientific method and iterative experimental design
+% exploratory analysis: summarize, visualize, hypothesize
 
 % Model criticism, active learning, revision
 
 % Not the first...
+% cf Sahani 1999
+
 \TODO{We are certainly not the first to advocate a Bayesian approach...
   but previous approaches were stifled by the challenges inherent in performing
   Bayesian inference in sophisticated models. We extend previous
