@@ -1,51 +1,235 @@
-% \begin{savequote}[75mm]
-% Nulla facilisi. In vel sem. Morbi id urna in diam dignissim feugiat. Proin molestie tortor eu velit. Aliquam erat volutpat. Nullam ultrices, diam tempus vulputate egestas, eros pede varius leo.
-% \qauthor{Quoteauthor Lastname}
-% \end{savequote}
+%\begin{savequote}[75mm]
+% The idea that complex physical, biological or sociological systems can be exactly described by a few formulae is patently absurd. The construction of idealized representations that capture important stable aspects of such systems is, however, a vital part of general scientific analysis...
+%\qauthor{Sir David Cox}
+%\end{savequote}
 
 \chapter{Background}
-In order to make sense of the rest of the thesis, some background is required. 
-I think a section on probabilistic modeling will be helpful, but I would 
-like to keep it short since there are already many good references on the 
-subject. I will then introduce point processes, specifically the Poisson 
-process, the Hawkes process, and the nonlinear Hawkes process, for which 
-I have developed inference methods. Then I will introduce time series 
-models, including the hidden Markov model (HMM), linear dynamical system (LDS),
-and the vector autoregressive (VAR) models. In subsequent chapters, I 
-will show how these can be combined with Poisson process observations.
-Finally, I may discuss network models, since I have two chapters that draw 
-on this material. Alternatively, I may defer the network models until 
-the next chapter, where they are first used.
-
-\section{Probabilistic Modeling}
-
-\subsection{Generative Graphical Models}
-
-\subsection{Bayesian Inference}
-
-\subsubsection{Markov Chain Monte Carlo}
-
-\subsubsection{Variational Inference}
-
-\subsection{Model Comparison}
+This chapter lays the foundation for those that follow by introducing 
+the essential toolkit of probabilistic modeling: the language of 
+generative models, the building blocks of time series, and the algorithms
+of Bayesian inference. 
 
 
-\section{Point Processes}
+\section{Generative Probabilistic Models}
+Generative probabilistic models formalize a story of how the data came to be. 
+While this story never captures every physical detail, it serves as an 
+idealized version that captures the essence of the system. For example, when
+modeling a neural spike train, we will ignore the states of individual ion 
+channels and the nonlinear dynamics of membrane potential and instead 
+characterize the instantaneous \emph{firing rate} of a neuron --- the 
+probability that a neuron spikes at any moment in time. 
 
-\subsection{The Poisson Process}
+As a simple illustration, consider the following generative
+process. Suppose a neuron has two states, an \emph{up} state and an
+\emph{down} state. In the \emph{up} state, the neuron spikes at a high
+rate, say 100Hz, and in the \emph{down} state it rarely fires, say at 1Hz.
+Assume that every 50ms the neuron flips a coin to decide what state it
+will be in, and then fires a random number of spikes according to the
+rate associated with its current state. Once 50ms have elapsed, it
+flips another coin and its rate immediately changes to reflect its new
+state. Moreover, assume that all we observe is the number of spikes
+fired in each 50ms time bin.  Our goal is to infer the latent state of
+the neuron given the observed spike counts.
 
-\subsection{The Hawkes Process}
+Clearly, this generative story contains many simplifying assumptions
+and omits a great amount of detail. In addition to assuming that
+spiking is adequately captured by firing rates, the notion that a
+neuron has only two firing rates and that it randomly switches between
+them is obviously a gross simplification. Nevertheless, this very
+simple model captures some patterns of spiking that have been observed
+in experiment \cite{cowan1994spontaneous, shu2003turning}. 
 
-\subsection{The Nonlinear Hawkes Process}
+\sloppy We can formalize this generative story with a probabilistic
+model that specifies a joint distribution over latent states and
+observed spike counts. Let~$s_t \in \naturals$ denote the number of
+spikes counted in the~$t$-th time bin,
+and~$z_t \in \{\textit{up}, \textit{down}\}$ denote the corresponding
+state of the neuron. The assumption that states are drawn from a coin
+flip corresponds to the prior distribution,
+${z_t \sim \distBernoulli(\rho)}$, where~$\rho$ specifies the
+probability of \textit{up} versus \textit{down} states.  Implicitly,
+we assumed that~${\rho=\tfrac{1}{2}}$, though this need not be the
+case.  We previously said that the neurons fire a random number of
+spikes according to their state-dependent firing rate; now we will
+formalize this by
+assuming,~${s_{t} \sim \distPoisson(\lambda_{z_t} \cdot \Delta t)}$,
+where ${\Delta t = 0.05\text{s}}$,
+${\lambda_{\textit{up}} = 100\,\text{spikes/s}}$, and
+${\lambda_{\textit{down}} = 1\,\text{spike/s}}$. 
+The joint distribution 
+is,
+\begin{align}
+  \label{eq:joint_chain_rule}
+  %p(\bs, \bz \given \rho, \lambda_{\textit{up}}, \lambda_{\textit{down}}, \Delta t) 
+  %&= p(\bz \given \rho) \, p(\bs \given \bz, \lambda_{\textit{up}}, \lambda_{\textit{down}}, \Delta t) \\
+  p(\bs, \bz \given \rho, \blambda, \Delta t) 
+  &= p(\bz \given \rho) \, p(\bs \given \bz, \blambda, \Delta t) \\
+  \label{eq:joint_factorized}
+  &= \prod_{t=1}^T p(z_t \given \rho) \, p(s_t \given \lambda_{z_t}, \Delta t) \\
+  &= \prod_{t=1}^T \distBernoulli(z_t \given \rho) \, \distPoisson(s_t \given \lambda_{z_t} \cdot \Delta t).
+\end{align} 
+Here, we have introduced notation that will be used throughout this
+thesis. Bold symbols like~$\bs$ will denote arrays of
+random variables. Typically, lowercase bold symbols will denote
+vectors, as in this case,~${\bs = \big[s_1, \ldots, s_T \big]}$ 
+and~${\blambda = \big[ \lambda_{\textit{up}}, \lambda_{\textit{down}} \big]}$.
+
+In addition to specifying functional forms for the distributions,
+${p(z_t \given \rho)}$ and~${p(z_t \given \lambda_{z_t}, \Delta t)}$,
+the probabilistic model also formalizes the particular factorization of
+the joint probability distribution implied by the generative story.
+Eq.~\ref{eq:joint_chain_rule} simply applies the chain rule of
+probability, which does not reflect any loss of generality. However,
+in going from \eqref{eq:joint_chain_rule} to
+\eqref{eq:joint_factorized}, we have asserted that the latent
+states~$z_t$ and~$z_{t'}$ are conditionally independent given~$\rho$,
+and that the spike counts~$s_{t}$ and~$s_{t'}$ are conditionally
+independent given their corresponding latent states. This conditional
+independence assumption, which was implicit in the generative story,
+is made explicit when we factor the joint distribution into a product
+over time bins. When we hypothesize relationships between different variables,
+we are making assertions about the factorization of the joint distribution. 
+In Section~\ref{sec:motifs}, different patterns of conditional dependence 
+that form the building blocks of models for dynamic data.
+
+% Latent variables (states at each time)
+% Parameters rates associate with each state
+% Prior distributions on parameters
+The model above assumes that the firing rates are known, but in practice 
+this is a bit unreasonable. A more reasonable hypothesis is that neurons have 
+two firing rates, and while we do not know their exact values, we can 
+specify a distribution over them. To keep the model simple, let's assume 
+that the firing rates are both drawn from the same prior, 
+${\lambda_{*} \sim \distGamma(\alpha, \beta)}$. Similarly, we may not know 
+the exact probability of each state,~$\rho$, but we can place a reasonable
+ prior distribution on it, for instance, ${\rho \sim \distBeta(\tau_0, \tau_1)}$.
+Incorporating these prior distributions into the model yields the joint 
+distribution,
+\begin{align}
+  \label{eq:full_joint}
+  p(\bs, \bz, \rho, \blambda \given \alpha, \beta, \tau_0, \tau_1, \Delta t) 
+  &= p(\rho \given \tau_0, \tau_1) \, 
+     p(\blambda \given \alpha, \beta) \,
+     p(\bs, \bz \given \rho, \blambda, \Delta t).
+\end{align}
+
+We will often distinguish between the different types of random
+variables in the model. The states,~$\bz$, are called \emph{latent
+  variables} because their number grows with the size of the dataset,
+in this case there is one latent state per time bin. The latent state
+probability,~$\rho$, and the firing rates,~$\blambda$, are called
+\emph{parameters} because there are a fixed number of them. The
+remaining values,~${\{ \alpha, \beta, \tau_0, \tau_1, \Delta t \} }$,
+are called \emph{hyperparameters}. These are constants that we set
+prior to performing inference.  Typically, these can be tuned
+cross-validation, or simply set based on intuition and physical
+constraints.
+
+\subsection{Representations of Spike Trains}
+% Notation for sets of spike times or spike count matrices
+As modelers, one of the first decisions we must make is how we
+represent our data. In this thesis we will focus solely on modeling
+spike trains, which are sequences of discrete events in time. These
+spike trains typically come from spike sorting algorithms applied to
+extracellular recordings from multi-electrode arrays
+\cite{lewicki1998review, quiroga2004unsupervised}, or from
+deconvolution algorithms applied to optically recorded calcium
+fluorescence traces \cite{pnevmatikakis2016simultaneous,
+  vogelstein2010fast}. Reducing the data to the set of spikes often 
+results in an enormous compression. Rather than considering electrode 
+potentials, which are often sampled at upwards of 10kHz, or calcium 
+fluorescence traces, which are highly autocorrelated due to the relatively 
+slow dynamics of calcium concentration in cells, we can instead consider 
+only the times of action potentials.
+
+While this thesis treats the spike trains as given, it is also possible to
+work directly with the observed extracellular recordings or calcium
+fluorescence and treat the spike train as a latent variable.  Then,
+the spike train must be inferred along with the rest of the model's
+latent variables and parameters, cf. \cite{pillow2013model}. As we just 
+mentioned, this will typically incur a substantial cost, but it may be 
+worthwhile if there is considerable uncertainty in the spike timing 
+and if precise timing is important to the overarching model.
+
+The most general representation of a spike train is as a set of~$M$
+\emph{marked} spike times.
+Let,
+\begin{align}
+  \mcS = \left \{ (s_m, c_m) \right \}_{m=1}^M \subset [0, T] \times \{1, \ldots, N\}.
+\end{align}
+Each member of this set consists of a real-valued spike time~$s_m$ in
+the interval~$[0, T]$, and an integer,~$c_m \in \{1, \ldots, N\}$,
+that specifies the index of the cell that generated this spike. In the
+working example of a neuron with an \emph{up} and \emph{down} state
+there is only one neuron ($N=1$), so the cell markers would be
+trivially equal to~$c_m=1$. This continuous-time representation is
+warranted when the temporal resolution of the data is considerably
+higher than the timescale of typical action potentials. For example,
+multielecrode arrays typically have sampling intervals of~$0.1$ms or
+smaller, whereas the width of action potentails is on the order
+of~$1$ms. This allows us to specify the spike time as an effectively
+real-valued number.  Calcium imaging methods typically have much lower
+temporal resolution and are often sampled at lower rates, but by
+deconvolving spike trains it may be possible to obtain effectively
+higher resolution than the raw data affords.
+
+While the data may naturally come as a set of continuous spike times, it is common 
+to discretize the data and instead represent it as a spike count matrix,
+\begin{align}
+  \bS &= 
+        \begin{bmatrix}
+          s_{1,1} & \cdots & s_{1,N} \\
+          & & \\
+          \vdots  &        & \vdots  \\ 
+          & & \\
+          s_{T,1} & \cdots & s_{T,N}
+        \end{bmatrix},
+\end{align}
+where~$s_{t,n} \in \naturals$ denotes the number of spikes fired in
+the~$t$-th time bin by the~$n$-th neuron. Sometimes, the effects we
+are interested in studying occur at relatively slow time scales, so
+discretizing may provide valuable compression while retaining most of
+the relevant information. For example, if we are studying neural
+dynamics on the order of minutes, then simply knowing how many spikes
+occurred each second may provide most of the relevant information, while
+precise spike timing may be superfluous.
+
+However, the primary reason to discretize spike times into a matrix of
+counts is that the statistics and machine learning community have
+developed a much broader set of models for matrices than for sets of
+continuous time events.  In the next section, we will explore a number
+of common modeling motifs that can be applied to time series data
+represented as matrices, and many of the chapters of this thesis will
+focus on extending these motifs in novel ways.
 
 
-\section{Time Series Models}
+\subsection{Motifs of Time Series Models}
+\label{sec:motifs}
 
-\subsection{Hidden Markov Models}
+% Mixture model
 
-\subsection{Dynamical Systems Models}
+% Hidden Markov Model
 
-\subsection{Autoregressive Models}
+% Autoregressive models
 
+% Factor analysis 
 
-\section{Network Models}
+% Linear Dynamical System 
+
+% Switching LDS
+
+\section{Bayesian Inference}
+
+\subsection{Markov Chain Monte Carlo}
+
+\paragraph{Block Gibbs Sampling}
+
+\paragraph{Augmented Gibbs Sampling}
+
+\paragraph{Collapsed Gibbs Sampling}
+
+\subsection{Variational Inference}
+
+%\subsection{Model Comparison}
+
+\section{The Craft of Modeling}
