@@ -11,7 +11,7 @@ of Bayesian inference.
 
 
 \section{Generative Probabilistic Models}
-Generative probabilistic models formalize a story of how the data came to be. 
+Generative probabilistic models formalize a story of how data comes to be. 
 While this story never captures every physical detail, it serves as an 
 idealized version that captures the essence of the system. For example, when
 modeling a neural spike train, we will ignore the states of individual ion 
@@ -159,22 +159,43 @@ Let,
 \end{align}
 Each member of this set consists of a real-valued spike time~$s_m$ in
 the interval~$[0, T]$, and an integer,~$c_m \in \{1, \ldots, N\}$,
-that specifies the index of the cell that generated this spike. In the
-working example of a neuron with an \emph{up} and \emph{down} state
-there is only one neuron ($N=1$), so the cell markers would be
-trivially equal to~$c_m=1$. This continuous-time representation is
+that specifies the index of the cell that generated this spike. 
+% In the working example of a neuron with an \emph{up} and \emph{down}
+% state there is only one neuron ($N=1$), so the cell markers would be
+% trivially equal to~$c_m=1$.
+This continuous-time representation is
 warranted when the temporal resolution of the data is considerably
 higher than the timescale of typical action potentials. For example,
 multielecrode arrays typically have sampling intervals of~$0.1$ms or
 smaller, whereas the width of action potentails is on the order
 of~$1$ms. This allows us to specify the spike time as an effectively
-real-valued number.  Calcium imaging methods typically have much lower
-temporal resolution and are often sampled at lower rates, but by
-deconvolving spike trains it may be possible to obtain effectively
-higher resolution than the raw data affords.
+real-valued number.  
+% Calcium imaging methods typically have much lower temporal
+% resolution and are often sampled at lower rates, but by deconvolving
+% spike trains it may be possible to obtain effectively higher
+% resolution than the raw data affords.
 
-While the data may naturally come as a set of continuous spike times, it is common 
-to discretize the data and instead represent it as a spike count matrix,
+We typically model sets of discrete events like these as realizations
+of a \emph{marked point process} \cite{daley2003introduction1}. Such a
+process is defined by its firing rates\footnote{In the point process
+  literature, these firing rates are called \emph{conditional
+    intensity functions}.},
+${\{\lambda_n(t \given \mcH_t)\}_{n=1}^N}$, where $\mcH_t$ captures
+the history of the process through time~$t$. For example, the history
+may include the previous spikes,~${\mcH_t = \{(s_m, c_m): s_m < t\}}$,
+or some external covariates,~$x(t)$.  If we consider a small time
+window,~${[t, t+\Delta t)}$, and take the limit as~$\Delta t$
+approaches zero, the expected number of spikes fired by neuron~$n$ in
+the window~${[t, t+\Delta t)}$
+is~${\lambda_n(t \given \mcH_t) \cdot \Delta t}$. As modelers, our
+goal is to specify flexible and interpretable conditional intensity
+functions.
+
+The limiting perspective on the conditional intensity functions
+suggestions an alternative, discrete-time representation.  Rather than
+modeling a set of continuous spike times and conditional firing rates,
+we may instead represent a spike count matrix,~$\bS$, and the
+corresponding rate matrix,~$\bLambda$, where,
 \begin{align}
   \bS &= 
         \begin{bmatrix}
@@ -183,10 +204,20 @@ to discretize the data and instead represent it as a spike count matrix,
           \vdots  &        & \vdots  \\ 
           & & \\
           s_{T,1} & \cdots & s_{T,N}
-        \end{bmatrix},
+        \end{bmatrix}, 
+  & & &
+  \bLambda &= 
+        \begin{bmatrix}
+          \lambda_{1,1} & \cdots & \lambda_{1,N} \\
+          & & \\
+          \vdots  &        & \vdots  \\ 
+          & & \\
+          \lambda_{T,1} & \cdots & \lambda_{T,N}
+        \end{bmatrix}.
 \end{align}
-where~$s_{t,n} \in \naturals$ denotes the number of spikes fired in
-the~$t$-th time bin by the~$n$-th neuron. Sometimes, the effects we
+Here,~$s_{t,n} \in \naturals$ denotes the number of spikes fired in
+the~$t$-th time bin by the~$n$-th neuron, and~$\lambda_{t,n}$ denotes 
+the corresponding firing rate. Sometimes, the effects we
 are interested in studying occur at relatively slow time scales, so
 discretizing may provide valuable compression while retaining most of
 the relevant information. For example, if we are studying neural
@@ -205,6 +236,13 @@ focus on extending these motifs in novel ways.
 
 \subsection{Motifs of Time Series Models}
 \label{sec:motifs}
+The art of probabilistic modeling is in balancing conflicting concerns:
+our model should capture as much of the relevant structure in the data 
+as possible, drawing on our intuition and our existing knowledge of the 
+system, yet at the same time we wish to limit the complexity of the model
+so that we may perform inference efficiently. One of the ways that we 
+accomplish this balancing act is by composing our model out of common 
+motifs. These motifs are well-studied, 
 
 % Mixture model
 
