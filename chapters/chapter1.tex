@@ -11,6 +11,7 @@ of Bayesian inference.
 
 
 \section{Generative Probabilistic Models}
+\label{sec:generative_models}
 Generative probabilistic models formalize a story of how data comes to be. 
 While this story never captures every physical detail, it serves as an 
 idealized version that captures the essence of the system. For example, when
@@ -187,9 +188,9 @@ or some external covariates,~$x(t)$.  If we consider a small time
 window,~${[t, t+\Delta t)}$, and take the limit as~$\Delta t$
 approaches zero, the expected number of spikes fired by neuron~$n$ in
 the window~${[t, t+\Delta t)}$
-is~${\lambda_n(t \given \mcH_t) \cdot \Delta t}$. As modelers, our
-goal is to specify flexible and interpretable conditional intensity
-functions.
+is~${\lambda_n(t \given \mcH_t) \cdot \Delta t}$. Our
+goal is then to specify flexible and interpretable conditional intensity
+functions. Chapter~\ref{chap:hawkes} 
 
 The limiting perspective on the conditional intensity functions
 suggestions an alternative, discrete-time representation.  Rather than
@@ -241,20 +242,176 @@ our model should capture as much of the relevant structure in the data
 as possible, drawing on our intuition and our existing knowledge of the 
 system, yet at the same time we wish to limit the complexity of the model
 so that we may perform inference efficiently. One of the ways that we 
-accomplish this balancing act is by composing our model out of common 
-motifs. These motifs are well-studied, 
+accomplish this balancing act is by composing our model out of common,
+well-studied motifs. 
 
-% Mixture model
+\paragraph{Mixture Models}
+% Discrete latent states
+Our working example from Section~\ref{sec:generative_models}
+illustrates one such motif --- a simple mixture model.  The firing
+rate takes assumes only two values, and the observed spike counts are
+a mixture of counts drawn from the \textit{up} state and counts from
+the \textit{down} state. We can easily extend this to populations of
+neurons and mixtures of more than two states.  Suppose there are
+now~$K$ states, such that~${z_t \in \{1, \ldots, K\}}$. Furthermore,
+we generalize the rates~$\lambda_{\textit{up}}$
+and~$\lambda_{\textit{down}}$, to vectors of rates, one for each
+neuron and state.
+Let,~${\blambda_k = \big[ \lambda_{1,k}, \ldots, \lambda_{N,k}\big]}$,
+denote a vector of rates where $\lambda_{n,k}$ is the firing rate of
+the~${n\text{-th}}$ neuron in state~$k$.  We can write the full rate
+matrix,~$\bLambda$, as the outer product of a ~${T \times K}$
+indicator matrix,~$\bZ$, and an~${N \times K}$ rate
+matrix,~$\bC$. Let~$\be_k$ denote a length-$K$ column vector that is all zero
+except for a single one in the~$k$-th position.
+Then,~${\bLambda = \bZ \bC^\trans}$, where,
+\begin{align}
+  \bZ = 
+        \begin{bmatrix}
+          - & \be_{z_1}^\trans & - \\
+            &                  &   \\
+            &  \vdots          &   \\
+            &                  &   \\
+          - & \be_{z_T}^\trans & - 
+        \end{bmatrix}, 
+  \qquad
+  \bC = 
+        \begin{bmatrix}
+          | &  & | \\
+          \blambda_1 & \cdot \cdot & \blambda_K \\
+          | &  & | 
+        \end{bmatrix}.
+\end{align}
+Now that we have framed the mixture model as a simple factorization of 
+the rate matrix, a number of connections and extensions become clear.
 
-% Hidden Markov Model
+\paragraph{Hidden Markov Models}
+% Autoregressive latent states
+First, the mixture model encodes the hypothesis that the latent states
+are independent from one time to the next.
+Hence,~$p(\bz)=\prod_{t} p(z_t)$.  Instead, it is natural to expect
+the latent states to exhibit some temporal dynamics. For example, we
+may hypothesize that the states obey a Markov process such that,
+\begin{align}
+  p(\bz \given \bpi, \bA) &= p(z_1 \given \bpi) \prod_{t=2}^T p(z_t \given z_{t-1}, \bA) \\ 
+  \label{eq:hmm}
+  &= \distCategorical(z_1 \given \bpi) \prod_{t=2}^T \distCategorical(z_t \given \bA^\trans \be_{z_{t-1}}),
+\end{align}
+where~$\bpi \in [0,1]^K$ is a discrete probability distribution over
+initial states, and
+\begin{align}
+  \bA &=
+        \begin{bmatrix}
+          \text{---} &  \ba_{1}  & \text{---} \\
+            &  \vdots &   \\
+          \text{---} &  \ba_{K}  & \text{---}
+        \end{bmatrix},
+\end{align}
+is a~${K \times K}$ transition matrix where the
+row,~${\ba_{k} \in [0,1]^K}$, specifies a discrete conditional
+distribution over~$z_t$ given~${z_{t-1}=k}$.
 
-% Autoregressive models
+This is known as a hidden Markov model (HMM), and in Chapter~\ref{chap:hmms} we 
+will study some of the challenges involved in selecting the number of states,~$K$,
+in a nonparametric way.
 
-% Factor analysis 
+\paragraph{Autoregressive Models}
+% Autoregressive observations
+In an HMM, correlations in spike counts from one bin to the next arise from 
+correlations in the underlying latent states. Alternatively, we may directly 
+model the rate as a linear of previous spike counts. For example, consider 
+an autoregressive model of the form,
+\begin{align}
+  \label{eq:ar_model}
+  \blambda_{t} &= \sum_{d=1}^D \bW^{(d)} \, \bs_{t-d}.
+\end{align}
+Compare~\eqref{eq:ar_model} to \eqref{eq:hmm}; rather than having an
+autoregresive model for latent states, as in the HMM, here the
+autoregression governs the rates directly.  Moreover, this
+autoregressive model sums over the past~$D$ time bins, allowing
+delayed interactions.  Since the rates must be non-negative, the
+weights must be as well.  That is,
+~$\bW^{(d)} \in \reals_+^{N \times N}$.
 
-% Linear Dynamical System 
+By constraining the weights to be non-negative, we are instantiatign
+the hypothesis that the interactions between spikes on one neuron and
+the rate of another is always excitatory~---~a spike can never
+decrease the future firing rate. While this is not the most
+biologically realistic model given our knowledge of excitatory and
+inhibitory synapses, it is important to remember that this is simply a
+descriptive model of firing rate dynamics, and it does not necessarily
+map onto physical synaptic connections. As we will see in
+Chapters~\ref{chap:hawkes} and~\ref{chap:discrete_hawkes}, the weights
+inferred by this type of excitatory autoregressive model can still
+provide useful insight into the structure of neural activity.
+
+\paragraph{Nonlinear Autoregressive Models}
+In order to capture both excitatory and inhibitory autoregressive weights,
+we need to introduce a nonlinear function that ensure a non-negative firing 
+rate. Specifically, assume that,
+\begin{align}
+  \bpsi_t &= \sum_{d=1}^D \bW^{(d)} \bs_{t-d}, \\
+  \blambda_t &= g \left( \bpsi_t \right),
+\end{align}
+where~${g(\cdot): \reals \to \reals_+}$ is a nonlinear function that
+maps a real valued ``activation,''~$\bpsi_t$, into a non-negative
+firing rate. Here, we assume~$g$ is applied elementwise. Most
+commonly, we use the exponential function~$g(x) = e^x$. In this
+formulation the weights,~$\bW^{(d)} \in \reals^{N \times N}$, may be
+either positive or negative to reflect either excitatory or inhibitory
+interactions, respectively. Chapter~\ref{chap:nonlinear_hawkes}
+derives efficient inference algorithms for nonlinear autoregressive
+models like these.
+
+\paragraph{Factor Models}
+Once we have introduced a nonlinear link between activation and firing
+rate, we can revisit the discrete latent states of the mixture model 
+and consider their continuous analogues. For example, consider the model,
+\begin{align}
+  p(\bz) &= \prod_{t=1}^T \distNormal(\bz_t \given \bzero, \bSigma), \\
+  \bpsi_t &= \bC \bz_t, \\
+  \blambda_t &= g(\bpsi_t),
+\end{align}
+where~$\bz_t \in \reals^K$,~$\bC \in \reals^{N \times
+  K}$, and~${\bSigma = \diag \left([ \sigma^2_1, \ldots, \sigma^2_K ] \right)}$.
+This corresponds to a factor analysis model. Unlike standard 
+factor analysis, however, here the observations are discrete spike 
+counts rather than Gaussian observations. 
+
+\paragraph{Linear Dynamical Systems}
+In the same way that HMM's extended mixture models with temporal 
+dynamics, linear dynamical systems (LDS's) extend factor models
+with linear autoregressive dynamics in the latent state. 
+Replace the prior on~$\bz$ with a model of the form,
+\begin{align}
+  p(\bz) &= \distNormal(\bz_1 \given \bzero, \bSigma) \prod_{t=2}^T \distNormal(\bz_t \given \bA \bz_{t-1}, \bSigma).
+\end{align}
+The nonlinear mapping from latent states to firing rates is the same
+as in the factor model, but now the linear autoregressive nature of
+the dynamics induces correlations in spike counts from one time bin to
+the next.
 
 % Switching LDS
+
+\paragraph{Hierarchical Extensions}
+These motifs --- continuous and discrete latent states, linear autoregressive 
+dynamics, and nonlinear link functions --- provide a foundation for 
+constructing probabilistic models for spike trains. Atop this foundation 
+we may layer additional random variables reflecting hypotheses about shared 
+structure. For example, Chapters~\ref{chap:hawkes}, \ref{chap:discrete_hawkes},
+and~\ref{chap:nonlinear_hawkes} consider structured prior distributions on 
+the weights of autoregressive models, and Chapter~\ref{chap:hmms} considers 
+nonparametric Bayesian priors on the number of states in an HMM. Once the 
+dynamics model has been specified, it is easy to test a variety of hypotheses
+about hierarchical structure. In order to fit these models, however, we need 
+efficient inference algorithms that capitalize on the compositional structure 
+of the model.
+
+
+% Inference in this model is not quite as straightforward as in the
+% Gaussian case. In Chapter~\ref{chap:discussion}, we discuss some ways
+% in which the ideas of Chapter~\ref{chap:nonlinear_hawkes} could be
+% extended to
 
 \section{Bayesian Inference}
 
