@@ -353,26 +353,28 @@ rate. Specifically, assume that,
   \bpsi_t &= \sum_{d=1}^D \bW^{(d)} \bs_{t-d}, \\
   \blambda_t &= g \left( \bpsi_t \right),
 \end{align}
-where~${g(\cdot): \reals \to \reals_+}$ is a nonlinear function that
-maps a real valued ``activation,''~$\bpsi_t$, into a non-negative
-firing rate. Here, we assume~$g$ is applied elementwise. Most
-commonly, we use the exponential function~$g(x) = e^x$. In this
-formulation the weights,~$\bW^{(d)} \in \reals^{N \times N}$, may be
-either positive or negative to reflect either excitatory or inhibitory
-interactions, respectively. Chapter~\ref{chap:nonlinear_hawkes}
-derives efficient inference algorithms for nonlinear autoregressive
-models like these.
+where~$\bs_{t}$ is the~$t$-th row of~$\bS$, the nonlinear
+function~${g(\cdot): \reals \to \reals_+}$ is applied elementwise to
+map a real valued ``activation,''~$\bpsi_t$, into a non-negative
+firing rate. Most commonly, we use the exponential
+function,~$g(\psi) = e^\psi$. In this formulation the
+weights,~${\bW^{(d)} \in \reals^{N \times N}}$, may be either positive
+or negative to reflect either excitatory or inhibitory interactions,
+respectively. Chapter~\ref{chap:nonlinear_hawkes} derives efficient
+inference algorithms for nonlinear autoregressive models like these.
 
 \paragraph{Factor Models}
 Once we have introduced a nonlinear link between activation and firing
-rate, we can revisit the discrete latent states of the mixture model 
-and consider their continuous analogues. For example, consider the model,
+rate, we can revisit the discrete latent states of the mixture model
+and consider their continuous analogues, where~$\bz_t \in \reals^K$
+rather than~$z_t \in \{1, \ldots, K\}$. For example, consider the
+model,
 \begin{align}
   p(\bz) &= \prod_{t=1}^T \distNormal(\bz_t \given \bzero, \bSigma), \\
   \bpsi_t &= \bC \bz_t, \\
   \blambda_t &= g(\bpsi_t),
 \end{align}
-where~$\bz_t \in \reals^K$,~$\bC \in \reals^{N \times
+where~$\bC \in \reals^{N \times
   K}$, and~${\bSigma = \diag \left([ \sigma^2_1, \ldots, \sigma^2_K ] \right)}$.
 This corresponds to a factor analysis model. Unlike standard 
 factor analysis, however, here the observations are discrete spike 
@@ -414,14 +416,244 @@ of the model.
 % extended to
 
 \section{Bayesian Inference}
+Given an observed spike train, our goal is to compute the posterior
+distribution over latent variables,~$\bz$, and parameters,~$\btheta$,
+of the model.  For example, in an HMM the latent variables are just
+the dynamic latent states, and the parameters
+are~${\btheta = \{\bA, \bC\}}$ --- the transition matrix and the
+state--rate matrix. Bayes' rule relates the posterior distribution to
+the joint distribution of our probabilistic model,
+\begin{align}
+  \label{eq:bayes_rule}
+  p(\bz, \btheta \given \bs) 
+  &= \frac{p(\bs, \bz, \btheta)}{p(\bs)} 
+   = \frac{p(\bs, \bz, \btheta)}{\int p(\bs, \bz, \btheta) \, \mathrm{d}\bz \, \mathrm{d}\btheta} .
+\end{align}
+Unfortunately, the denominator in \eqref{eq:bayes_rule} involves an 
+integral over latent variables and parameters that is intractable for 
+all but the simplest models. Instead, we must resort to approximate 
+algorithms like Markov Chain Monte Carlo (MCMC) and mean field variational 
+inference. We will briefly describe each of these in turn.
 
 \subsection{Markov Chain Monte Carlo}
+Markov Chain Monte Carlo (MCMC) algorithms are a workhorse of modern
+machine learning, and many texts are devoted to the subject,
+e.g.~\cite{geyer1992practical, gilks2005markov, robert2013monte}.  The
+fundamental idea is to generate a collection of samples from the
+posterior distribution and use them to estimate expectations with
+respect to the posterior distribution.  Specifically, if we can collect a set of
+samples,
+\begin{align}
+  \left \{ \big(\bz^{(1)}, \btheta^{(1)} \big), 
+           \ldots, 
+           \big(\bz^{(L)}, \btheta^{(L)} \big) 
+  \right\},
+\end{align}
+where
+\begin{align}
+  \bz^{(\ell)}, \btheta^{(\ell)} &\sim p(\bz, \btheta \given \bs),
+\end{align}
+then we can form a Monte Carlo estimate of the expectation of a function~$f(\bz, \btheta)$
+with respect to the posterior,
+\begin{align}
+  \bbE_{p(\bz, \btheta \given \bs)} \left[ f(\bz, \btheta) \right] 
+  &\approx \frac{1}{L} \sum_{\ell = 1}^L f \big(\bz^{(\ell)}, \btheta^{(\ell)} \big).
+\end{align}
+When the samples are independently drawn from the posterior, the strong 
+law of large numbers ensures that the Monte Carlo estimate converges to 
+the true expectation almost surely, which implies that these Monte Carlo
+estimates are unbiased. Moreover, if the function~$f$ is real-valued, 
+the variance of the Monte Carlo estimator scales as~$\mcO(L^{-1})$
+regardless of the dimension of~$\bz$ and~$\btheta$.
 
-\paragraph{Block Gibbs Sampling}
 
-\paragraph{Augmented Gibbs Sampling}
+To collect these samples, we design a Markov chain to stochastically
+explore the space of latent variables and parameters.  
+%For notational clarity, we will now refer to these collectively as~${\bx = (\bz, \btheta)}$.  
+The chain starts at an initial state,~${(\bz^{(1)}, \btheta^{(1)})}$,
+and then iteratively samples a new state according to its transition
+operator,~${\mcT \big((\bz, \btheta) \to (\bz', \btheta') \big)}$, which
+specifies a the probability of transitioning to
+state~${(\bz', \btheta')}$ from state~${(\bz, \btheta)}$.  Each state
+the Markov chain visits is taken as a sample. If we design the Markov
+chain appropriately, we can guarantee that, asymptotically, the
+transition operator will visit states according to their posterior
+probability. 
 
-\paragraph{Collapsed Gibbs Sampling}
+When states are sampled with a Markov chain, it is no longer true that
+the samples are independent. In fact, the transition operator will
+often lead to relatively local updates, which leads to autocorrelation
+in the sequence of samples. This does not affect the bias of Monte
+Carlo estimate, but it does affect the constant in the
+asymptotic~$\mcO(L^{-1})$ convergence rate. However, in addition to 
+the increased variance, MCMC algorithms also suffer from a transient 
+bias due to the fact that the initial state is not drawn from the 
+posterior distribution (if we could sample from the posterior directly we would 
+not be using MCMC!). Fortunately, the transient bias 
+of the Monte Carlo estimator also decays as~$\mcO(L^{-1})$. Since the 
+mean squared error of an estimator is equal to its variance plus its 
+ bias squared, and since both variance and bias scale inversely with~$L$, 
+the asymptotic effect of the transient bias is insignificant compared to 
+that of the variance. 
+
+The critical property of our Markov chain is that, asymptotically, it
+visits states with probability equal to the true posterior
+probability.  For this asymptotic guarantee to hold, the posterior
+distribution must be invariant with respect to the transition
+operator, which is defined by the following equivalence,
+\begin{align}
+  \label{eq:invariance}
+  p(\bz, \btheta \given \bs) 
+  &= \int \mcT \big((\bz', \btheta') \to (\bz, \btheta) \big) \, 
+    p \big(\bz', \btheta' \given \bs \big) \, 
+    \mathrm{d}\bz' \, \mathrm{d}\btheta'. 
+\end{align}
+Intuitively, an invariant, or ``stationary,'' distribution with respect 
+to~$\mcT$ has the property that if we start in a state drawn from the 
+distribution and then apply the transition operator, the distribution 
+over next states remains unchanged. This is akin to an eigenvector of 
+a transition matrix. 
+
+In addition to leaving the posterior distribution invariant, the Markov 
+chain must also converge to this stationary distribution, regardless 
+of where it starts. If this property holds, the Markov chain is ``ergodic,''
+and the posterior distribution is the unique stationary distribution of 
+the chain. One simple sufficient condition that ensures ergodicity is 
+that the transition operator be strictly positive. 
+
+Designing an MCMC algorithm thus boils down to designing a valid
+transition operator. This is typically done by composing a sequence of
+operators,~${\mcT = \mcT_1 \circ \ldots \circ \mcT_K}$, each of which
+leaves the stationary distribution intact. While there are many ways
+of developing these transition operators, one of the most common 
+is to sample from the conditional distribution of one variable 
+while holding the rest of fixed. This leads to an algorithm called 
+Gibbs sampling, which we describe next.
+
+\subsubsection{Gibbs Sampling}
+Consider a transition operator,~$\mcT_{\bz}$, that only updates~$\bz$,
+holding ~$\btheta$ constant. In order to update~$\bz$, it samples from
+the conditional distribution,~$p(\bz \given \btheta, \bs)$. To see
+that this transition operator leaves the posterior distribution
+invariant, we plug it into Eq.~\ref{eq:invariance}:
+\begin{align*}
+  \int \mcT_{\bz} \big((\bz', \btheta') \to (\bz, \btheta) \big) \, 
+    &p \big(\bz', \btheta' \given \bs \big) \, 
+    \mathrm{d}\bz' \, \mathrm{d}\btheta' \\
+  &= \int p(\bz \given \btheta', \bs) \, \delta_{\btheta'}(\btheta) \,
+    p \big(\bz', \btheta' \given \bs \big) \, 
+    \mathrm{d}\bz' \, \mathrm{d}\btheta' \\
+  &= 
+  \int p(\bz \given \btheta', \bs) \, \delta_{\btheta'}(\btheta) \,
+    p \big(\btheta' \given \bs \big) \,
+    \left[ \, \int
+    p \big(\bz' \given \btheta', \bs \big) \, 
+    \mathrm{d}\bz'  \right] \mathrm{d}\btheta' \\
+  &= p(\bz \given \btheta, \bs) \, p(\btheta \given \bs) \\
+  &= p(\bz, \btheta \given \bs).
+\end{align*}
+The same holds for a distribution that
+samples~${\btheta \given \bz, \bs}$, or even a single element of these
+sets,~${\theta_j \given \btheta_{\neg j}, \bz, \bs}$.
+Here,~$\theta_j$ is one parameter, like the transition matrix in an
+HMM, and~$\btheta_{\neg j}$ is the set of all other parameters except
+for the~$j$-th.
+
+Many compositional models are designed such that these conditional 
+distributions are in fact easy to sample from. For example, if the 
+model is defined with \emph{conjugate} prior distributions, the conditional
+distributions can typically be sampled exactly. Moreover, some model 
+motifs enable more efficient types of Gibbs updates outlined below.
+
+\begin{itemize}
+\item \textsc{Block Gibbs Sampling}:
+  In some cases, entire subsets or ``blocks'' of random variables can 
+  be updated by a single transition operator. Consider the HMM,
+  \begin{align*}
+    p(\bs, \bz, \btheta) 
+    &= p(\btheta)
+      \prod_{t=1}^T p(z_t \given z_{t-1}, \btheta) \, 
+      p(\bs_t \given z_t, \btheta),
+  \end{align*}
+  where we have rolled the initial state into the product to ease the 
+  notation. A na\"ive Gibbs update might update one latent state,~$z_t$,
+  given all the rest,~$\bz_{\neg t}$. However, this would be horribly 
+  inefficient because the states are highly correlated. Given~$z_{t-1}$
+  and~$z_{t+1}$, the state~$z_t$ may be essentially deterministic. Thus,
+  even if there is genuine uncertainty over the state sequence as a whole,
+  this simple transition operator may take exponentially long to explore 
+  different state sequences. This is known as ``poor mixing.''
+
+  Instead, we could try to update the entire state sequence at once. 
+  The conditional distribution of~$\bz$ is proportional to this joint 
+  distribution,
+  \begin{align*}
+    p(\bz \given \btheta, \bs) 
+    &\propto p(z_1 \given \btheta) \prod_{t=2}^T p(z_t \given z_{t-1}, \btheta) \, 
+      p(\bs_t \given z_t, \btheta).
+  \end{align*}
+  While this distribution may not seem simple at first glance, since it 
+  is chain structured (each state depends only on the previous state and 
+  the current spike counts), we can actually sample this distribution 
+  efficiently using dynamic programming.
+  
+\item \textsc{Block Parallel Gibbs Sampling}:
+  A special case of block Gibbs sampling occurs when an entire block 
+  of variables is conditionally independent given the rest. For example,
+  consider the conditional distribution over~$\bz$ in a mixture model,
+  \begin{align*}
+    p(\bz \given \btheta, \bs) 
+    &\propto \prod_{t=1}^T p(z_t \given \btheta) \,
+      p(\bs_t \given z_t, \btheta).
+  \end{align*}
+  Since the conditional distribution factors into a product, the individual
+  latent variables are conditionally independent of one another. That is, the 
+  update to~$z_t$ does not depend on the updated value of~$z_{t'}$. This 
+  allows us to sample new latent states in parallel using as many processors
+  or threads as our computer allows.
+
+\item \textsc{Collapsed Gibbs Sampling}: Another special case of block
+  Gibbs sampling occurs when the conditional distribution can be
+  factored using the product rule. For example, consider a model with
+  two highly correlated latent variables,~$z_1$ and~$z_2$.  Na\"ively
+  alternating between sampling~${p(z_1 \given z_2, \btheta, \bs)}$ and
+  ${p(z_2 \given z_1, \btheta, \bs)}$ will lead to poor mixing, so we
+  would like to update them jointly.  Suppose, however, that it is
+  challenging to directly sample the full conditional
+  distribution~$p(z_1, z_2 \given \btheta, \bs)$. By the chain rule,
+  \begin{align*}
+    p(z_1, z_2 \given \btheta, \bs) 
+    &= p(z_2 \given z_1, \btheta, \bs) \, 
+      p(z_1 \given \btheta, \bs) \\
+    &= p(z_2 \given z_1, \btheta, \bs) \, 
+      \int p(z_1, z_2 \given \btheta, \bs) \, \mathrm{d}z_2.
+  \end{align*}
+  If it is possible ``collapse'' the second variable and obtain a
+  tractable closed form solution for~$p(z_1 \given \btheta, \bs)$,
+  then we can sample the pair of variables jointly in a two step
+  procedure. First, sample~$z_1$ from its marginal conditional
+  distribution, $p(z_1 \given \btheta, \bs)$, and then
+  sample~${p(z_2 \given z_1, \btheta, \bs)}$. We use this technique 
+  in the spike-and-slab models of Chapter~\ref{chap:nonlinear_hawkes}.
+  
+\item \textsc{Augmented Gibbs Sampling}: Just as it is possible to
+  collapse some variables during block updates, in other cases it is
+  possible to introduce \emph{auxiliary} variables that render the
+  conditional distributions conjugate, and hence easy to work
+  with. For example, in some cases~$p(\bz \given \btheta, \bs)$ is
+  challenging to sample from, but by introducing an auxiliary
+  variable,~$\bomega$, it becomes easy to sample from the conditional
+  distributions of the full model. It is as if we ``un-collapse''~$\bomega$
+  and then perform augmented Gibbs sampling in two steps,
+  \begin{align*}
+    \bz' &\sim p(\bz \given \bomega, \btheta, \bs), \\
+    \bomega' &\sim p(\bomega \given \bz', \btheta, \bs).
+  \end{align*}
+  This technique of \emph{data augmentation} is a powerful tool that we use 
+  throughout this thesis.
+\end{itemize}
+
+
 
 \subsection{Variational Inference}
 
