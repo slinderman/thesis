@@ -654,8 +654,87 @@ motifs enable more efficient types of Gibbs updates outlined below.
 \end{itemize}
 
 
+\subsection{Mean Field Variational Inference}
+Variational inference methods take a fundamentally different approach 
+to approximating the posterior distribution. Rather than collecting a 
+set of samples, variational methods attempt to find the distribution 
+within a tractable family of distributions that most closely matches 
+the true posterior. Thus, inference becomes an optimization problem. 
+However, when the tractable family is the class of fully factorized 
+distributions, as in mean field variational inference, and optimization
+is performed with coordinate ascent, the resulting algorithms look 
+very similar to Gibbs sampling.
 
-\subsection{Variational Inference}
+Let's assume the variational posterior is parameterized by~$\boldeta$,
+and call the variational distribution,~$q_{\boldeta}(\bz, \btheta)$.
+To find the optimal~$q(\cdot)$, we optimize a functional,~$\mcL[q]$,
+called the \emph{variational lower bound}, which
+provides a lower bound on the log marginal likelihood,~${\log p(\bs)}$.
+Specifically, we can write the log marginal likelihood as an 
+expectation with respect to~$q$,
+\begin{align}
+  \log p(\bs) 
+  &= \bbE_{q(\bz, \btheta)} \left[ \log \frac{p(\bs, \bz, \btheta)}{p(\bz, \btheta \given \bs)} \right] \\
+  &= \bbE_{q(\bz, \btheta)} \left[ \log \frac{p(\bs, \bz, \btheta)}{q(\bz, \btheta)} \right]
+   + \bbE_{q(\bz, \btheta)} \left[ \log \frac{q(\bz, \btheta)}{p(\bz, \btheta \given \bs)} \right] \\
+  &= \mcL[q(\bz, \btheta)] + \KL(q(\bz, \btheta) \barbar p(\bz, \btheta \given \bs) \\
+  &\geq \mcL[q(\bz, \btheta)].
+\end{align}
+where~$\KL(q \barbar p)$ is the KL-divergence between distributions~$q$ and~$p$. 
+The last line follows from the fact that the KL-divergence is non-negative
+and equal to zero if and only if the distributions are identical. Thus, 
+optimizing this functional is equivalent to minimizing the KL-divergence
+between the variational distribution and the true posterior.
+
+Our goal is to maximize the variational lower bound over a family of 
+tractable distributions,~$\mcQ$. In mean field variational inference, 
+we take~$\mcQ$ to be the family of fully factorized distributions,
+\begin{align}
+  \mcQ &= \left \{ q: q(\bz, \btheta) \propto \prod_{t=1}^T q_t(z_t) \prod_{j=1}^J q_j(\theta_j) \right\}.
+\end{align}
+Each of these \emph{variational factors},~$q_t(z_t)$ or~$q_j(\theta_j)$, will have 
+some parameters associated with it. We seek to set these parameters in order to 
+maximize the variational lower bound.
+
+In general, this objective function is not concave, so we should not expect 
+to optimize this function globally. However, we can still use local optimization 
+and multiple random restarts in hopes of finding a decent local optimum. 
+For mean field variational inference, a simple approach is to perform coordinate 
+ascent on the parameters of one variational factor at a time, holding the rest
+fixed. Given the equivalence between maximizing the variational lower bound and 
+minimizing the KL-divergence, we can derive the general form of a mean field 
+update. Consider updating the variational factor for only~$\theta_j$. We have,
+\begin{align}
+  \KL(q \barbar p) 
+  &= \bbE_{q(\bz, \btheta)} \left[ \log q(\bz, \btheta) \right] 
+   - \bbE_{q(\bz, \btheta)} \left[ \log p(\bz, \btheta \given \bs) \right] \\
+  &\simeq \bbE_{q(\bz, \btheta)} \left[ \log q(\bz, \btheta) \right] 
+   - \bbE_{q(\bz, \btheta)} \left[ \log p(\bs, \bz, \btheta) \right]  \\
+  \label{eq:separate_expectations}
+  &\simeq \bbE_{q_j(\theta_j)} \left[ \log q_j(\theta_j) \right] 
+   - \bbE_{q(\theta_j)} \left[ \bbE_{q(\bz, \btheta_{\neg j})} \big[ \log p(\bs, \bz, \btheta) \big] \right] \\
+  &\simeq \KL \big( q_j(\theta_j) \barbar \widetilde{p}_j(\theta_j) \big),
+\end{align}
+where~$\simeq$ denotes equality up to an additive term that is
+constant with respect to~$\theta_j$, and
+\begin{align}
+  \label{eq:optimal_factor}
+  \widetilde{p}_j(\theta_j) 
+  &\propto \exp \left \{ \bbE_{q(\bz, \btheta_{\neg j})} \big[ \log p(\bs, \bz, \btheta) \big] \right \}.
+\end{align}
+We are able to separate the expectations in
+Eq.~\ref{eq:separate_expectations} because of the factorized form
+of~$q(\bz, \btheta)$.  Since KL-divergence is minimized when the two
+distributions are equal, the optimal~$q_j(\theta_j)$, given the
+variational factors for the remaining variables, is equal
+to~$\widetilde{p}_j(\theta_j)$.  As in the Gibbs sampling algorithms
+developed before, the expectation in Eq.~\ref{eq:optimal_factor} is
+often greatly simplified by the factorization of the joint
+distribution in our probabilistic model. Moreover, when the model 
+is constructed out of conjugate distributions, these mean field 
+updates can often be computed in closed form.
+
+
 
 %\subsection{Model Comparison}
 
