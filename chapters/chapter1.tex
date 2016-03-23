@@ -105,8 +105,9 @@ intuitions and simultaneously make inference a bit easier by using
 \emph{conjugate} prior distributions.
 
 
-Intuitively, a prior distribution is conjugate with the likelihood
-if the conditional distribution has the same form. For example,
+%Intuitively, a prior distribution is conjugate with the likelihood
+%if the conditional distribution has the same form.
+For example,
 take the parameter,~$\lambda_{\textit{up}}$. If we look at the
 likelihood as a function of~$\lambda_{\textit{up}}$ and ignore
 terms that do not depend on this parameter, we have,
@@ -129,14 +130,17 @@ where
   t_{\textit{up}} &= \sum_{t=1}^T \Delta t \cdot \bbI[z_t = \textit{up}].
 \end{align}
 
-This likelihood is conjugate with a gamma prior,
+%This likelihood is conjugate with a gamma prior,
+Now consider a gamma prior distribution,
 \begin{align}
   p(\lambda_{\textit{up}} \given \alpha, \beta)
   &= \distGamma(\lambda_{\textit{up}} \given \alpha, \beta) \\
   &\propto \lambda_{\textit{up}}^{\alpha - 1} \,
-  e^{-\lambda_{\textit{up}} \cdot \beta},
+  e^{-\lambda_{\textit{up}} \cdot \beta}.
 \end{align}
-because,
+The conditional distribution over~$\lambda_{\textit{up}}$ given the
+observed spike counts, the latent states, and the prior is
+proportional to the likelihood times the prior. This simplifies to,
 \begin{align}
   p(\lambda_{\textit{up}} \given \bs, \bz, \alpha, \beta)
   &\propto p(\bs, \bz \given \rho, \blambda, \Delta t) \,
@@ -147,26 +151,29 @@ because,
   s_{\textit{up}} + \alpha, \,
   t_{\textit{up}} + \beta).
 \end{align}
-Since the conditional distribution is also in the gamma family,
-the gamma prior is conjugate with the Poisson likelihood. Moreover,
-the parameters of conditional distribution only depend on~$\bs$ and
-~$\bz$ through simple \emph{sufficient statistics},~$s_{\textit{up}}$
+Since both the prior and the the conditional distribution
+over~$\lambda_{\textit{up}}$ are in the gamma family, we say gamma
+prior is conjugate with this product-of-Poissons likelihood.
+Moreover, the parameters of
+conditional distribution only depend on~$\bs$ and ~$\bz$ through
+simple \emph{sufficient statistics},~$s_{\textit{up}}$
 and~$t_{\textit{up}}$. A beta distribution on the state probability,
 ~${\distBeta(\rho \given \tau_0, \tau_1)}$, is similarly conjugate
-with the Bernoulli likelihood that links~$\rho$ and~$z_t$. In fact,
+with the product-of-Bernoulli likelihood that links~$\rho$ and~$\bz$.
+In fact,
 conjugate priors exist for all likelihoods in the \emph{exponential
-  family}. These ideas are thoroughly discussed in standard
-machine learning and Bayesian statistics textbooks like~\citet{Murphy-2012}. 
+  family}. These ideas are thoroughly discussed in standard machine
+learning and Bayesian statistics textbooks like~\citet{Murphy-2012}.
 
 Putting this all together, we can now write down the \emph{joint
-  distribution} of our probabilistic model, which is simply the
-product of the likelihood and the prior distributions,
+  distribution} of our probabilistic model --- the
+product of the likelihood and the prior distributions:
 \begin{align}
   \label{eq:full_joint}
   p(\bs, \bz, \rho, \blambda \given \alpha, \beta, \tau_0, \tau_1, \Delta t) 
-  &= p(\rho \given \tau_0, \tau_1) \, 
-     p(\blambda \given \alpha, \beta) \,
-     p(\bs, \bz \given \rho, \blambda, \Delta t).
+  &= p(\bs, \bz \given \rho, \blambda, \Delta t) \,
+  p(\rho \given \tau_0, \tau_1) \, 
+     p(\blambda \given \alpha, \beta).
 \end{align}
 
 
@@ -177,7 +184,7 @@ As our models get increasingly complicated,
 we will often distinguish between the different types of random
 variables. The states,~$\bz$, are called \emph{latent
   variables} because their number grows with the size of the dataset,
-in this case there is one latent state per time bin. The latent state
+in this case there is one latent state per time bin. The unknown latent state
 probability,~$\rho$, and the firing rates,~$\blambda$, are called
 \emph{parameters} because there are a fixed number of them. The
 remaining values,~${\{ \alpha, \beta, \tau_0, \tau_1, \Delta t \} }$,
@@ -193,7 +200,7 @@ represent our data. In this thesis we will focus solely on modeling
 spike trains, which are sequences of discrete events in time. These
 spike trains typically come from spike sorting algorithms applied to
 extracellular recordings from multi-electrode arrays
-\cite{lewicki1998review, quiroga2004unsupervised}, or from
+\cite{lewicki1998review}, or from
 deconvolution algorithms applied to optically recorded calcium
 fluorescence traces \cite{pnevmatikakis2016simultaneous,
   vogelstein2010fast}. Reducing the data to the set of spikes often 
@@ -815,6 +822,80 @@ expectations with respect to the shared factor. In the case of HMMs,
 the same type of dynamic programming algorithm that enables efficient
 block sampling also enables efficient calculation of expectations. 
 
-%\subsection{Model Comparison}
+\subsection{Model Comparison}
+Now that we have developed the tools to formulate models and perform
+Bayesian inference, we need a way to compare and criticise our models.
+The easiest way, and the primary way used throughout this thesis, is
+to compare the models based on how well they predict 
+held-out data. Suppose that at the beginning of the experiment, we reserve
+a set of spike counts,~$\bs_{\mathsf{test}}$, to be used for model
+comparison. Once we have performed Bayesian inference to compute a
+posterior distribution over the models parameters and latent variables,
+we can then compute the predictive likelihood,
+\begin{align}
+  \label{eq:predictive_likelihood}
+  p(\bs_{\mathsf{test}} \given \bs_{\mathsf{train}})
+  &= \int p(\bs_{\mathsf{test}} \given \bz_{\mathsf{test}}, \btheta) \,
+  p(\bz_{\mathsf{test}} \given \btheta) \,
+  p(\btheta \given \bs_{\mathsf{train}}) \,
+  \mathrm{d}\bz_{\mathsf{test}} \, \mathrm{d} \btheta.
+\end{align}
+Notice that this is an expectation with respect to the \emph{posterior}
+distribution of~$\btheta$ given the training data, and a \emph{marginal}
+distribution in that it involves an integration over the latent variables
+associated with the test data. As usual, this integral is typically
+intractable, but we can construct a Monte Carlo estimate given 
+samples from the approximate posterior,
+\begin{align}
+  p(\bs_{\mathsf{test}} \given \bs_{\mathsf{train}})
+  &\approx \frac{1}{L} \sum_{\ell=1}^L
+  p(\bs_{\mathsf{test}} \given \bz_{\mathsf{test}}^{(\ell)}, \btheta^{(\ell)}) \,
+\end{align}
+where
+\begin{align}
+  \btheta^{(\ell)} &\sim p(\btheta \given \bs_{\mathsf{train}}), \\
+  \bz_{\mathsf{test}}^{(\ell)} &\sim   p(\bz_{\mathsf{test}} \given \btheta^{(\ell)}).
+\end{align}
+When Bayesian inference is performed with MCMC, the samples~$\{\btheta^{(\ell)}\}$
+are simply the states visited by the Markov chain. When variational methods
+are used, we assume the variational posterior is such that~$q(\btheta)$ is
+easy to sample from.
 
-\section{The Craft of Modeling}
+This is by no means the only method of comparing models. In ``fully
+Bayesian'' analyses, it is common to compare models on the basis of
+their \emph{marginal likelihood},~$p(\bs)$. Recall that this is the
+quantity that variational methods attempt to lower bound. Unfortunately,
+we cannot evaluate the tightness of variational lower bounds because
+they depend on the KL-divergence, which is intractable.
+
+Instead, we may resort to other methods of approximating the marginal
+likelihood. Notice that,
+\begin{align}
+  \label{eq:marginal_likelihood}
+  p(\bs)
+  &= \int p(\bs \given \bz, \btheta) \,
+  p(\bz \given \btheta) \,
+  p(\btheta) \,
+  \mathrm{d}\bz \, \mathrm{d} \btheta.
+\end{align}
+Comparing~\eqref{eq:predictive_likelihood} and~\eqref{eq:marginal_likelihood},
+we see that the marginal likelihood is equal to the predictive likelihood
+in the absence of training data. Unfortunately, training data plays the crucial
+role of winnowing the posterior distribution over parameters to typically
+a very small subset. Without this constraint, simple Monte Carlo estimates
+like those used to approximate the predictive likelihood will suffer from
+extremely high variance. Instead, more sophisticated methods, like annealed
+importance sampling \cite{neal2001annealed} are typically employed. 
+
+Finally, another means of evaluating and criticising models is via
+\emph{posterior predictive checks} (PPCs) \cite{box1980sampling, Gelman13, blei2014build}.
+Though we do not make use of them in this thesis, we note that they
+provide a slightly different view on model performance. Rather than
+assessing how well the model predicts held-out data, they assess how
+well samples from the posterior distribution match samples of the real
+data. Rather than evaluating how well one model performs relative to
+another, PPCs assess how well the model explains different aspects of
+the data.
+
+\section{The Frontier of Modeling and Inference}
+
