@@ -41,7 +41,7 @@ simple model captures some patterns of spiking that have been observed
 in experiment \cite{cowan1994spontaneous, shu2003turning}. 
 
 \sloppy We can formalize this generative story with a probabilistic
-model that specifies a joint distribution over latent states and
+model that specifies a distribution over latent states and
 observed spike counts. Let~$s_t \in \naturals$ denote the number of
 spikes counted in the~$t$-th time bin,
 and~$z_t \in \{\textit{up}, \textit{down}\}$ denote the corresponding
@@ -57,15 +57,14 @@ assuming,~${s_{t} \sim \distPoisson(\lambda_{z_t} \cdot \Delta t)}$,
 where ${\Delta t = 0.05\text{s}}$,
 ${\lambda_{\textit{up}} = 100\,\text{spikes/s}}$, and
 ${\lambda_{\textit{down}} = 1\,\text{spike/s}}$. 
-The joint distribution 
-is,
+The likelihood is,
 \begin{align}
-  \label{eq:joint_chain_rule}
+  \label{eq:lkhd_chain_rule}
   %p(\bs, \bz \given \rho, \lambda_{\textit{up}}, \lambda_{\textit{down}}, \Delta t) 
   %&= p(\bz \given \rho) \, p(\bs \given \bz, \lambda_{\textit{up}}, \lambda_{\textit{down}}, \Delta t) \\
   p(\bs, \bz \given \rho, \blambda, \Delta t) 
   &= p(\bz \given \rho) \, p(\bs \given \bz, \blambda, \Delta t) \\
-  \label{eq:joint_factorized}
+  \label{eq:lkhd_factorized}
   &= \prod_{t=1}^T p(z_t \given \rho) \, p(s_t \given \lambda_{z_t}, \Delta t) \\
   &= \prod_{t=1}^T \distBernoulli(z_t \given \rho) \, \distPoisson(s_t \given \lambda_{z_t} \cdot \Delta t).
 \end{align} 
@@ -78,34 +77,90 @@ and~${\blambda = \big[ \lambda_{\textit{up}}, \lambda_{\textit{down}} \big]}$.
 In addition to specifying functional forms for the distributions,
 ${p(z_t \given \rho)}$ and~${p(z_t \given \lambda_{z_t}, \Delta t)}$,
 the probabilistic model also formalizes the particular factorization of
-the joint probability distribution implied by the generative story.
-Eq.~\ref{eq:joint_chain_rule} simply applies the chain rule of
+the likelihood implied by the generative story.
+Eq.~\ref{eq:lkhd_chain_rule} simply applies the chain rule of
 probability, which does not reflect any loss of generality. However,
-in going from \eqref{eq:joint_chain_rule} to
-\eqref{eq:joint_factorized}, we have asserted that the latent
+in going from \eqref{eq:lkhd_chain_rule} to
+\eqref{eq:lkhd_factorized}, we have asserted that the latent
 states~$z_t$ and~$z_{t'}$ are conditionally independent given~$\rho$,
 and that the spike counts~$s_{t}$ and~$s_{t'}$ are conditionally
 independent given their corresponding latent states. This conditional
 independence assumption, which was implicit in the generative story,
-is made explicit when we factor the joint distribution into a product
+is made explicit when we factor the likelihood into a product
 over time bins. When we hypothesize relationships between different variables,
-we are making assertions about the factorization of the joint distribution. 
+we are making assertions about the factorization of the likelihood. 
 In Section~\ref{sec:motifs}, different patterns of conditional dependence 
 that form the building blocks of models for dynamic data.
 
-% Latent variables (states at each time)
-% Parameters rates associate with each state
 % Prior distributions on parameters
+\subsubsection{Conjugate Prior Distributions}
 The model above assumes that the firing rates are known, but in practice 
 this is a bit unreasonable. A more reasonable hypothesis is that neurons have 
 two firing rates, and while we do not know their exact values, we can 
-specify a distribution over them. To keep the model simple, let's assume 
-that the firing rates are both drawn from the same prior, 
-${\lambda_{*} \sim \distGamma(\alpha, \beta)}$. Similarly, we may not know 
-the exact probability of each state,~$\rho$, but we can place a reasonable
- prior distribution on it, for instance, ${\rho \sim \distBeta(\tau_0, \tau_1)}$.
-Incorporating these prior distributions into the model yields the joint 
-distribution,
+specify a distribution over them. Similarly, we may not know 
+the exact probability of each state,~$\rho$, but perhaps we can say
+that it should not be too close to zero or one, with a mean of 0.5.
+When crafting a probabilistic model, we can express these prior
+intuitions and simultaneously make inference a bit easier by using
+\emph{conjugate} prior distributions.
+
+
+Intuitively, a prior distribution is conjugate with the likelihood
+if the conditional distribution has the same form. For example,
+take the parameter,~$\lambda_{\textit{up}}$. If we look at the
+likelihood as a function of~$\lambda_{\textit{up}}$ and ignore
+terms that do not depend on this parameter, we have,
+\begin{align}
+  p(\bs, \bz \given \rho, \blambda, \Delta t)
+  &\propto \prod_{t=1}^T \left[
+    \distPoisson(s_t \given \lambda_{\textit{up}} \cdot \Delta t)
+    \right]^{\bbI[z_t = \textit{up}]} \\
+  &\propto \prod_{t=1}^T \left[
+    \lambda_{\textit{up}}^{s_t} \,
+    e^{-\lambda_{\textit{up}} \cdot \Delta t}
+    \right]^{\bbI[z_t = \textit{up}]} \\
+  &=
+  \lambda_{\textit{up}}^{s_{\textit{up}}} \,
+  e^{-\lambda_{\textit{up}} \cdot t_{\textit{up}}},
+\end{align}
+where
+\begin{align}
+  s_{\textit{up}} &= \sum_{t=1}^T s_t \cdot \bbI[z_t = \textit{up}], \\
+  t_{\textit{up}} &= \sum_{t=1}^T \Delta t \cdot \bbI[z_t = \textit{up}].
+\end{align}
+
+This likelihood is conjugate with a gamma prior,
+\begin{align}
+  p(\lambda_{\textit{up}} \given \alpha, \beta)
+  &= \distGamma(\lambda_{\textit{up}} \given \alpha, \beta) \\
+  &\propto \lambda_{\textit{up}}^{\alpha - 1} \,
+  e^{-\lambda_{\textit{up}} \cdot \beta},
+\end{align}
+because,
+\begin{align}
+  p(\lambda_{\textit{up}} \given \bs, \bz, \alpha, \beta)
+  &\propto p(\bs, \bz \given \rho, \blambda, \Delta t) \,
+  p(\lambda_{\textit{up}} \given \alpha, \beta) \\
+  &\propto \lambda_{\textit{up}}^{s_{\textit{up}} + \alpha - 1} \,
+  e^{-\lambda_{\textit{up}} (t_{\textit{up}} +\beta)} \\
+  &\propto \distGamma(\lambda_{\textit{up}} \given
+  s_{\textit{up}} + \alpha, \,
+  t_{\textit{up}} + \beta).
+\end{align}
+Since the conditional distribution is also in the gamma family,
+the gamma prior is conjugate with the Poisson likelihood. Moreover,
+the parameters of conditional distribution only depend on~$\bs$ and
+~$\bz$ through simple \emph{sufficient statistics},~$s_{\textit{up}}$
+and~$t_{\textit{up}}$. A beta distribution on the state probability,
+~${\distBeta(\rho \given \tau_0, \tau_1)}$, is similarly conjugate
+with the Bernoulli likelihood that links~$\rho$ and~$z_t$. In fact,
+conjugate priors exist for all likelihoods in the \emph{exponential
+  family}. These ideas are thoroughly discussed in standard
+machine learning and Bayesian statistics textbooks like~\citet{Murphy-2012}. 
+
+Putting this all together, we can now write down the \emph{joint
+  distribution} of our probabilistic model, which is simply the
+product of the likelihood and the prior distributions,
 \begin{align}
   \label{eq:full_joint}
   p(\bs, \bz, \rho, \blambda \given \alpha, \beta, \tau_0, \tau_1, \Delta t) 
@@ -114,8 +169,13 @@ distribution,
      p(\bs, \bz \given \rho, \blambda, \Delta t).
 \end{align}
 
-We will often distinguish between the different types of random
-variables in the model. The states,~$\bz$, are called \emph{latent
+
+% Latent variables (states at each time)
+% Parameters rates associate with each state
+\paragraph{Latent Variables, Parameters, and Hyperparameters}
+As our models get increasingly complicated, 
+we will often distinguish between the different types of random
+variables. The states,~$\bz$, are called \emph{latent
   variables} because their number grows with the size of the dataset,
 in this case there is one latent state per time bin. The latent state
 probability,~$\rho$, and the firing rates,~$\blambda$, are called
@@ -482,7 +542,7 @@ probability.
 
 When states are sampled with a Markov chain, it is no longer true that
 the samples are independent. In fact, the transition operator will
-often lead to relatively local updates, which leads to autocorrelation
+often lead to relatively local updates, which in turn lead to autocorrelation
 in the sequence of samples. This does not affect the bias of Monte
 Carlo estimate, but it does affect the constant in the
 asymptotic~$\mcO(L^{-1})$ convergence rate. However, in addition to 
@@ -514,12 +574,13 @@ distribution and then apply the transition operator, the distribution
 over next states remains unchanged. This is akin to an eigenvector of 
 a transition matrix. 
 
-In addition to leaving the posterior distribution invariant, the Markov 
-chain must also converge to this stationary distribution, regardless 
-of where it starts. If this property holds, the Markov chain is ``ergodic,''
-and the posterior distribution is the unique stationary distribution of 
-the chain. One simple sufficient condition that ensures ergodicity is 
-that the transition operator be strictly positive. 
+In addition to leaving the posterior distribution invariant, the
+Markov chain must also converge to this stationary distribution,
+regardless of where it starts. If this property holds, the Markov
+chain is \emph{ergodic}, and the posterior distribution is the unique
+stationary distribution of the chain. One simple sufficient condition
+that ensures ergodicity is that the transition operator be strictly
+positive.
 
 Designing an MCMC algorithm thus boils down to designing a valid
 transition operator. This is typically done by composing a sequence of
@@ -546,9 +607,9 @@ invariant, we plug it into Eq.~\ref{eq:invariance}:
   &= 
   \int p(\bz \given \btheta', \bs) \, \delta_{\btheta'}(\btheta) \,
     p \big(\btheta' \given \bs \big) \,
-    \left[ \, \int
+     \underbrace{\int
     p \big(\bz' \given \btheta', \bs \big) \, 
-    \mathrm{d}\bz'  \right] \mathrm{d}\btheta' \\
+    \mathrm{d}\bz'}_{=1}  \mathrm{d}\btheta' \\
   &= p(\bz \given \btheta, \bs) \, p(\btheta \given \bs) \\
   &= p(\bz, \btheta \given \bs).
 \end{align*}
@@ -561,7 +622,8 @@ for the~$j$-th.
 
 Many compositional models are designed such that these conditional 
 distributions are in fact easy to sample from. For example, if the 
-model is defined with \emph{conjugate} prior distributions, the conditional
+model is defined with conjugate prior distributions, as described
+above, the conditional
 distributions can typically be sampled exactly. Moreover, some model 
 motifs enable more efficient types of Gibbs updates outlined below.
 
@@ -575,14 +637,15 @@ motifs enable more efficient types of Gibbs updates outlined below.
       \prod_{t=1}^T p(z_t \given z_{t-1}, \btheta) \, 
       p(\bs_t \given z_t, \btheta),
   \end{align*}
-  where we have rolled the initial state into the product to ease the 
-  notation. A na\"ive Gibbs update might update one latent state,~$z_t$,
-  given all the rest,~$\bz_{\neg t}$. However, this would be horribly 
-  inefficient because the states are highly correlated. Given~$z_{t-1}$
-  and~$z_{t+1}$, the state~$z_t$ may be essentially deterministic. Thus,
-  even if there is genuine uncertainty over the state sequence as a whole,
-  this simple transition operator may take exponentially long to explore 
-  different state sequences. This is known as ``poor mixing.''
+  where we have rolled the initial state into the product to ease the
+  notation. A na\"ive Gibbs sampling algorithm might update one latent
+  state,~$z_t$, given all the rest,~$\bz_{\neg t}$. However, this
+  would be horribly inefficient when the states are highly
+  correlated. Given~$z_{t-1}$ and~$z_{t+1}$, the state~$z_t$ may be
+  essentially deterministed. Thus, even if there is genuine
+  uncertainty over the state sequence as a whole, this simple
+  transition operator may get stuck in a single state sequence assignment.
+  This is known as ``poor mixing.''
 
   Instead, we could try to update the entire state sequence at once. 
   The conditional distribution of~$\bz$ is proportional to this joint 
@@ -610,7 +673,7 @@ motifs enable more efficient types of Gibbs updates outlined below.
   latent variables are conditionally independent of one another. That is, the 
   update to~$z_t$ does not depend on the updated value of~$z_{t'}$. This 
   allows us to sample new latent states in parallel using as many processors
-  or threads as our computer allows.
+  or threads as we have at our disposal.
 
 \item \textsc{Collapsed Gibbs Sampling}: Another special case of block
   Gibbs sampling occurs when the conditional distribution can be
@@ -692,12 +755,12 @@ we take~$\mcQ$ to be the family of fully factorized distributions,
 \begin{align}
   \mcQ &= \left \{ q: q(\bz, \btheta) \propto \prod_{t=1}^T q_t(z_t) \prod_{j=1}^J q_j(\theta_j) \right\}.
 \end{align}
-Each of these \emph{variational factors},~$q_t(z_t)$ or~$q_j(\theta_j)$, will have 
-some parameters associated with it. We seek to set these parameters in order to 
+Each of these \emph{variational factors},~$q_t(z_t)$ and~$q_j(\theta_j)$, will have 
+some parameters associated with it. We will set these parameters in order to 
 maximize the variational lower bound.
 
 In general, this objective function is not concave, so we should not expect 
-to optimize this function globally. However, we can still use local optimization 
+to find a global optimum. However, we can still use local optimization 
 and multiple random restarts in hopes of finding a decent local optimum. 
 For mean field variational inference, a simple approach is to perform coordinate 
 ascent on the parameters of one variational factor at a time, holding the rest
@@ -724,7 +787,8 @@ constant with respect to~$\theta_j$, and
 \end{align}
 We are able to separate the expectations in
 Eq.~\ref{eq:separate_expectations} because of the factorized form
-of~$q(\bz, \btheta)$.  Since KL-divergence is minimized when the two
+of~$q(\bz, \btheta)$.
+Since KL-divergence is minimized when the two
 distributions are equal, the optimal~$q_j(\theta_j)$, given the
 variational factors for the remaining variables, is equal
 to~$\widetilde{p}_j(\theta_j)$.  As in the Gibbs sampling algorithms
@@ -734,7 +798,22 @@ distribution in our probabilistic model. Moreover, when the model
 is constructed out of conjugate distributions, these mean field 
 updates can often be computed in closed form.
 
-
+\paragraph{Structured Mean Field}
+Just as block Gibbs sampling enables more efficient updates for sets
+of correlated random variables, structured mean field algorithms allow
+groups of random variables to share a variational factor.  For
+example, in an HMM, we can group the latent states~$\bz$ together in a
+shared factor,~$q(\bz)$, that does not necessarily factor into a
+product over time bins.
+If the optimal shared factor given by Eq.~\ref{eq:optimal_factor} has
+a tractable form, we can perform coordinate ascent on the variational
+lower bound by updating the parameters of the shared factor,
+rather than sequentially updating individual factors for each time bin.
+As a result, our coordinate ascent algorithm converges much more rapidly.
+The only other requirement is that it must be possible to compute the
+expectations with respect to the shared factor. In the case of HMMs,
+the same type of dynamic programming algorithm that enables efficient
+block sampling also enables efficient calculation of expectations. 
 
 %\subsection{Model Comparison}
 
