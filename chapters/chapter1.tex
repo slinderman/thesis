@@ -32,6 +32,15 @@ state. Moreover, assume that all we observe is the number of spikes
 fired in each 50ms time bin.  Our goal is to infer the latent state of
 the neuron given the observed spike counts.
 
+\begin{figure}[t]
+\centering%
+\includegraphics[width=5.5in]{figures/ch1/figure1} 
+\caption[Simple neuron with two states]{A simple neuron that randomly switches between an \textit{up} and a \textit{down} state every 50ms. Each state has an associated firing rate from which a Poisson number of spikes are drawn.}
+\label{fig:updown}
+\vspace{-0.5cm}
+\end{figure}
+
+
 Clearly, this generative story contains many simplifying assumptions
 and omits a great amount of detail. In addition to assuming that
 spiking is adequately captured by firing rates, the notion that a
@@ -56,7 +65,7 @@ formalize this by
 assuming,~${s_{t} \sim \distPoisson(\lambda_{z_t} \cdot \Delta t)}$,
 where ${\Delta t = 0.05\text{s}}$,
 ${\lambda_{\textit{up}} = 100\,\text{spikes/s}}$, and
-${\lambda_{\textit{down}} = 1\,\text{spike/s}}$. 
+${\lambda_{\textit{down}} = 10\,\text{spike/s}}$. 
 The likelihood is,
 \begin{align}
   \label{eq:lkhd_chain_rule}
@@ -888,14 +897,29 @@ extremely high variance. Instead, more sophisticated methods, like annealed
 importance sampling \cite{neal2001annealed} are typically employed. 
 
 Finally, another means of evaluating and criticising models is via
-\emph{posterior predictive checks} (PPCs) \cite{box1980sampling, Gelman13, blei2014build}.
-Though we do not make use of them in this thesis, we note that they
-provide a slightly different view on model performance. Rather than
-assessing how well the model predicts held-out data, they assess how
-well samples from the posterior distribution match samples of the real
-data. Rather than evaluating how well one model performs relative to
-another, PPCs assess how well the model explains different aspects of
-the data.
+\emph{posterior predictive checks} (PPCs) \cite{box1980sampling,
+  Gelman13, blei2014build}.  Though we do not make use of them in this
+thesis, we note that they provide a slightly different view on model
+performance. Rather than assessing how well the model predicts
+held-out data, they assess how well statistics of data simulated from
+the posterior distribution match statistics calculated from samples of
+the real data. Rather than evaluating how well one model performs
+relative to another, PPCs assess how well the model explains important
+aspects of the data.
 
 \section{The Frontier of Modeling and Inference}
-
+With this background, we have the basic tools necessary to formulate
+models, perform Bayesian inference, and evaluate model performance.
+However, as we incorporate more structure into our model and scale up
+to larger datasets, inference quickly becomes computationally
+intractable. This thesis is about extending the frontier of models and
+motifs at our disposal by leveraging model structure to develop
+efficient inference algorithms. One of the major techniques we use is
+the introduction of auxiliary variables that render the model
+conjugate and enable block parallel Gibbs samplers or structured mean
+field algorithms. Essentially, these methods provide nice coordinates
+for inference. By adding dimensions to our posterior, it is sometimes
+easier to make two simple updates rather than one hard update.  These
+insights enable us to push the frontier of modeling and inference for
+complex discrete datasets like neural spike trains, and extend the
+set of motifs in our modeling toolkit.
