@@ -7,12 +7,23 @@
 This chapter lays the foundation for those that follow by introducing 
 the essential toolkit of probabilistic modeling: the language of 
 generative models, the building blocks of time series, and the algorithms
-of Bayesian inference. 
-
+of Bayesian inference.  Generative models are a means of formalizing, 
+in probabilistic terms, our hypotheses about the structure in our 
+data. The key ingredients are latent variables that reflect the state 
+of the system, and conditional distributions that relate these variables 
+to the observed data. Time series are a special case of generative model
+in which the data evolves according to some dynamical rules. Given a 
+model and an observed dataset, we can invert the model and reason about 
+the posterior distribution over latent variables using Bayesian inference. 
+At the end of this chapter, we will have the basic foundation necessary 
+to start looking for structure in neural data. The rest of the thesis 
+will build upon this foundation, developing more sophisticated models
+ and more efficient inference algorithms, and putting them to use on 
+real neural recordings.
 
 \section{Generative Probabilistic Models}
 \label{sec:generative_models}
-Generative probabilistic models formalize a story of how data comes to be. 
+Generative probabilistic models tell a story of how data comes to be. 
 While this story never captures every physical detail, it serves as an 
 idealized version that captures the essence of the system. For example, when
 modeling a neural spike train, we will ignore the states of individual ion 
@@ -22,20 +33,26 @@ probability that a neuron spikes at any moment in time.
 
 As a simple illustration, consider the following generative
 process. Suppose a neuron has two states, an \emph{up} state and an
-\emph{down} state. In the \emph{up} state, the neuron spikes at a high
-rate, say 100Hz, and in the \emph{down} state it rarely fires, say at 1Hz.
+\emph{down} state. In the \emph{up} state, it spikes at a high
+rate, say 100Hz, and in the \emph{down} state it rarely fires, say at 10Hz.
 Assume that every 50ms the neuron flips a coin to decide what state it
 will be in, and then fires a random number of spikes according to the
-rate associated with its current state. Once 50ms have elapsed, it
+rate associated with its current state. For the sake of simplicity, 
+assume the precise spike times are uniformly distributed over the 50ms
+interval. Once the interval has elapsed, the neuron
 flips another coin and its rate immediately changes to reflect its new
-state. Moreover, assume that all we observe is the number of spikes
-fired in each 50ms time bin.  Our goal is to infer the latent state of
-the neuron given the observed spike counts.
+state.   Our goal is to infer the latent state of
+the neuron given the observed spikes.
 
 \begin{figure}[t]
 \centering%
 \includegraphics[width=5.5in]{figures/ch1/figure1} 
-\caption[Simple neuron with two states]{A simple neuron that randomly switches between an \textit{up} and a \textit{down} state every 50ms. Each state has an associated firing rate from which a Poisson number of spikes are drawn.}
+\caption[Simple neuron with up and down states]{A simple neuron that
+  randomly switches between an \textit{up} and a \textit{down} state
+  every 50ms. Here, time bins are colored blue and yellow depending on
+  the latent state,~$z_t$. Each state has an associated firing rate from
+  which a Poisson number of spikes,~$s_t$, is drawn. Precise spike
+  times are uniformly distributed over the 50ms interval.}
 \label{fig:updown}
 \vspace{-0.5cm}
 \end{figure}
@@ -66,7 +83,22 @@ assuming,~${s_{t} \sim \distPoisson(\lambda_{z_t} \cdot \Delta t)}$,
 where ${\Delta t = 0.05\text{s}}$,
 ${\lambda_{\textit{up}} = 100\,\text{spikes/s}}$, and
 ${\lambda_{\textit{down}} = 10\,\text{spike/s}}$. 
-The likelihood is,
+
+Figure~\ref{fig:updown} shows a neural spike train sampled from this
+generative model. The time bins are colored blue or yellow depending
+on whether the neuron is in the \textit{up} or \textit{down} state,
+respectively.  The precise spike times are denoted by black vertical
+lines with circular endpoints. Above, the vector of observed spike
+counts, ${\bs = \big[s_1, \ldots, s_T \big]}$, and the vector of
+latent states,~${\bz = \big[z_1, \ldots, z_T \big]}$, are shown.  We
+will use this notation throughout the thesis: bold symbols like~$\bs$
+will denote arrays of random variables; lowercase bold symbols will
+typically denote vectors
+
+The generative procedure defines the \emph{likelihood} of any given set of 
+observed spike counts and corresponding latent states. This can be 
+written as a conditional distribution where the firing rates,
+state probabilities, and bin size are assumed to be known. We have,
 \begin{align}
   \label{eq:lkhd_chain_rule}
   %p(\bs, \bz \given \rho, \lambda_{\textit{up}}, \lambda_{\textit{down}}, \Delta t) 
@@ -77,15 +109,10 @@ The likelihood is,
   &= \prod_{t=1}^T p(z_t \given \rho) \, p(s_t \given \lambda_{z_t}, \Delta t) \\
   &= \prod_{t=1}^T \distBernoulli(z_t \given \rho) \, \distPoisson(s_t \given \lambda_{z_t} \cdot \Delta t).
 \end{align} 
-Here, we have introduced notation that will be used throughout this
-thesis. Bold symbols like~$\bs$ will denote arrays of
-random variables. Typically, lowercase bold symbols will denote
-vectors, as in this case,~${\bs = \big[s_1, \ldots, s_T \big]}$ 
-and~${\blambda = \big[ \lambda_{\textit{up}}, \lambda_{\textit{down}} \big]}$.
 
 In addition to specifying functional forms for the distributions,
 ${p(z_t \given \rho)}$ and~${p(z_t \given \lambda_{z_t}, \Delta t)}$,
-the probabilistic model also formalizes the particular factorization of
+the probabilistic model also specifies the particular factorization of
 the likelihood implied by the generative story.
 Eq.~\ref{eq:lkhd_chain_rule} simply applies the chain rule of
 probability, which does not reflect any loss of generality. However,
@@ -101,25 +128,39 @@ we are making assertions about the factorization of the likelihood.
 In Section~\ref{sec:motifs}, different patterns of conditional dependence 
 that form the building blocks of models for dynamic data.
 
-% Prior distributions on parameters
-\subsubsection{Conjugate Prior Distributions}
-The model above assumes that the firing rates are known, but in practice 
-this is a bit unreasonable. A more reasonable hypothesis is that neurons have 
+So far, we have assumed that the firing rates and state probabilities are known, but in practice 
+this is a bit unreasonable. To complete the probabilistic model, we need 
+to combine the likelihood function with a \emph{prior distribution} that 
+captures our uncertainty about these parameters. 
+For example, a more reasonable hypothesis is that neurons have 
 two firing rates, and while we do not know their exact values, we can 
-specify a distribution over them. Similarly, we may not know 
-the exact probability of each state,~$\rho$, but perhaps we can say
-that it should not be too close to zero or one, with a mean of 0.5.
-When crafting a probabilistic model, we can express these prior
+specify a distribution over them,~$p(\blambda)$. Similarly, we may not know 
+the exact probability of each state,~$\rho$, but perhaps we can specify 
+a prior,~$p(\rho)$, that captures our intuition that~$\rho$ should be about 0.5 and it should 
+not be too close to zero or one. 
+Putting this all together, we can now write down the \emph{joint
+  distribution} of our probabilistic model --- the
+product of the likelihood and the prior distributions:
+\begin{align}
+  \label{eq:full_joint}
+  p(\bs, \bz, \rho, \blambda \given \alpha, \beta, \tau_0, \tau_1, \Delta t) 
+  &= p(\bs, \bz \given \rho, \blambda, \Delta t) \,
+  p(\rho \given \tau_0, \tau_1) \, 
+     p(\blambda \given \alpha, \beta).
+\end{align}
+
+When constructing a probabilistic model, we can express these prior
 intuitions and simultaneously make inference a bit easier by using
 \emph{conjugate} prior distributions.
 
 
-%Intuitively, a prior distribution is conjugate with the likelihood
-%if the conditional distribution has the same form.
-For example,
+% Prior distributions on parameters
+\subsubsection{Conjugate Prior Distributions}
+A conjugate prior ensures that the conditional distribution of a
+parameter, given the data, will have a tractable form.  For example,
 take the parameter,~$\lambda_{\textit{up}}$. If we look at the
-likelihood as a function of~$\lambda_{\textit{up}}$ and ignore
-terms that do not depend on this parameter, we have,
+likelihood as a function of~$\lambda_{\textit{up}}$ and ignore terms
+that do not depend on this parameter, we have,
 \begin{align}
   p(\bs, \bz \given \rho, \blambda, \Delta t)
   &\propto \prod_{t=1}^T \left[
@@ -136,8 +177,10 @@ terms that do not depend on this parameter, we have,
 where
 \begin{align}
   s_{\textit{up}} &= \sum_{t=1}^T s_t \cdot \bbI[z_t = \textit{up}], \\
-  t_{\textit{up}} &= \sum_{t=1}^T \Delta t \cdot \bbI[z_t = \textit{up}].
+  t_{\textit{up}} &= \sum_{t=1}^T \Delta t \cdot \bbI[z_t = \textit{up}],
 \end{align}
+and~$\bbI[x]$ is an indicator function that equals one if~$x$ evaluates to true
+and equals zero otherwise.
 
 %This likelihood is conjugate with a gamma prior,
 Now consider a gamma prior distribution,
@@ -174,37 +217,28 @@ conjugate priors exist for all likelihoods in the \emph{exponential
   family}. These ideas are thoroughly discussed in standard machine
 learning and Bayesian statistics textbooks like~\citet{Murphy-2012}.
 
-Putting this all together, we can now write down the \emph{joint
-  distribution} of our probabilistic model --- the
-product of the likelihood and the prior distributions:
-\begin{align}
-  \label{eq:full_joint}
-  p(\bs, \bz, \rho, \blambda \given \alpha, \beta, \tau_0, \tau_1, \Delta t) 
-  &= p(\bs, \bz \given \rho, \blambda, \Delta t) \,
-  p(\rho \given \tau_0, \tau_1) \, 
-     p(\blambda \given \alpha, \beta).
-\end{align}
-
 
 % Latent variables (states at each time)
 % Parameters rates associate with each state
 \paragraph{Latent Variables, Parameters, and Hyperparameters}
-As our models get increasingly complicated, 
-we will often distinguish between the different types of random
-variables. The states,~$\bz$, are called \emph{latent
-  variables} because their number grows with the size of the dataset,
-in this case there is one latent state per time bin. The unknown latent state
-probability,~$\rho$, and the firing rates,~$\blambda$, are called
-\emph{parameters} because there are a fixed number of them. The
+As our models get increasingly complicated, we will often distinguish
+between the different types of random variables. The states,~$\bz$,
+are called \emph{local latent variables} because there is one for each
+data point.  The unknown latent state probability,~$\rho$, and the
+firing rates,~$\blambda$, are either called \emph{parameters} or
+\emph{global latent variables} because their dimension is fixed. The
 remaining values,~${\{ \alpha, \beta, \tau_0, \tau_1, \Delta t \} }$,
 are called \emph{hyperparameters}. These are constants that we set
 prior to performing inference.  Typically, these can be tuned
 cross-validation, or simply set based on intuition and physical
-constraints.
+constraints. For conciseness, we will sometimes refer to the set of
+all parameters as~$\btheta$ and the set of hyperparameters
+as~$\boldeta$.
+
 
 \subsection{Representations of Spike Trains}
 % Notation for sets of spike times or spike count matrices
-As modelers, one of the first decisions we must make is how we
+One of the first decisions we must make is how to
 represent our data. In this thesis we will focus solely on modeling
 spike trains, which are sequences of discrete events in time. These
 spike trains typically come from spike sorting algorithms applied to
@@ -219,24 +253,27 @@ fluorescence traces, which are highly autocorrelated due to the relatively
 slow dynamics of calcium concentration in cells, we can instead consider 
 only the times of action potentials.
 
-While this thesis treats the spike trains as given, it is also possible to
-work directly with the observed extracellular recordings or calcium
-fluorescence and treat the spike train as a latent variable.  Then,
-the spike train must be inferred along with the rest of the model's
-latent variables and parameters, cf. \cite{pillow2013model}. As we just 
-mentioned, this will typically incur a substantial cost, but it may be 
-worthwhile if there is considerable uncertainty in the spike timing 
-and if precise timing is important to the overarching model.
+% While this thesis treats the spike trains as given, it is also possible to
+% work directly with the observed extracellular recordings or calcium
+% fluorescence and treat the spike train as a latent variable.  Then,
+% the spike train must be inferred along with the rest of the model's
+% latent variables and parameters, cf. \cite{pillow2013model}. As we just 
+% mentioned, this will typically incur a substantial cost, but it may be 
+% worthwhile if there is considerable uncertainty in the spike timing 
+% and if precise timing is important to the overarching model.
 
-The most general representation of a spike train is as a set of~$M$
-\emph{marked} spike times.
-Let,
+As we can see in Figure~\ref{fig:updown}, the most general representation 
+of a spike train is as set of real-valued times for each neuron.
+When there is more than one neuron, we have a set of
+\emph{marked} spike times, which we call,
 \begin{align}
   \mcS = \left \{ (s_m, c_m) \right \}_{m=1}^M \subset [0, T] \times \{1, \ldots, N\}.
 \end{align}
 Each member of this set consists of a real-valued spike time~$s_m$ in
 the interval~$[0, T]$, and an integer,~$c_m \in \{1, \ldots, N\}$,
-that specifies the index of the cell that generated this spike. 
+that specifies the index of the cell that generated this spike. $M$ is 
+the total number of spikes on all neurons.
+
 % In the working example of a neuron with an \emph{up} and \emph{down}
 % state there is only one neuron ($N=1$), so the cell markers would be
 % trivially equal to~$c_m=1$.
@@ -254,19 +291,19 @@ real-valued number.
 
 We typically model sets of discrete events like these as realizations
 of a \emph{marked point process} \cite{daley2003introduction1}. Such a
-process is defined by its firing rates\footnote{In the point process
-  literature, these firing rates are called \emph{conditional
-    intensity functions}.},
+process is defined by its non-negative firing rates\footnote{In the
+  point process literature, these firing rates are called
+  \emph{conditional intensity functions}.},
 ${\{\lambda_n(t \given \mcH_t)\}_{n=1}^N}$, where $\mcH_t$ captures
 the history of the process through time~$t$. For example, the history
 may include the previous spikes,~${\mcH_t = \{(s_m, c_m): s_m < t\}}$,
 or some external covariates,~$x(t)$.  If we consider a small time
 window,~${[t, t+\Delta t)}$, and take the limit as~$\Delta t$
-approaches zero, the expected number of spikes fired by neuron~$n$ in
-the window~${[t, t+\Delta t)}$
-is~${\lambda_n(t \given \mcH_t) \cdot \Delta t}$. Our
-goal is then to specify flexible and interpretable conditional intensity
-functions. Chapter~\ref{chap:hawkes} 
+approaches zero,~${\lambda_n(t \given \mcH_t) \cdot \Delta t}$ is the
+expected number of spikes fired by neuron~$n$ in the
+window~${[t, t+\Delta t)}$. Our goal is then to specify flexible and
+interpretable conditional intensity
+functions. Chapter~\ref{chap:hawkes}
 
 The limiting perspective on the conditional intensity functions
 suggestions an alternative, discrete-time representation.  Rather than
@@ -293,7 +330,7 @@ corresponding rate matrix,~$\bLambda$, where,
         \end{bmatrix}.
 \end{align}
 Here,~$s_{t,n} \in \naturals$ denotes the number of spikes fired in
-the~$t$-th time bin by the~$n$-th neuron, and~$\lambda_{t,n}$ denotes 
+the~$t$-th time bin by the~$n$-th neuron, and~${\lambda_{t,n} \in \reals_+}$ denotes 
 the corresponding firing rate. Sometimes, the effects we
 are interested in studying occur at relatively slow time scales, so
 discretizing may provide valuable compression while retaining most of
@@ -320,6 +357,32 @@ system, yet at the same time we wish to limit the complexity of the model
 so that we may perform inference efficiently. One of the ways that we 
 accomplish this balancing act is by composing our model out of common,
 well-studied motifs. 
+
+Motifs correspond to factorizations of probabilistic model, which can be 
+visualized as a directed acyclic graph. Each node in the graph corresponds to a random variable, 
+and shaded nodes indicate the variables that are observed. The edges 
+represent conditional dependencies. For example, in the mixture model 
+shown in Figure~\ref{fig:motifs}, the spike count~$s_2$ has incoming edges 
+from the corresponding latent state~$z_2$ and the firing rates,~$\blambda$.
+Thus,~$p(s_2 \given z_2, \blambda)$ is a factor in the joint probability distribution.
+Since the graph is directed and acyclic, we can read off the factors starting 
+with the root nodes,~$p(\rho)$ and~$p(\blambda)$, and ending with the leaf nodes,
+~$p(s_t \given z_t, \blambda)$. In this way, the graphical model captures the 
+factorization of the graph and specifies a particular subset of all possible
+joint distributions over this set of variables. 
+
+The edges of the graph do not, however, specify the type of the random variable 
+or functional form of the factors. For example, a node may indicate either a discrete or 
+a continuous random variable, and an edge may indicate either a linear or a nonlinear 
+dependence pattern. In this way, two models may share the same graph but have 
+fundamentally different interpretations. This is true of mixture models 
+and factor analysis models shown in Figure~\ref{fig:motifs}.
+
+the spike count~$s_2$ is conditionally 
+dependent on the corresponding latent state,~$z_2$, and the firing rates,~$\blambda$, 
+but given these two variables, it is conditionally \emph{independent} of 
+the other spike counts. Similarly,~$z_2$ depends on the state probabilities,~$\rho$,
+but given~$\rho$ it is conditionally independent of all other 
 
 \begin{figure}[t]
 \centering%

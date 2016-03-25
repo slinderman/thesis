@@ -50,7 +50,7 @@ def make_figure_1():
 
     Ss = np.concatenate(Ss)
 
-    fig = create_figure((5.5, 2.4))
+    fig = create_figure((5.5, 2.7))
     ax = create_axis_at_location(fig, .75, .5, 4., 1.375)
     ymax = 105
     # Plot the rates
@@ -88,15 +88,32 @@ def make_figure_1():
     ax.set_ylim(0,10)
     ax.set_xticks([])
     ax.set_yticks([])
-    ax.yaxis.labelpad = 27
-    ax.set_ylabel("$s$")
+    ax.yaxis.labelpad = 30
+    ax.set_ylabel("${s_t}$", rotation=0,  verticalalignment='center')
 
+    ## Now plot the latent state above that above
+    ax = create_axis_at_location(fig, .75, 2.375, 4., .25)
+    for i in xrange(n):
+        # Plot boundaries
+        ax.add_patch(Rectangle([i*D,0], D, 10,
+                            color=colors[z[i]], ec="none", alpha=0.5))
+
+        ax.plot([(i+1)*D, (i+1)*D], [0, 10], '-k', lw=1)
+        ax.text(i*D + D/3.5, 3, "u" if z[i]==0 else "d", fontdict={"size":9})
+    ax.set_xlim(0,T)
+    ax.set_ylim(0,10)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.yaxis.labelpad = 30
+    ax.set_ylabel("${z_t}$", rotation=0,  verticalalignment='center')
+
+    
     fig.savefig("figure1.pdf")
     fig.savefig("figure1.png", dpi=300)
     
     plt.show()
-        
-if __name__ == "__main__":
+
+def make_figure_2():
     # Make a figure of probabilistic models for matrix factorization
     T = 50
     N = 25
@@ -130,4 +147,9 @@ if __name__ == "__main__":
     plt.xticks([(N-1)*kr], ["$N$"])
 
     fig.savefig("figure2a.pdf")
+
+    
     plt.show()
+
+if __name__ == "__main__":
+    make_figure_1()
