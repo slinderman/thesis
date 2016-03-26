@@ -67,22 +67,21 @@ simple model captures some patterns of spiking that have been observed
 in experiment \cite{cowan1994spontaneous, shu2003turning}. 
 
 \sloppy We can formalize this generative story with a probabilistic
-model that specifies a distribution over latent states and
-observed spike counts. Let~$s_t \in \naturals$ denote the number of
-spikes counted in the~$t$-th time bin,
-and~$z_t \in \{\textit{up}, \textit{down}\}$ denote the corresponding
-state of the neuron. The assumption that states are drawn from a coin
-flip corresponds to the prior distribution,
-${z_t \sim \distBernoulli(\rho)}$, where~$\rho$ specifies the
-probability of \textit{up} versus \textit{down} states.  Implicitly,
-we assumed that~${\rho=\tfrac{1}{2}}$, though this need not be the
-case.  We previously said that the neurons fire a random number of
-spikes according to their state-dependent firing rate; now we will
-formalize this by
-assuming,~${s_{t} \sim \distPoisson(\lambda_{z_t} \cdot \Delta t)}$,
-where ${\Delta t = 0.05\text{s}}$,
-${\lambda_{\textit{up}} = 100\,\text{spikes/s}}$, and
-${\lambda_{\textit{down}} = 10\,\text{spike/s}}$. 
+model that specifies a distribution over latent states and observed
+spike counts. Let~$s_t \in \naturals$ denote the number of spikes
+counted in the~$t$-th time bin, and~$z_t \in \{\textit{up},
+\textit{down}\}$ denote the corresponding state of the neuron. The
+assumption that states are drawn from a coin flip corresponds to the
+prior distribution, ${z_t \sim \distCategorical(\bpi)}$,
+where~${\bpi \in [0,1]^2}$ is a vector that specifies the probability
+of \textit{up} and \textit{down} states.  Implicitly, we have assumed
+that~${\bpi=\big[\tfrac{1}{2}, \tfrac{1}{2} \big]}$, though this need
+not be the case.  We previously said that the neurons fire a random
+number of spikes according to their state-dependent firing rate; now
+we will formalize this by assuming,~${s_{t} \sim
+  \distPoisson(\lambda_{z_t} \cdot \Delta t)}$, where ${\Delta t =
+  0.05\text{s}}$, ${\lambda_{\textit{up}} = 100\,\text{spikes/s}}$,
+and ${\lambda_{\textit{down}} = 10\,\text{spike/s}}$.
 
 Figure~\ref{fig:updown} shows a neural spike train sampled from this
 generative model. The time bins are colored blue or yellow depending
@@ -101,32 +100,33 @@ written as a conditional distribution where the firing rates,
 state probabilities, and bin size are assumed to be known. We have,
 \begin{align}
   \label{eq:lkhd_chain_rule}
-  %p(\bs, \bz \given \rho, \lambda_{\textit{up}}, \lambda_{\textit{down}}, \Delta t) 
-  %&= p(\bz \given \rho) \, p(\bs \given \bz, \lambda_{\textit{up}}, \lambda_{\textit{down}}, \Delta t) \\
-  p(\bs, \bz \given \rho, \blambda, \Delta t) 
-  &= p(\bz \given \rho) \, p(\bs \given \bz, \blambda, \Delta t) \\
+  p(\bs, \bz \given \bpi, \blambda) 
+  &= p(\bz \given \bpi) \, p(\bs \given \bz, \blambda) \\
   \label{eq:lkhd_factorized}
-  &= \prod_{t=1}^T p(z_t \given \rho) \, p(s_t \given \lambda_{z_t}, \Delta t) \\
-  &= \prod_{t=1}^T \distBernoulli(z_t \given \rho) \, \distPoisson(s_t \given \lambda_{z_t} \cdot \Delta t).
-\end{align} 
+  &= \prod_{t=1}^T p(z_t \given \bpi) \, p(s_t \given \lambda_{z_t}) \\
+  \label{eq:lkhd_factorized_forms}
+  &= \prod_{t=1}^T \distCategorical(z_t \given \bpi) \, \distPoisson(s_t \given \lambda_{z_t} \cdot \Delta t).
+\end{align}
+Since~$\Delta t$ is a constant, we do not include it as a random
+variable in the joint distribution or explicitly condition on it.
 
-In addition to specifying functional forms for the distributions,
-${p(z_t \given \rho)}$ and~${p(z_t \given \lambda_{z_t}, \Delta t)}$,
-the probabilistic model also specifies the particular factorization of
-the likelihood implied by the generative story.
+The probabilistic model specifies the particular factorization of the
+likelihood implied by the generative story.
 Eq.~\ref{eq:lkhd_chain_rule} simply applies the chain rule of
 probability, which does not reflect any loss of generality. However,
 in going from \eqref{eq:lkhd_chain_rule} to
 \eqref{eq:lkhd_factorized}, we have asserted that the latent
-states~$z_t$ and~$z_{t'}$ are conditionally independent given~$\rho$,
+states~$z_t$ and~$z_{t'}$ are conditionally independent given~$\bpi$,
 and that the spike counts~$s_{t}$ and~$s_{t'}$ are conditionally
 independent given their corresponding latent states. This conditional
 independence assumption, which was implicit in the generative story,
-is made explicit when we factor the likelihood into a product
-over time bins. When we hypothesize relationships between different variables,
-we are making assertions about the factorization of the likelihood. 
-In Section~\ref{sec:motifs}, different patterns of conditional dependence 
-that form the building blocks of models for dynamic data.
+is made explicit when we factor the likelihood into a product over
+time bins.  Eq.~\ref{eq:lkhd_factorized_forms} specifies the
+functional form of the conditional distributions.  When we hypothesize
+relationships between different variables, we are making assertions
+about the factorization and the form of the likelihood.  In
+Section~\ref{sec:motifs}, different patterns of conditional dependence
+that provide the building blocks of models for dynamic data.
 
 So far, we have assumed that the firing rates and state probabilities are known, but in practice 
 this is a bit unreasonable. To complete the probabilistic model, we need 
@@ -135,17 +135,17 @@ captures our uncertainty about these parameters.
 For example, a more reasonable hypothesis is that neurons have 
 two firing rates, and while we do not know their exact values, we can 
 specify a distribution over them,~$p(\blambda)$. Similarly, we may not know 
-the exact probability of each state,~$\rho$, but perhaps we can specify 
-a prior,~$p(\rho)$, that captures our intuition that~$\rho$ should be about 0.5 and it should 
-not be too close to zero or one. 
+the exact probability of each state,~$\bpi$, but perhaps we can specify 
+a prior,~$p(\bpi)$, that captures our intuition that the states should
+be equally likely \emph{a priori}.
 Putting this all together, we can now write down the \emph{joint
   distribution} of our probabilistic model --- the
 product of the likelihood and the prior distributions:
 \begin{align}
   \label{eq:full_joint}
-  p(\bs, \bz, \rho, \blambda \given \alpha, \beta, \tau_0, \tau_1, \Delta t) 
-  &= p(\bs, \bz \given \rho, \blambda, \Delta t) \,
-  p(\rho \given \tau_0, \tau_1) \, 
+  p(\bs, \bz, \bpi, \blambda \given \alpha, \beta, \gamma) 
+  &= p(\bs, \bz \given \bpi, \blambda) \,
+  p(\bpi \given \gamma) \, 
      p(\blambda \given \alpha, \beta).
 \end{align}
 
@@ -161,8 +161,8 @@ parameter, given the data, will have a tractable form.  For example,
 take the parameter,~$\lambda_{\textit{up}}$. If we look at the
 likelihood as a function of~$\lambda_{\textit{up}}$ and ignore terms
 that do not depend on this parameter, we have,
-\begin{align}
-  p(\bs, \bz \given \rho, \blambda, \Delta t)
+\begin{align*}
+  p(\bs, \bz \given \bpi, \blambda)
   &\propto \prod_{t=1}^T \left[
     \distPoisson(s_t \given \lambda_{\textit{up}} \cdot \Delta t)
     \right]^{\bbI[z_t = \textit{up}]} \\
@@ -173,36 +173,36 @@ that do not depend on this parameter, we have,
   &=
   \lambda_{\textit{up}}^{s_{\textit{up}}} \,
   e^{-\lambda_{\textit{up}} \cdot t_{\textit{up}}},
-\end{align}
+\end{align*}
 where
-\begin{align}
+\begin{align*}
   s_{\textit{up}} &= \sum_{t=1}^T s_t \cdot \bbI[z_t = \textit{up}], \\
   t_{\textit{up}} &= \sum_{t=1}^T \Delta t \cdot \bbI[z_t = \textit{up}],
-\end{align}
+\end{align*}
 and~$\bbI[x]$ is an indicator function that equals one if~$x$ evaluates to true
 and equals zero otherwise.
 
 %This likelihood is conjugate with a gamma prior,
 Now consider a gamma prior distribution,
-\begin{align}
+\begin{align*}
   p(\lambda_{\textit{up}} \given \alpha, \beta)
   &= \distGamma(\lambda_{\textit{up}} \given \alpha, \beta) \\
   &\propto \lambda_{\textit{up}}^{\alpha - 1} \,
   e^{-\lambda_{\textit{up}} \cdot \beta}.
-\end{align}
+\end{align*}
 The conditional distribution over~$\lambda_{\textit{up}}$ given the
 observed spike counts, the latent states, and the prior is
 proportional to the likelihood times the prior. This simplifies to,
-\begin{align}
+\begin{align*}
   p(\lambda_{\textit{up}} \given \bs, \bz, \alpha, \beta)
-  &\propto p(\bs, \bz \given \rho, \blambda, \Delta t) \,
+  &\propto p(\bs, \bz \given \bpi, \blambda) \,
   p(\lambda_{\textit{up}} \given \alpha, \beta) \\
   &\propto \lambda_{\textit{up}}^{s_{\textit{up}} + \alpha - 1} \,
   e^{-\lambda_{\textit{up}} (t_{\textit{up}} +\beta)} \\
   &\propto \distGamma(\lambda_{\textit{up}} \given
   s_{\textit{up}} + \alpha, \,
   t_{\textit{up}} + \beta).
-\end{align}
+\end{align*}
 Since both the prior and the the conditional distribution
 over~$\lambda_{\textit{up}}$ are in the gamma family, we say gamma
 prior is conjugate with this product-of-Poissons likelihood.
@@ -210,8 +210,8 @@ Moreover, the parameters of
 conditional distribution only depend on~$\bs$ and ~$\bz$ through
 simple \emph{sufficient statistics},~$s_{\textit{up}}$
 and~$t_{\textit{up}}$. A beta distribution on the state probability,
-~${\distBeta(\rho \given \tau_0, \tau_1)}$, is similarly conjugate
-with the product-of-Bernoulli likelihood that links~$\rho$ and~$\bz$.
+~${\distDirichlet(\bpi \given \gamma)}$, is similarly conjugate
+with the product-of-Categorical likelihood that links~$\bpi$ and~$\bz$.
 In fact,
 conjugate priors exist for all likelihoods in the \emph{exponential
   family}. These ideas are thoroughly discussed in standard machine
@@ -224,10 +224,10 @@ learning and Bayesian statistics textbooks like~\citet{Murphy-2012}.
 As our models get increasingly complicated, we will often distinguish
 between the different types of random variables. The states,~$\bz$,
 are called \emph{local latent variables} because there is one for each
-data point.  The unknown latent state probability,~$\rho$, and the
-firing rates,~$\blambda$, are either called \emph{parameters} or
+data point.  The unknown latent state probability and the
+firing rates,~${ \{\bpi, \blambda\} }$, are either called \emph{parameters} or
 \emph{global latent variables} because their dimension is fixed. The
-remaining values,~${\{ \alpha, \beta, \tau_0, \tau_1, \Delta t \} }$,
+remaining values,~${\{ \alpha, \beta, \gamma \} }$,
 are called \emph{hyperparameters}. These are constants that we set
 prior to performing inference.  Typically, these can be tuned
 cross-validation, or simply set based on intuition and physical
@@ -266,9 +266,9 @@ As we can see in Figure~\ref{fig:updown}, the most general representation
 of a spike train is as set of real-valued times for each neuron.
 When there is more than one neuron, we have a set of
 \emph{marked} spike times, which we call,
-\begin{align}
+\begin{align*}
   \mcS = \left \{ (s_m, c_m) \right \}_{m=1}^M \subset [0, T] \times \{1, \ldots, N\}.
-\end{align}
+\end{align*}
 Each member of this set consists of a real-valued spike time~$s_m$ in
 the interval~$[0, T]$, and an integer,~$c_m \in \{1, \ldots, N\}$,
 that specifies the index of the cell that generated this spike. $M$ is 
@@ -310,7 +310,7 @@ suggestions an alternative, discrete-time representation.  Rather than
 modeling a set of continuous spike times and conditional firing rates,
 we may instead represent a spike count matrix,~$\bS$, and the
 corresponding rate matrix,~$\bLambda$, where,
-\begin{align}
+\begin{align*}
   \bS &= 
         \begin{bmatrix}
           s_{1,1} & \cdots & s_{1,N} \\
@@ -328,7 +328,7 @@ corresponding rate matrix,~$\bLambda$, where,
           & & \\
           \lambda_{T,1} & \cdots & \lambda_{T,N}
         \end{bmatrix}.
-\end{align}
+\end{align*}
 Here,~$s_{t,n} \in \naturals$ denotes the number of spikes fired in
 the~$t$-th time bin by the~$n$-th neuron, and~${\lambda_{t,n} \in \reals_+}$ denotes 
 the corresponding firing rate. Sometimes, the effects we
@@ -358,34 +358,37 @@ so that we may perform inference efficiently. One of the ways that we
 accomplish this balancing act is by composing our model out of common,
 well-studied motifs. 
 
-Motifs correspond to factorizations of probabilistic model, which can be 
-visualized as a directed acyclic graph. Each node in the graph corresponds to a random variable, 
-and shaded nodes indicate the variables that are observed. The edges 
-represent conditional dependencies. For example, in the mixture model 
-shown in Figure~\ref{fig:motifs}, the spike count~$s_2$ has incoming edges 
-from the corresponding latent state~$z_2$ and the firing rates,~$\blambda$.
-Thus,~$p(s_2 \given z_2, \blambda)$ is a factor in the joint probability distribution.
-Since the graph is directed and acyclic, we can read off the factors starting 
-with the root nodes,~$p(\rho)$ and~$p(\blambda)$, and ending with the leaf nodes,
-~$p(s_t \given z_t, \blambda)$. In this way, the graphical model captures the 
-factorization of the graph and specifies a particular subset of all possible
-joint distributions over this set of variables. 
+Motifs correspond to factorizations of probabilistic model.  To
+visualize these motifs, we represent the probabilistic model in the
+form of a directed acylcic graph. Each node in the graph corresponds
+to a random variable, and shaded nodes indicate which variables are
+observed. The edges represent conditional dependencies. For example,
+in the mixture model shown in Figure~\ref{fig:motifs}, the spike
+count~$s_2$ has incoming edges from the corresponding latent
+state~$z_2$ and the firing rates,~$\blambda$.  Thus, the oint
+probability distribution contains the factor,~$p(s_2 \given z_2,
+\blambda)$. Since the graph is directed and acyclic, we can read off
+the factors starting with the root nodes,~$p(\bpi)$ and~$p(\blambda)$,
+and ending with the leaf nodes, ~$p(s_t \given z_t, \blambda)$. In
+this way, the graph captures the factorization of the joint
+probability distribution and specifies a particular subset of all
+possible joint distributions over this set of variables.
 
-The edges of the graph do not, however, specify the type of the random variable 
-or functional form of the factors. For example, a node may indicate either a discrete or 
-a continuous random variable, and an edge may indicate either a linear or a nonlinear 
-dependence pattern. In this way, two models may share the same graph but have 
-fundamentally different interpretations. This is true of mixture models 
-and factor analysis models shown in Figure~\ref{fig:motifs}.
-
-the spike count~$s_2$ is conditionally 
-dependent on the corresponding latent state,~$z_2$, and the firing rates,~$\blambda$, 
-but given these two variables, it is conditionally \emph{independent} of 
-the other spike counts. Similarly,~$z_2$ depends on the state probabilities,~$\rho$,
-but given~$\rho$ it is conditionally independent of all other 
+The edges of the graph do not, however, specify the type of the random
+variable or functional form of the factors. For example, a node may
+indicate either a discrete or a continuous random variable, and an
+edge may indicate either a linear or a nonlinear dependence
+pattern. In this way, two models may share the same graph but have
+fundamentally different interpretations. This is true of mixture
+models and factor analysis models shown in Figure~\ref{fig:motifs}.
+Some patterns of factorization, types, and dependencies are used
+over and over again in time series modeling, and form the foundational
+building blocks for more complex models. Figure~\ref{fig:motifs}
+shows graph structures corresponding to a few of these common motifs.
+  \todo{change notation in figure}
 
 \begin{figure}[t]
-\centering%
+  \centering%
 \includegraphics[width=5.5in]{figures/ch1/figure2} 
 \vspace{-.25in}
 \caption[Motifs of time series models]{Motifs of time series models.}
@@ -395,93 +398,103 @@ but given~$\rho$ it is conditionally independent of all other
 
 \paragraph{Mixture Models}
 % Discrete latent states
-Our working example from Section~\ref{sec:generative_models}
-illustrates one such motif --- a simple mixture model.  The firing
-rate takes assumes only two values, and the observed spike counts are
-a mixture of counts drawn from the \textit{up} state and counts from
-the \textit{down} state. We can easily extend this to populations of
-neurons and mixtures of more than two states.  Suppose there are
-now~$K$ states, such that~${z_t \in \{1, \ldots, K\}}$. Furthermore,
-we generalize the rates~$\lambda_{\textit{up}}$
-and~$\lambda_{\textit{down}}$, to vectors of rates, one for each
-neuron and state.
-Let,~${\blambda_k = \big[ \lambda_{1,k}, \ldots, \lambda_{N,k}\big]}$,
-denote a vector of rates where $\lambda_{n,k}$ is the firing rate of
-the~${n\text{-th}}$ neuron in state~$k$.  We can write the full rate
-matrix,~$\bLambda$, as the outer product of a ~${T \times K}$
-indicator matrix,~$\bZ$, and an~${N \times K}$ rate
-matrix,~$\bC$. Let~$\be_k$ denote a length-$K$ column vector that is all zero
-except for a single one in the~$k$-th position.
-Then,~${\bLambda = \bZ \bC^\trans}$, where,
-\begin{align}
-  \bZ = 
-        \begin{bmatrix}
-          - & \be_{z_1}^\trans & - \\
-            &                  &   \\
-            &  \vdots          &   \\
-            &                  &   \\
-          - & \be_{z_T}^\trans & - 
-        \end{bmatrix}, 
-  \qquad
-  \bC = 
-        \begin{bmatrix}
-          | &  & | \\
-          \blambda_1 & \cdot \cdot & \blambda_K \\
-          | &  & | 
-        \end{bmatrix}.
-\end{align}
-Now that we have framed the mixture model as a simple factorization of 
-the rate matrix, a number of connections and extensions become clear.
+Our working example from Section~\ref{sec:generative_models} is an
+instance of a simple mixture model.  The firing rate takes assumes
+only two values, and the observed spike counts are a mixture of counts
+drawn from the \textit{up} state and counts from the \textit{down}
+state. We can easily extend this to populations of neurons and
+mixtures of more than two states.  Suppose there are now~$K$ states,
+such that~${z_t \in \{1, \ldots, K\}}$. Furthermore, we generalize the
+rates~$\lambda_{\textit{up}}$ and~$\lambda_{\textit{down}}$, to
+vectors of rates, one for each neuron and state.  Changing notation
+slightly, let~${\bmu_k =
+  \big[ \mu_{k,1}, \ldots, \mu_{k,N}\big]}$ denote a vector
+of rates where $\mu_{k,n}$ is the firing rate of
+the~${n\text{-th}}$ neuron in state~$k$.
+
+In a mixture model, the latent states are discrete, the time bins are
+conditionally independent, and the dependence of~$s_t$ on~$z_t$
+and~$\bmu$ is linear.  To see the latter claim, note that that the
+instantaneous firing rate can be written, ${\lambda_{t,n} =
+  \sum_{k=1}^K \bbI[z_t=k] \cdot \mu_{k,n}}$. These provide multiple
+dimensions along with the mixture model may be generalized.
+
+%We can write the full rate
+%matrix,~$\bLambda$, as the outer product of a ~${T \times K}$
+%indicator matrix,~$\bZ$, and an~${N \times K}$ rate
+%matrix,~$\bC$. Let~$\be_k$ denote a length-$K$ column vector that is all zero
+%except for a single one in the~$k$-th position.
+%Then,~${\bLambda = \bZ \bC^\trans}$, where,
+%\begin{align}
+%  \bZ = 
+%        \begin{bmatrix}
+%          - & \be_{z_1}^\trans & - \\
+%            &                  &   \\
+%            &  \vdots          &   \\
+%            &                  &   \\
+%          - & \be_{z_T}^\trans & - 
+%        \end{bmatrix}, 
+%  \qquad
+%  \bC = 
+%        \begin{bmatrix}
+%          | &  & | \\
+%          \blambda_1 & \cdot \cdot & \blambda_K \\
+%          | &  & | 
+%        \end{bmatrix}.
+%\end{align}
+%Now that we have framed the mixture model as a simple factorization of 
+%the rate matrix, a number of connections and extensions become clear.
 
 \paragraph{Hidden Markov Models}
-% Autoregressive latent states
-First, the mixture model encodes the hypothesis that the latent states
-are independent from one time to the next.
-Hence,~$p(\bz)=\prod_{t} p(z_t)$.  Instead, it is natural to expect
-the latent states to exhibit some temporal dynamics. For example, we
-may hypothesize that the states obey a Markov process such that,
-\begin{align}
-  p(\bz \given \bpi, \bA) &= p(z_1 \given \bpi) \prod_{t=2}^T p(z_t \given z_{t-1}, \bA) \\ 
-  \label{eq:hmm}
-  &= \distCategorical(z_1 \given \bpi) \prod_{t=2}^T \distCategorical(z_t \given \bA^\trans \be_{z_{t-1}}),
-\end{align}
-where~$\bpi \in [0,1]^K$ is a discrete probability distribution over
+First, let's address the conditional independence of time bins in the
+mixture model. According to this model, the distribution over latent
+states factors into a product,~${p(\bz \given \bpi) = \prod_t p(z_t
+  \given \bpi)}$.  This is clearly ignoring the temporal dynamics of
+neural data. Instead, a simple hypothesis is that the states have
+Markovian dynamics,
+\begin{align*}
+  p(\bz \given \bpi^{(0)}, \bP) &= p(z_1 \given \bpi^{(0)}) \prod_{t=2}^T p(z_t \given z_{t-1}, \bP) \\ 
+  &= \distCategorical(z_1 \given \bpi^{(0)}) \prod_{t=2}^T \distCategorical(z_t \given \bpi^{(z_{t-1})}),
+\end{align*}
+where~$\bpi^{(0)} \in [0,1]^K$ is a discrete probability distribution over
 initial states, and
-\begin{align}
-  \bA &=
+\begin{align*}
+  \bP &=
         \begin{bmatrix}
-          \text{---} &  \ba_{1}  & \text{---} \\
+          \text{---} &  \bpi^{(1)}  & \text{---} \\
             &  \vdots &   \\
-          \text{---} &  \ba_{K}  & \text{---}
+          \text{---} &  \bpi^{(K)}  & \text{---}
         \end{bmatrix},
-\end{align}
+\end{align*}
 is a~${K \times K}$ transition matrix where the
-row,~${\ba_{k} \in [0,1]^K}$, specifies a discrete conditional
+row,~${\bpi^{(k)} \in [0,1]^K}$, specifies a discrete conditional
 distribution over~$z_t$ given~${z_{t-1}=k}$.
-
-This is known as a hidden Markov model (HMM), and in Chapter~\ref{chap:hmms} we 
-will study some of the challenges involved in selecting the number of states,~$K$,
-in a nonparametric way.
+This is known as a hidden Markov model (HMM), and in
+Chapter~\ref{chap:hmms} we will study some of the challenges involved
+in selecting the number of states,~$K$, in a nonparametric way.
 
 \paragraph{Autoregressive Models}
 % Autoregressive observations
 In an HMM, correlations in spike counts from one bin to the next arise from 
 correlations in the underlying latent states. Alternatively, we may directly 
-model the rate as a linear of previous spike counts. For example, consider 
-an autoregressive model of the form,
+model the rate as a function of previous spike counts. For example, consider 
+an autoregressive model with linear dynamics,
 \begin{align}
   \label{eq:ar_model}
-  \blambda_{t} &= \sum_{d=1}^D \bW^{(d)} \, \bs_{t-d}.
+  \lambda_{t,n} &= \sum_{m=1}^N \sum_{d=1}^D w_{n \from m}^{(d)} \cdot s_{t-d, m}.
 \end{align}
-Compare~\eqref{eq:ar_model} to \eqref{eq:hmm}; rather than having an
-autoregresive model for latent states, as in the HMM, here the
+The weight,~$w_{n \from m}^{(d)}$, specifies the influence that spikes
+on neuron~$m$ have on the rate of neuron~$n$ at an offset of~$d$ time bins
+in the future. 
+Unlike the HMM, which has an
+autoregresive model for latent states, here the
 autoregression governs the rates directly.  Moreover, this
-autoregressive model sums over the past~$D$ time bins, allowing
-delayed interactions.  Since the rates must be non-negative, the
-weights must be as well.  That is,
-~$\bW^{(d)} \in \reals_+^{N \times N}$.
+autoregressive model sums over the spike counts of all neurons over
+the past~$D$ time bins, allowing delayed interactions.  Since the
+firing rates must be non-negative, the weights must be as well.  That
+is,~$w_{n \from m}^{(d)} \in \reals_+$.
 
-By constraining the weights to be non-negative, we are instantiatign
+By constraining the weights to be non-negative, we are instantiating
 the hypothesis that the interactions between spikes on one neuron and
 the rate of another is always excitatory~---~a spike can never
 decrease the future firing rate. While this is not the most
@@ -497,49 +510,66 @@ provide useful insight into the structure of neural activity.
 In order to capture both excitatory and inhibitory autoregressive weights,
 we need to introduce a nonlinear function that ensure a non-negative firing 
 rate. Specifically, assume that,
-\begin{align}
-  \bpsi_t &= \sum_{d=1}^D \bW^{(d)} \bs_{t-d}, \\
-  \blambda_t &= g \left( \bpsi_t \right),
-\end{align}
-where~$\bs_{t}$ is the~$t$-th row of~$\bS$, the nonlinear
-function~${g(\cdot): \reals \to \reals_+}$ is applied elementwise to
-map a real valued ``activation,''~$\bpsi_t$, into a non-negative
-firing rate. Most commonly, we use the exponential
-function,~$g(\psi) = e^\psi$. In this formulation the
-weights,~${\bW^{(d)} \in \reals^{N \times N}}$, may be either positive
+\begin{align*}
+  \psi_{t,n} &= \sum_{m=1}^N \sum_{d=1}^D w_{n \from m}^{(d)} \cdot s_{t-d,m}, \\
+  \lambda_{t,n} &= g \left( \psi_{t,n} \right).
+\end{align*}
+The nonlinear
+function~${g(\cdot): \reals \to \reals_+}$ 
+maps a real valued ``activation,''~$\psi_{t,n}$, into a non-negative
+firing rate,~$\lambda_{t,n}$. It is common to use an exponential or a
+sigmoidal nonlinearity. In this formulation the
+weights may be either positive
 or negative to reflect either excitatory or inhibitory interactions,
 respectively. Chapter~\ref{chap:nonlinear_hawkes} derives efficient
 inference algorithms for nonlinear autoregressive models like these.
 
 \paragraph{Factor Models}
-Once we have introduced a nonlinear link between activation and firing
-rate, we can revisit the discrete latent states of the mixture model
-and consider their continuous analogues, where~$\bz_t \in \reals^K$
-rather than~$z_t \in \{1, \ldots, K\}$. For example, consider the
-model,
-\begin{align}
-  p(\bz) &= \prod_{t=1}^T \distNormal(\bz_t \given \bzero, \bSigma), \\
-  \bpsi_t &= \bC \bz_t, \\
-  \blambda_t &= g(\bpsi_t),
-\end{align}
-where~$\bC \in \reals^{N \times
-  K}$, and~${\bSigma = \diag \left([ \sigma^2_1, \ldots, \sigma^2_K ] \right)}$.
-This corresponds to a factor analysis model. Unlike standard 
-factor analysis, however, here the observations are discrete spike 
-counts rather than Gaussian observations. 
+HMM's introduced dynamics to the mixture model and nonlinear
+autoregressive models generalized the linear functional dependence.
+Factor models generalize the discrete nature of the random variables
+with a continuous analogue. For example, consider a model in which the
+discrete variable~${z_t \in \{1, \ldots, K\}}$ is replaced by a
+discrete probability distribution~${\bpi_t \in [0,1]^K}$. The rate
+is then a non-negative combination,
+\begin{align*}
+  \lambda_{t,n} &= \sum_{k=1}^K \pi_{t,k} \cdot \mu_{k,n}
+\end{align*}
+This is naturally interpreted as a \emph{mixed membership model} in
+which the rates at each time bin derive from a mixture of discrete
+latent states with mixing weights~$\bpi_t$. In text modeling, this motif
+is the basis of the latent Dirichlet allocation (LDA)
+model~\cite{blei2003latent}
+
+Alternatively, we may replace the discrete latent state with a continuous
+one,~$\bx_t \in \reals^K$. As in the nonlinear autoregressive model,
+we can retain the linear form and introduce an elementwise nonlinearity
+to ensure non-negative firing rates:
+\begin{align*}
+  p(\bx) &= \prod_{t=1}^T \distNormal(\bx_t \given \bzero, \bSigma), \\
+  \psi_{t,n} &= \sum_{k=1}^K x_{t,k} \cdot c_{k,n}, \\
+  \lambda_{t,n} &= g(\psi_{t,n}).
+\end{align*}
+Here,~$c_{k,n}$ is an entry in the real valued matrix~$\bC \in
+\reals^{K \times N}$, and~${\bSigma = \diag \left([ \sigma^2_1,
+    \ldots, \sigma^2_K ] \right)}$.  This corresponds to a factor
+analysis model. Unlike standard factor analysis, however, here the
+observations are discrete spike counts rather than Gaussian
+observations.
 
 \paragraph{Linear Dynamical Systems}
-In the same way that HMM's extended mixture models with temporal 
-dynamics, linear dynamical systems (LDS's) extend factor models
-with linear autoregressive dynamics in the latent state. 
-Replace the prior on~$\bz$ with a model of the form,
-\begin{align}
-  p(\bz) &= \distNormal(\bz_1 \given \bzero, \bSigma) \prod_{t=2}^T \distNormal(\bz_t \given \bA \bz_{t-1}, \bSigma).
-\end{align}
-The nonlinear mapping from latent states to firing rates is the same
-as in the factor model, but now the linear autoregressive nature of
-the dynamics induces correlations in spike counts from one time bin to
-the next.
+In the same way that HMM's extended mixture models with temporal
+dynamics, linear dynamical systems (LDS's) extend factor models with
+linear autoregressive dynamics in the latent state.  Replace the prior
+on~$\bx$ with a model of the form,
+\begin{align*}
+  p(\bx) &= \distNormal(\bx_1 \given \bzero, \bSigma) \prod_{t=2}^T \distNormal(\bx_t \given \bA \bx_{t-1}, \bSigma),
+\end{align*}
+where~$\bA \in \reals^{K \times K}$ specifies the linear dynamics of
+the latent state.  The elementwise nonlinear mapping from latent
+states to firing rates is the same as in the factor model, but now the
+linear autoregressive nature of the dynamics induces correlations in
+spike counts from one time bin to the next.
 
 % Switching LDS
 
@@ -548,7 +578,9 @@ These motifs --- continuous and discrete latent states, linear autoregressive
 dynamics, and nonlinear link functions --- provide a foundation for 
 constructing probabilistic models for spike trains. Atop this foundation 
 we may layer additional random variables reflecting hypotheses about shared 
-structure. For example, Chapters~\ref{chap:hawkes}, \ref{chap:discrete_hawkes},
+structure. For example, a switching linear dynamical system (Figure~\ref{fig:motifs})
+combines discrete \emph{and} continuous latent states. 
+Likewise, Chapters~\ref{chap:hawkes}, \ref{chap:discrete_hawkes},
 and~\ref{chap:nonlinear_hawkes} consider structured prior distributions on 
 the weights of autoregressive models, and Chapter~\ref{chap:hmms} considers 
 nonparametric Bayesian priors on the number of states in an HMM. Once the 
@@ -588,25 +620,25 @@ Markov Chain Monte Carlo (MCMC) algorithms are a workhorse of modern
 machine learning, and many texts are devoted to the subject,
 e.g.~\cite{geyer1992practical, gilks2005markov, robert2013monte}.  The
 fundamental idea is to generate a collection of samples from the
-posterior distribution and use them to estimate expectations with
-respect to the posterior distribution.  Specifically, if we can collect a set of
+posterior distribution and use them to estimate expectations
+Specifically, if we can collect a set of
 samples,
-\begin{align}
+\begin{align*}
   \left \{ \big(\bz^{(1)}, \btheta^{(1)} \big), 
            \ldots, 
            \big(\bz^{(L)}, \btheta^{(L)} \big) 
   \right\},
-\end{align}
+\end{align*}
 where
-\begin{align}
+\begin{align*}
   \bz^{(\ell)}, \btheta^{(\ell)} &\sim p(\bz, \btheta \given \bs),
-\end{align}
+\end{align*}
 then we can form a Monte Carlo estimate of the expectation of a function~$f(\bz, \btheta)$
 with respect to the posterior,
-\begin{align}
+\begin{align*}
   \bbE_{p(\bz, \btheta \given \bs)} \left[ f(\bz, \btheta) \right] 
   &\approx \frac{1}{L} \sum_{\ell = 1}^L f \big(\bz^{(\ell)}, \btheta^{(\ell)} \big).
-\end{align}
+\end{align*}
 When the samples are independently drawn from the posterior, the strong 
 law of large numbers ensures that the Monte Carlo estimate converges to 
 the true expectation almost surely, which implies that these Monte Carlo
@@ -618,15 +650,13 @@ regardless of the dimension of~$\bz$ and~$\btheta$.
 To collect these samples, we design a Markov chain to stochastically
 explore the space of latent variables and parameters.  
 %For notational clarity, we will now refer to these collectively as~${\bx = (\bz, \btheta)}$.  
-The chain starts at an initial state,~${(\bz^{(1)}, \btheta^{(1)})}$,
-and then iteratively samples a new state according to its transition
-operator,~${\mcT \big((\bz, \btheta) \to (\bz', \btheta') \big)}$, which
-specifies a the probability of transitioning to
-state~${(\bz', \btheta')}$ from state~${(\bz, \btheta)}$.  Each state
-the Markov chain visits is taken as a sample. If we design the Markov
-chain appropriately, we can guarantee that, asymptotically, the
-transition operator will visit states according to their posterior
-probability. 
+The chain iteratively samples a new state according to its transition
+operator,~${\mcT \big((\bz, \btheta) \to (\bz', \btheta') \big)}$,
+which specifies a the probability of transitioning from state~${(\bz,
+  \btheta)}$ to state~${(\bz', \btheta')}$.  Each state the Markov
+chain visits is taken as a sample. If we design the Markov chain
+appropriately, we can guarantee that the transition operator will
+asymptotically visit states according to their posterior probability.
 
 When states are sampled with a Markov chain, it is no longer true that
 the samples are independent. In fact, the transition operator will
@@ -636,8 +666,8 @@ Carlo estimate, but it does affect the constant in the
 asymptotic~$\mcO(L^{-1})$ convergence rate. However, in addition to 
 the increased variance, MCMC algorithms also suffer from a transient 
 bias due to the fact that the initial state is not drawn from the 
-posterior distribution (if we could sample from the posterior directly we would 
-not be using MCMC!). Fortunately, the transient bias 
+posterior distribution (we would 
+not be using MCMC if we could sample from the posterior directly!). Fortunately, the transient bias 
 of the Monte Carlo estimator also decays as~$\mcO(L^{-1})$. Since the 
 mean squared error of an estimator is equal to its variance plus its 
  bias squared, and since both variance and bias scale inversely with~$L$, 
@@ -652,15 +682,16 @@ operator, which is defined by the following equivalence,
 \begin{align}
   \label{eq:invariance}
   p(\bz, \btheta \given \bs) 
-  &= \int \mcT \big((\bz', \btheta') \to (\bz, \btheta) \big) \, 
-    p \big(\bz', \btheta' \given \bs \big) \, 
+  &= \int  p \big(\bz', \btheta' \given \bs \big) \,
+    \mcT \big((\bz', \btheta') \to (\bz, \btheta) \big) \, 
     \mathrm{d}\bz' \, \mathrm{d}\btheta'. 
 \end{align}
 Intuitively, an invariant, or ``stationary,'' distribution with respect 
 to~$\mcT$ has the property that if we start in a state drawn from the 
 distribution and then apply the transition operator, the distribution 
-over next states remains unchanged. This is akin to an eigenvector of 
-a transition matrix. 
+over next states remains unchanged. When~$\bz$ and~$\btheta$ are
+discrete, the stationary distribution is an eigenvector of 
+a transition matrix with eigenvalue one. 
 
 In addition to leaving the posterior distribution invariant, the
 Markov chain must also converge to this stationary distribution,
@@ -676,7 +707,7 @@ operators,~${\mcT = \mcT_1 \circ \ldots \circ \mcT_K}$, each of which
 leaves the stationary distribution intact. While there are many ways
 of developing these transition operators, one of the most common 
 is to sample from the conditional distribution of one variable 
-while holding the rest of fixed. This leads to an algorithm called 
+while holding the rest fixed. This leads to an algorithm called 
 Gibbs sampling, which we describe next.
 
 \subsubsection{Gibbs Sampling}
@@ -702,51 +733,54 @@ invariant, we plug it into Eq.~\ref{eq:invariance}:
   &= p(\bz, \btheta \given \bs).
 \end{align*}
 The same holds for a distribution that
-samples~${\btheta \given \bz, \bs}$, or even a single element of these
-sets,~${\theta_j \given \btheta_{\neg j}, \bz, \bs}$.
+samples~${p(\btheta \given \bz, \bs)}$, or even a single element of these
+sets,~${p(\theta_j \given \btheta_{\neg j}, \bz, \bs)}$.
 Here,~$\theta_j$ is one parameter, like the transition matrix in an
 HMM, and~$\btheta_{\neg j}$ is the set of all other parameters except
 for the~$j$-th.
 
-Many compositional models are designed such that these conditional 
-distributions are in fact easy to sample from. For example, if the 
+Many compositional models are designed such that these conditional
+distributions are in fact easy to sample from. For example, if the
 model is defined with conjugate prior distributions, as described
-above, the conditional
-distributions can typically be sampled exactly. Moreover, some model 
-motifs enable more efficient types of Gibbs updates outlined below.
+above, the conditional distributions have closed forms that can
+often be sampled exactly. Moreover, some model motifs enable more
+efficient types of Gibbs updates outlined below:
 
 \begin{itemize}
 \item \textsc{Block Gibbs Sampling}:
   In some cases, entire subsets or ``blocks'' of random variables can 
-  be updated by a single transition operator. Consider the HMM,
+  be updated by a single transition operator. Consider the conditional
+  distribution over the latent state,~$z_t$, in an HMM, given all other
+  variables,  
   \begin{align*}
-    p(\bs, \bz, \btheta) 
-    &= p(\btheta)
-      \prod_{t=1}^T p(z_t \given z_{t-1}, \btheta) \, 
-      p(\bs_t \given z_t, \btheta),
+    p(z_t \given \bs, \bz_{\neg t}, \btheta) 
+    &\propto p(z_t \given z_{t-1}, \btheta) \,
+    p(z_{t+1} \given z_t, \btheta) \,
+    p(\bs_t \given z_t, \btheta).
   \end{align*}
-  where we have rolled the initial state into the product to ease the
-  notation. A na\"ive Gibbs sampling algorithm might update one latent
-  state,~$z_t$, given all the rest,~$\bz_{\neg t}$. However, this
-  would be horribly inefficient when the states are highly
-  correlated. Given~$z_{t-1}$ and~$z_{t+1}$, the state~$z_t$ may be
-  essentially deterministed. Thus, even if there is genuine
-  uncertainty over the state sequence as a whole, this simple
-  transition operator may get stuck in a single state sequence assignment.
-  This is known as ``poor mixing.''
+  A na\"ive Gibbs sampling algorithm would enumerate the $K$~possible
+  values of~$z_t$, compute their posterior probability, and sample
+  accordingly. However, this would be horribly inefficient when the
+  states are highly correlated. Given~$z_{t-1}$ and~$z_{t+1}$, the
+  state~$z_t$ may be essentially deterministic. Thus, even if there is
+  genuine uncertainty over the state sequence as a whole, this simple
+  transition operator may get stuck in a single state sequence
+  assignment.  This is an example of ``poor mixing.''
 
   Instead, we could try to update the entire state sequence at once. 
   The conditional distribution of~$\bz$ is proportional to this joint 
   distribution,
   \begin{align*}
-    p(\bz \given \btheta, \bs) 
-    &\propto p(z_1 \given \btheta) \prod_{t=2}^T p(z_t \given z_{t-1}, \btheta) \, 
-      p(\bs_t \given z_t, \btheta).
+    p(\bz \given \bs, \btheta) 
+    &\propto p(z_1 \given \btheta) \, p(\bs_1 \given z_1, \btheta)
+      \prod_{t=2}^T p(z_t \given z_{t-1}, \btheta) \, 
+      p(\bs_t \given z_t, \btheta),
   \end{align*}
-  While this distribution may not seem simple at first glance, since it 
-  is chain structured (each state depends only on the previous state and 
-  the current spike counts), we can actually sample this distribution 
-  efficiently using dynamic programming.
+  While there are~$K^T$ possible assignments of~$\bz$, since the
+  conditional distribution is chain structured (each state depends
+  only on the previous state and the current spike counts), we can
+  actually sample this distribution using dynamic programming
+  without enumerating all possible assignments.
   
 \item \textsc{Block Parallel Gibbs Sampling}:
   A special case of block Gibbs sampling occurs when an entire block 
@@ -811,26 +845,24 @@ to approximating the posterior distribution. Rather than collecting a
 set of samples, variational methods attempt to find the distribution 
 within a tractable family of distributions that most closely matches 
 the true posterior. Thus, inference becomes an optimization problem. 
-However, when the tractable family is the class of fully factorized 
-distributions, as in mean field variational inference, and optimization
-is performed with coordinate ascent, the resulting algorithms look 
-very similar to Gibbs sampling.
 
-Let's assume the variational posterior is parameterized by~$\boldeta$,
-and call the variational distribution,~$q_{\boldeta}(\bz, \btheta)$.
+Let's assume the variational posterior is parameterized by~$\bvartheta$,
+and call the variational distribution,~$q(\bz, \btheta ; \bvartheta)$.
+\footnote{Since~$q$ is not strictly a conditional distribution, we use a
+  semicolon to indicate that it is parameterized by~$\bvartheta$.}
 To find the optimal~$q(\cdot)$, we optimize a functional,~$\mcL[q]$,
 called the \emph{variational lower bound}, which
 provides a lower bound on the log marginal likelihood,~${\log p(\bs)}$.
 Specifically, we can write the log marginal likelihood as an 
 expectation with respect to~$q$,
-\begin{align}
+\begin{align*}
   \log p(\bs) 
-  &= \bbE_{q(\bz, \btheta)} \left[ \log \frac{p(\bs, \bz, \btheta)}{p(\bz, \btheta \given \bs)} \right] \\
-  &= \bbE_{q(\bz, \btheta)} \left[ \log \frac{p(\bs, \bz, \btheta)}{q(\bz, \btheta)} \right]
-   + \bbE_{q(\bz, \btheta)} \left[ \log \frac{q(\bz, \btheta)}{p(\bz, \btheta \given \bs)} \right] \\
-  &= \mcL[q(\bz, \btheta)] + \KL(q(\bz, \btheta) \barbar p(\bz, \btheta \given \bs) \\
-  &\geq \mcL[q(\bz, \btheta)].
-\end{align}
+  &= \bbE_{q(\bz, \btheta ; \bvartheta)} \left[ \log \frac{p(\bs, \bz, \btheta)}{p(\bz, \btheta \given \bs)} \right] \\
+  &= \bbE_{q(\bz, \btheta ; \bvartheta)} \left[ \log \frac{p(\bs, \bz, \btheta)}{q(\bz, \btheta; \bvartheta)} \right]
+   + \bbE_{q(\bz, \btheta; \bvartheta)} \left[ \log \frac{q(\bz, \btheta; \bvartheta)}{p(\bz, \btheta \given \bs)} \right] \\
+  &= \mcL[q(\bz, \btheta; \bvartheta)] + \KL(q(\bz, \btheta; \bvartheta) \barbar p(\bz, \btheta \given \bs) \\
+  &\geq \mcL[q(\bz, \btheta; \bvartheta)].
+\end{align*}
 where~$\KL(q \barbar p)$ is the KL-divergence between distributions~$q$ and~$p$. 
 The last line follows from the fact that the KL-divergence is non-negative
 and equal to zero if and only if the distributions are identical. Thus, 
@@ -840,12 +872,11 @@ between the variational distribution and the true posterior.
 Our goal is to maximize the variational lower bound over a family of 
 tractable distributions,~$\mcQ$. In mean field variational inference, 
 we take~$\mcQ$ to be the family of fully factorized distributions,
-\begin{align}
-  \mcQ &= \left \{ q: q(\bz, \btheta) \propto \prod_{t=1}^T q_t(z_t) \prod_{j=1}^J q_j(\theta_j) \right\}.
-\end{align}
-Each of these \emph{variational factors},~$q_t(z_t)$ and~$q_j(\theta_j)$, will have 
-some parameters associated with it. We will set these parameters in order to 
-maximize the variational lower bound.
+\begin{align*}
+  \mcQ &= \left \{ q: q(\bz, \btheta; \bvartheta) \propto \prod_{t=1}^T q_t(z_t; \vartheta_t) \prod_{j=1}^J q_j(\theta_j; \vartheta_j) \right\}.
+\end{align*}
+We will set these parameters,~$\bvartheta$, in order to maximize the
+variational lower bound over the set of distributions in~$\mcQ$.
 
 In general, this objective function is not concave, so we should not expect 
 to find a global optimum. However, we can still use local optimization 
@@ -856,35 +887,38 @@ fixed. Given the equivalence between maximizing the variational lower bound and
 minimizing the KL-divergence, we can derive the general form of a mean field 
 update. Consider updating the variational factor for only~$\theta_j$. We have,
 \begin{align}
+  \nonumber
   \KL(q \barbar p) 
-  &= \bbE_{q(\bz, \btheta)} \left[ \log q(\bz, \btheta) \right] 
-   - \bbE_{q(\bz, \btheta)} \left[ \log p(\bz, \btheta \given \bs) \right] \\
-  &\simeq \bbE_{q(\bz, \btheta)} \left[ \log q(\bz, \btheta) \right] 
-   - \bbE_{q(\bz, \btheta)} \left[ \log p(\bs, \bz, \btheta) \right]  \\
+  &= \bbE_{q(\bz, \btheta; \bvartheta)} \left[ \log q(\bz, \btheta) \right] 
+  - \bbE_{q(\bz, \btheta; \bvartheta)} \left[ \log p(\bz, \btheta \given \bs) \right] \\
+  \nonumber
+  &\simeq \bbE_{q(\bz, \btheta; \bvartheta)} \left[ \log q(\bz, \btheta; \bvartheta) \right] 
+  - \bbE_{q(\bz, \btheta; \bvartheta_)} \left[ \log p(\bs, \bz, \btheta) \right]  \\
+  \nonumber
+  &\simeq \bbE_{q_j(\theta_j; \vartheta_j)} \left[ \log q_j(\theta_j ; \vartheta_j) \right] 
+  - \bbE_{q(\theta_j; \vartheta_j)} \left[ \bbE_{q(\bz, \btheta_{\neg j} ; \bvartheta_{\neg j})} \big[ \log p(\bs, \bz, \btheta) \big] \right] \\
   \label{eq:separate_expectations}
-  &\simeq \bbE_{q_j(\theta_j)} \left[ \log q_j(\theta_j) \right] 
-   - \bbE_{q(\theta_j)} \left[ \bbE_{q(\bz, \btheta_{\neg j})} \big[ \log p(\bs, \bz, \btheta) \big] \right] \\
-  &\simeq \KL \big( q_j(\theta_j) \barbar \widetilde{p}_j(\theta_j) \big),
+  &\simeq \KL \big( q_j(\theta_j; \vartheta_j) \barbar \widetilde{p}_j(\theta_j) \big),
 \end{align}
 where~$\simeq$ denotes equality up to an additive term that is
 constant with respect to~$\theta_j$, and
 \begin{align}
   \label{eq:optimal_factor}
   \widetilde{p}_j(\theta_j) 
-  &\propto \exp \left \{ \bbE_{q(\bz, \btheta_{\neg j})} \big[ \log p(\bs, \bz, \btheta) \big] \right \}.
+  &\propto \exp \left \{ \bbE_{q(\bz, \btheta_{\neg j} ; \bvartheta_{\neg j})} \big[ \log p(\bs, \bz, \btheta) \big] \right \}.
 \end{align}
-We are able to separate the expectations in
+We are able to separate the expectations in the third line of
 Eq.~\ref{eq:separate_expectations} because of the factorized form
-of~$q(\bz, \btheta)$.
+of~$q(\bz, \btheta; \bvartheta)$.
 Since KL-divergence is minimized when the two
-distributions are equal, the optimal~$q_j(\theta_j)$, given the
+distributions are equal, the optimal~$q_j(\theta_j; \vartheta_j)$, given the
 variational factors for the remaining variables, is equal
 to~$\widetilde{p}_j(\theta_j)$.  As in the Gibbs sampling algorithms
 developed before, the expectation in Eq.~\ref{eq:optimal_factor} is
 often greatly simplified by the factorization of the joint
 distribution in our probabilistic model. Moreover, when the model 
 is constructed out of conjugate distributions, these mean field 
-updates can often be computed in closed form.
+updates can be computed in closed form.
 
 \paragraph{Structured Mean Field}
 Just as block Gibbs sampling enables more efficient updates for sets
@@ -927,16 +961,16 @@ distribution in that it involves an integration over the latent variables
 associated with the test data. As usual, this integral is typically
 intractable, but we can construct a Monte Carlo estimate given 
 samples from the approximate posterior,
-\begin{align}
+\begin{align*}
   p(\bs_{\mathsf{test}} \given \bs_{\mathsf{train}})
   &\approx \frac{1}{L} \sum_{\ell=1}^L
   p(\bs_{\mathsf{test}} \given \bz_{\mathsf{test}}^{(\ell)}, \btheta^{(\ell)}) \,
-\end{align}
+\end{align*}
 where
-\begin{align}
+\begin{align*}
   \btheta^{(\ell)} &\sim p(\btheta \given \bs_{\mathsf{train}}), \\
   \bz_{\mathsf{test}}^{(\ell)} &\sim   p(\bz_{\mathsf{test}} \given \btheta^{(\ell)}).
-\end{align}
+\end{align*}
 When Bayesian inference is performed with MCMC, the samples~$\{\btheta^{(\ell)}\}$
 are simply the states visited by the Markov chain. When variational methods
 are used, we assume the variational posterior is such that~$q(\btheta)$ is
@@ -959,11 +993,9 @@ likelihood. Notice that,
   p(\btheta) \,
   \mathrm{d}\bz \, \mathrm{d} \btheta.
 \end{align}
-Comparing~\eqref{eq:predictive_likelihood} and~\eqref{eq:marginal_likelihood},
-we see that the marginal likelihood is equal to the predictive likelihood
+is equal to the predictive likelihood
 in the absence of training data. Unfortunately, training data plays the crucial
-role of winnowing the posterior distribution over parameters to typically
-a very small subset. Without this constraint, simple Monte Carlo estimates
+role of winnowing the posterior distribution over parameters. Without this constraint, simple Monte Carlo estimates
 like those used to approximate the predictive likelihood will suffer from
 extremely high variance. Instead, more sophisticated methods, like annealed
 importance sampling \cite{neal2001annealed} are typically employed. 
@@ -989,7 +1021,7 @@ motifs at our disposal by leveraging model structure to develop
 efficient inference algorithms. One of the major techniques we use is
 the introduction of auxiliary variables that render the model
 conjugate and enable block parallel Gibbs samplers or structured mean
-field algorithms. Essentially, these methods provide nice coordinates
+field algorithms. Essentially, these methods provide nice ``axes''
 for inference. By adding dimensions to our posterior, it is sometimes
 easier to make two simple updates rather than one hard update.  These
 insights enable us to push the frontier of modeling and inference for
