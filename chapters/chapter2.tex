@@ -278,8 +278,7 @@ network.
 Hawkes processes \cite{Hawkes-1971} are a special type of point process
 that allow spikes to influence the future firing rate. This is achieved
 via a linear superposition of Poisson processes. Before jumping into the
-details, a brief primer on point processes and Poisson processes is in
-order.
+details, a brief primer on Poisson processes is in order.
 
 \subsection{Poisson Processes}
 \sloppy Point processes are fundamental statistical objects that yield
@@ -318,23 +317,59 @@ the likelihood of a set of events is given by,
   \prod_{m=1}^M\lambda(s_m).
 \end{align}
 
-
-We will make use of a special property of Poisson processes, the
+\paragraph{Poisson Superposition Principle}
+We will make use of a special property of Poisson processes called the
 \emph{Poisson superposition principle}, which states that if
 \begin{align*}
-  \{s_{m}\}_{m=1}^{M} &\sim \PP(\lambda(t))\\
+  \{s_{m}\}_{m=1}^{M} &\sim \PP(\lambda(t)), & 
   \{s'_{m}\}_{m=1}^{M'} &\sim \PP(\lambda'(t))
 \end{align*}
 are independent Poisson process realizations, then
 \begin{align*}
 \{s_{m}\}_{m=1}^{M} \cup \{s'_{m}\}_{m=1}^{M'} \sim \PP(\lambda(t)+\lambda'(t)).
 \end{align*}
-Furthermore,~${\{s_m\}\sim\PP(\lambda(t)+\lambda'(t))}$ can be
-\emph{thinned} into two independent Poisson processes by randomly and
-independently assigning each event $s_m$ to the first process with
-probability~$\frac{\lambda(s_m)}{\lambda(s_m)+\lambda'(s_m)}$ and to
-second process otherwise. These results extend to the superposition of
-multiple processes by induction.
+By induction, this extends to the sum of~$K$ independent Poisson
+processes as well.
+
+Equivalently, suppose we are given sets of spikes drawn independently
+from ~$K$ Poisson processes with rates~${\lambda_1(t), \ldots,
+  \lambda_K(t)}$.  Call the union of the spikes~${\{s_m,
+  \omega_m\}}$, where~${s_m \in [0,T]}$ is the time of the spike
+and~${\omega_m \in \{1, \ldots, K\}}$ says which process it came
+from. Let~${\lambda_{\mathsf{tot}}(t) = \sum_{k=1}^K \lambda_k(t)}$.
+The likelihood of the full set of spikes is,
+\begin{align*}
+  p(\{s_m, \omega_m\}_{m=1}^M \given \{\lambda_k(t)\}_{k=1}^K)
+  &= \prod_{k=1}^K \PP(\{s_m: \omega_m=k\} \given \lambda_k(t)) \\
+  &= \prod_{k=1}^K \left[
+    \exp\left\{-\int_0^T \lambda_k(t) \, \mathrm{d}t\right\}
+    \prod_{m=1}^M \lambda_k(s_m)^{\bbI[\omega_m = k]} \right] \\
+  &= \exp\left\{-\int_0^T \lambda_{\mathsf{tot}}(t) \, \mathrm{d}t\right\}
+  \prod_{m=1}^M \prod_{k=1}^K \lambda_k(s_m)^{\bbI[\omega_m = k]}.
+\end{align*}
+
+The Poisson superposition principle says that the marginal distribution
+summing over all possible process assignments,~$\{\omega_m\}$, is a Poisson
+process with rate~$\lambda_{\mathsf{tot}}(t)$. That is,
+\begin{align*}
+  p(\{s_m\}_{m=1}^M \given \{\lambda_k(t)\}_{k=1}^K)
+  &= \sum_{\omega_1=1}^K \cdots \sum_{\omega_M=1}^K p(\{s_m, \omega_m\}_{m=1}^M \given \{\lambda_k(t)\}_{k=1}^K) \\
+  &= \exp\left\{-\int_0^T \lambda_{\mathsf{tot}}(t) \, \mathrm{d}t\right\}
+  \prod_{m=1}^M \sum_{\omega_m=1}^K \prod_{k=1}^K \lambda_k(s_m)^{\bbI[\omega_m = k]} \\
+  &= \exp\left\{-\int_0^T \lambda_{\mathsf{tot}}(t) \, \mathrm{d}t\right\}
+  \prod_{m=1}^M \lambda_{\mathsf{tot}}(s_m) \\
+  &= \PP(\{s_m\} \given \lambda_{\mathsf{tot}}(t)).
+\end{align*}
+Furthermore, the conditional distribution of~$\omega_m$ is,
+\begin{align*}
+  p(\omega_m=k \given s_m, \{\lambda_k(t)\}_{k=1}^K)
+  &= \frac{\lambda_k(s_m)}{\sum_{k'=1}^K \lambda_{k'}(s_m)}.
+\end{align*}
+In other words, given a set of spikes drawn from rate~$\lambda_{\mathsf{tot}}(t)$,
+we can attribute each spike to one of the~$K$ additive contributions
+to the rate function by sampling a categorical distribution with probabilities
+given by the relative rate at the time of the spike. This is known as
+\emph{Poisson thinning}.
 
 \subsection{Including Spike History with Hawkes Processes}
 Though Poisson processes have many nice properties, they cannot
@@ -346,8 +381,7 @@ where~${c_m\in\{1,\ldots,N\}}$ specifies the process on which
 the~$m$-th event occurred.  Each of the~$N$ processes is a
 \emph{conditionally Poisson process} with a rate~${\lambda_n(t\given
   \mcH_t)}$ that depends on the preceding
-events,~$\mcH_t=\{s_n:s_n<t\}$.
-%Each of the~$K$ processes is a \emph{conditionally Poisson process} with a rate~$\lambda_k(t\given H(t))$ that depends on the history of events up to time~$t$, denoted~${H(t)=\{s_n:s_n<t\}}$.
+events,~$\mcH_t=\{s_m:s_m<t\}$.
 This allows for event-driven dynamics that are not possible in Poisson
 processes.  Moreover, the Hawkes process reduces to a set of
 independent Poisson processes when the firing rate is independent of
@@ -385,7 +419,7 @@ process:
 \begin{multline*}
 p(\{(s_m,c_m,\omega_m)\}_{m=1}^M \given \{\lambda_{0,n}(t)\}, \{\{h_{n \to n'}(\Delta t)\}\}) = \\
 \prod_{n=1}^N p(\{s_{m}: c_{m}=k \wedge \omega_{m}=0\} \given \lambda_{0,n}(t))\;\times\\
-\prod_{m=1}^M \prod_{n=1}^N p(\{s_{m'}: c_{m'}=k \wedge \omega_{m'}=m\} \given h_{c_m \to n}(t-s_n)),
+\prod_{m=1}^M \prod_{n=1}^N p(\{s_{m'}: c_{m'}=k \wedge \omega_{m'}=m\} \given h_{c_m \to n}(t-s_m)),
 \end{multline*}
 where the densities in the product are Poisson process likelihoods
 given by Equation~\ref{eq:poisson_lkhd}.
@@ -468,7 +502,7 @@ interactions occur between clusters of communities. In this case we
 can use a simple clustering model or a nonparametric model like that
 of \citet{Blundell-2012}.
 
-\subsection{Inference with Gibbs Sampling}
+\section{Bayesian Inference with Gibbs Sampling}
 We present a Gibbs sampling procedure for inferring the model
 parameters,~$\bA$,~$\bW$,~$\btheta$,$\{\lambda_{0,n}(t)\}$, and, if
 necessary,~${\{c_m\}}$. In order to simplify our Gibbs updates, we
@@ -515,7 +549,7 @@ on neuron~$n$. Thus, the likelihood reduces to the prior,~$p(w_{n \to n'})$.
 If~${a_{n \to n'}=1}$, we have to consider the likelihood.
 Assume that there are no spikes after~${T-\Delta t_{\mathsf{max}}}$. Then,
 \begin{align*}
-  -\int^T_{s_m} w_{n \to n'} \cdot
+  -\int^T_{s_m} a_{n \to n'} \cdot w_{n \to n'} \cdot
   \hbar(t - s_m; \theta_{n \to n'}) \, \mathrm{d}t
   &= -w_{n \to n'}  \int^T_{s_m} \hbar(t - s_m; \theta_{n \to n'}) \, \mathrm{d}t \\
   &= - w_{n \to n'},
@@ -557,7 +591,7 @@ where
 \paragraph{Sampling constant background rates.}
 Similarly, the likelihood of a constant background rate,
 ${\lambda_{0,n}(t)\equiv\lambda_{0,n}}$, is conjugate with a gamma
-prior ${\lambda_{0,n} \sim
+prior~${\lambda_{0,n} \sim
   \distGamma(\alpha_{\lambda},\beta_{\lambda})}$.  The conditional
 distribution is,
 \begin{align*}
@@ -623,22 +657,57 @@ parent variables,~$\omega_m$. Specifically, if~${\omega_{m'}=m}$, then
 we must have~${a_{c_{m},c_{m'}}=1}$. To improve the mixing of our
 sampling algorithm, first we
 update~${\bA\given\{s_m,c_m\},\bW,\theta_{n \to n'}}$ by marginalizing
-the parent variables. The posterior is determined by the likelihood of
-the conditionally Poisson process~${\lambda_{n'}(t\given \mcH_t)}$
-(Eq.~\ref{eq:poisson_lkhd}) with and without interaction~${a_{n
-    \to n'}}$ and the prior comes from the Aldous-Hoover graph
-model. Then we update~${\omega_m \given \{s_m,c_m\},\bA,\bW,\theta_{n
-    \to n'}}$ by sampling from the discrete conditional
-distribution. Though there are~$M$ parent variables, they are
-conditionally independent and may be sampled in parallel. We have
-implemented our inference algorithm on GPUs to capitalize on this
-parallelism.
+the parent variables. By the Poisson superposition principle, the marginal
+distribution is still a Poisson process:
+\begin{align*}
+  p(a_{n \to n'} \given \{s_m, c_m\}, &\bA_{\neg n \to n'}, \bW, \btheta) \\
+  &\propto p(\{s_m, c_m\}, \bA, \bW, \btheta) \\
+  &= \sum_{\omega_1} \cdots \sum_{\omega_M} p(\{s_m, c_m, \omega_m\}, \bA, \bW, \btheta) \\
+  &\propto \PP \big(\{s_m: c_m=n'\} \, \big| \, \lambda_{n'}(t \given \mcH_t)\big)
+  \times p(a_{n \to n'}) \\
+  &= \exp \left \{ -\int_0^T \lambda_{n'}(t \given \mcH_t) \, \mathrm{d}t \right\}
+  \prod_{m=1}^M \left[ \lambda_{n'}(s_m \given \mcH_t)^{\bbI[c_m=n']} \right]
+  p(a_{n \to n'}),
+\end{align*}
+where~$\lambda_{n'}(t \given \mcH_t)$ depends on~$\bA$,~$\bW$, and~$\btheta$
+through,
+\begin{align*}
+  \lambda_{n'}(t \given \mcH_t) &= \lambda_{0,n'} +
+  \sum_{m=1}^M a_{c_m \to n'} \cdot w_{c_m \to n'} \cdot \hbar(t-s_m; \theta_{c_m \to n'}).
+\end{align*}
+Importantly, the integral of the rate function appearing in the
+likelihood can be computed without numerical quadrature,
+\begin{align*}
+  \int_0^T \lambda_{n'}(t \given \mcH_t) \, \mathrm{d}t
+  &= \lambda_{0,n'} T +
+  \sum_{m=1}^M a_{c_m \to n'} \cdot w_{c_m \to n'}
+  \int_0^T  \hbar(t-s_m; \theta_{c_m \to n'}) \, \mathrm{d}t \\
+  &\approx \lambda_{0,n'} T + \sum_{m=1}^M a_{c_m \to n'} \cdot w_{c_m \to n'} \\
+  &= \lambda_{0,n'} T + \sum_{n=1}^N a_{n \to n'} \cdot w_{n \to n'} \cdot M_{n}.
+\end{align*}
+Again, the approximation stems from spikes that occur in the final
+interval of the recording,~${(T-\Delta t_{\mathsf{max}}, T]}$.
 
-\paragraph{Sampling process identities $c_m$.}
-As with the adjacency matrix, we use a collapsed Gibbs sampler to
-marginalize out the parent variables when sampling the process
-identities. Unfortunately, the~$c_m$'s are not conditionally
-independent and hence must be sampled sequentially.
+The first step in the collapsed update is to iterate over the
+entries in~$\bA$, updating one at a time according to their
+conditional distribution with the auxiliary variables,~$\bomega$,
+integrated out. To improve efficiency, note that columns of~$\bA$
+(i.e. sets of incoming connections), are conditionally
+independent of one another. This allows us to parallelize over
+columns and achieve an~$\mcO(N)$ speedup.
+
+Once the adjacency matrix has been resampled, the parent variables
+are updated by Poisson thinning --- that is, by sampling from their
+discrete conditional distribution. Again, these are all conditionally
+independent, so the~$M$ auxiliary variables can be sampled in parallel.
+We have implemented our inference algorithm on GPUs to capitalize
+on this parallelism.
+
+%\paragraph{Sampling process identities $c_m$.}
+%As with the adjacency matrix, we use a collapsed Gibbs sampler to
+%marginalize out the parent variables when sampling the process
+%identities. Unfortunately, the~$c_m$'s are not conditionally
+%independent and hence must be sampled sequentially.
 
 \paragraph{Computational concerns.}
 Compact impulse responses limit the number of potential event parents
@@ -649,13 +718,13 @@ the per-event contributions to the log likelihood can be done
 in~${\mathrm{O}(\log M)}$ time using standard parallel
 reductions. Hence, after parallelizing over the columns of $\bA$ and
 the parents~$\omega_m$, one step of our sampling algorithm
-takes~${\mathrm{O}(N(N+\log M))}$ time when process identities are
-known, and~${\mathrm{O}((N+M)(N+\log M))}$ time otherwise. On the
-datasets used in the following experiments, our GPU
+takes~${\mathrm{O}(N(N+\log M))}$ time
+%when process identities are known
+%, and~${\mathrm{O}((N+M)(N+\log M))}$ time otherwise.
+On the datasets used in the following experiments, our GPU
 implementation
 %\footnote{\url{https://github.com/slinderman}}
-achieves
-5-50 iterations per second.
+achieves 5-50 iterations per second.
 
 \section{Stability of Network Hawkes Processes}
 \label{sec:stability}
@@ -667,14 +736,14 @@ achieves
 \caption{}
 \label{fig:stability_p_w}
 %\vspace{-.9em}
-\includegraphics[height=1.35in]{figures/ch2/stability_p_w} 
+\includegraphics[height=1.25in]{figures/ch2/stability_p_w} 
 \end{subfigure}
 ~
 \begin{subfigure}[b]{.22\textwidth}
 \caption{}
 %\vspace{-1em}
 \label{fig:stability_max_rho}
-\includegraphics[height=1.35in]{figures/ch2/stability_max_rho} 
+\includegraphics[height=1.25in]{figures/ch2/stability_max_rho} 
 \end{subfigure}
 ~
 \hspace{1em}
@@ -683,7 +752,7 @@ achieves
 \label{fig:stability_1_5}
 %\vspace{-.5em}
 %\vspace{.8em}
-\includegraphics[height=1.3in]{figures/ch2/stability_1_5} 
+\includegraphics[height=1.2in]{figures/ch2/stability_1_5} 
 \end{subfigure}
 ~
 \begin{subfigure}[b]{.22\textwidth}
@@ -691,7 +760,7 @@ achieves
 \caption{}
 \label{fig:stability_8_12}
 %\vspace{-.5em}
-\includegraphics[height=1.3in]{figures/ch2/stability_8_12} 
+\includegraphics[height=1.2in]{figures/ch2/stability_8_12} 
 \end{subfigure}
 \end{center}
 \vspace{-1em}
@@ -717,11 +786,14 @@ events. A stable system must satisfy
 \begin{align*}
   \lambda_{\mathsf{max}}=\max\; |\,\mathrm{eig}(\bA\odot\bW)\,| < 1
 \end{align*}
-(c.f. \citet{Daley-1988}). When we are conditioning on finite datasets
-we do not have to worry about this. We simply place weak priors on the
-network parameters, e.g., a beta prior on the sparsity~${\rho}$ of an
-Erd\H{o}s-Renyi graph, and a Jeffreys prior on the scale of the gamma
-weight distribution. For the generative model, however, we would like
+(c.f. \citet{Daley-1988}).
+%When we are conditioning on finite datasets
+%we do not have to worry about this.
+%We simply place weak priors on the
+%network parameters, e.g., a beta prior on the sparsity~${\rho}$ of an
+%Erd\H{o}s-Renyi graph, and a Jeffreys prior on the scale of the gamma
+%weight distribution.
+For the generative model, we would like
 to set our hyperparameters such that the prior distribution places
 little mass on unstable networks. In order to do so, we use tools from
 random matrix theory.
@@ -819,7 +891,7 @@ interaction. By summing the cross-correlation over offsets~${\Delta
     \includegraphics[width=\textwidth]{figures/ch2/synth_link_pred} 
     \label{fig:synth_link_pred}
   \end{subfigure}
-  ~
+  ~ ~ ~ ~
   \begin{subfigure}[T]{.4\textwidth}
     \caption{}
     \includegraphics[width=\textwidth]{figures/ch2/synth_pred_ll}
