@@ -1,1242 +1,1060 @@
-% \begin{savequote}[75mm]
-% This is some random quote to start off the chapter.
-% \qauthor{Firstname lastname}
-% \end{savequote}
+%\begin{savequote}[75mm]
+% The idea that complex physical, biological or sociological systems can be exactly described by a few formulae is patently absurd. The construction of idealized representations that capture important stable aspects of such systems is, however, a vital part of general scientific analysis...
+%\qauthor{Sir David Cox}
+%\end{savequote}
 
-\chapter{Hawkes Processes with Latent Network Structure}
-\TODO{Rewrite the intro to focus on neurons, then cite other example areas}
-Networks play a central role in modern data analysis, enabling us to reason about systems by studying the relationships between their parts.  Most often in network analysis, the edges are given.  However, in many systems it is difficult or impossible to measure the network directly.  Examples of latent networks include economic interactions linking financial instruments and patterns of reciprocity in gang violence.  In these cases, we are limited to noisy observations of events associated with each node.  To enable analysis of these implicit networks, we develop a probabilistic model that combines mutually-exciting point processes with random graph models.  We show how the Poisson superposition principle enables an elegant auxiliary variable formulation and a fully-Bayesian, parallel inference algorithm.  We evaluate this new model empirically on several datasets.
+\chapter{Background}
+This chapter lays the foundation for probabilistic modeling of neural
+spike trains.  We start by introducing the language of generative
+models, which allow us to formalize, in probabilistic terms, our
+hypotheses about dynamics and low-dimensional structure.  The key
+ingredients are latent variables that reflect the underlying state of
+the system, and conditional distributions that relate these variables
+to the observed data.  Once we understand the basics of this language,
+we can begin to articulate hypotheses about dynamical data in the form
+of generative time series models.  Section~\ref{sec:motifs} enumerates
+a few common motifs of time series modeling that will be used
+throughout this thesis.  Finally, given a model and an observed spike
+train, we can invert the model and reason about the posterior
+distribution over latent variables using Bayesian inference algorithms
+like Markov Chain Monte Carlo and mean field variational inference,
+which are introduced in Section~\ref{sec:inference_algorithms}.  At
+the end of this chapter, we will have the basic foundation necessary
+to start looking for structure in neural data. The rest of the thesis
+will build upon this foundation by developing more sophisticated
+models and more efficient inference algorithms, and putting them to
+use on real neural recordings.
 
-\section{Introduction}
-Many types of modern data are characterized via relationships on a network.  Social network analysis is the most commonly considered example, where the properties of individuals (vertices) can be inferred from ``friendship'' type connections (edges).  Such analyses are also critical to understanding regulatory biological pathways, trade relationships between nations, and propagation of disease.  The tasks associated with such data may be unsupervised (e.g., identifying low-dimensional representations of edges or vertices) or supervised (e.g., predicting unobserved links in the graph).  Traditionally, network analysis has focused on \emph{explicit network} problems in which the graph itself is considered to be the observed data.  That is, the vertices are considered known and the data are the entries in the associated adjacency matrix. A rich literature has arisen in recent years for applying statistical machine learning models to this type of problem, e.g., \citet{Liben-2007,Hoff-2008,Goldenberg-2010}.
+\section{Generative Probabilistic Models}
+\label{sec:generative_models}
+Generative probabilistic models tell a story of how data comes to be. 
+While this story never captures every physical detail, it serves as an 
+idealized version that captures the essence of the system. For example, when
+modeling a neural spike train, we will ignore the states of individual ion 
+channels and the nonlinear dynamics of membrane potential and instead 
+characterize the instantaneous \emph{firing rate} of a neuron --- the 
+probability that a neuron spikes at any moment in time. 
 
-In this paper we are concerned with \emph{implicit networks} that cannot be observed directly, but about which we wish to perform analysis.  In an implicit network, the vertices or edges of the graph may not be directly observed, but the graph structure may be inferred from noisy emissions.  These noisy observations are assumed to have been generated according to underlying dynamics that respect the latent network structure.
-
-For example, trades on financial stock markets are executed thousands of times per second. Trades of one stock are likely to cause subsequent activity on stocks in related industries. How can we infer such interactions and disentangle them from market-wide fluctuations? Discovering latent structure underlying financial markets not only reveals interpretable patterns of interaction, but also provides insight into the stability of the market. In Section~\ref{sec:stability} we will analyze the stability of mutually-excitatory systems, and in Section~\ref{sec:financial} we will explore how stock similarity may be inferred from trading activity.
-
-As another example, both the edges and vertices may be latent.  In Section~\ref{sec:chicago}, we examine patterns of violence in Chicago, which can often be attributed to social structures in the form of gangs.  We would expect that attacks from one gang onto another might induce cascades of violence, but the vertices (gang identity of both perpetrator and victim) are unobserved.  As with the financial data, it should be possible to exploit dynamics to infer these social structures.  In this case spatial information is available as well, which can help inform latent vertex identities.
-
-In both of these examples, the noisy emissions have the form of events in time, or ``spikes,'' and our intuition is that a spike at a vertex will induce activity at adjacent vertices.  In this paper, we formalize this idea into a probabilistic model based on mutually-interacting point processes.  Specifically, we combine the Hawkes process \cite{Hawkes-1971} with recently developed exchangeable random graph priors.  This combination allows us to reason about latent networks in terms of the way that they regulate interaction in the Hawkes process.  Inference in the resulting model can be done with Markov chain Monte Carlo, and an elegant data augmentation scheme results in efficient parallelism. 
-
-\section{Probabilistic Network Models}
-\label{sec:graph_models}
-Networks of~$N$ nodes can be represented by~${N\times N}$
-matrices. Unweighted networks are binary adjacency matrices~$\bA$
-where~${a_{m,n}=a_{m \to n}=1}$ indicates a directed edge from
-node~$m$ to node~$n$. We use the arrow notation ($\to$) to remind the
-reader of the directionality of the connection. When these edges have
-weights associated with them, we can use a second matrix,~${\bW \in
-  \reals^{N \times N}}$.  The complete network is then defined by the
-elementwise product,~${\bA \odot \bW}$. The binary adjacency matrix
-captures the sparsity pattern, and the real-valued wieght matrix
-captures the strength of the connections. From a modeling perspective,
-separating these two matrices allows us to separate our prior
-intuitions about sparsity and strength. This is known as a
-spike-and-slab model~\cite{Mitchell1988, Mohamed-2012}.
-
-
-Arbitrarily complex models can be constructed by incorporating latent
-variables into the prior distributions over~$\bA$ and~$\bW$.
-Unsurprisingly, the same types of motifs that recur throughout
-probabilistic modeling --- discrete mixture models and low-dimensional
-factor models, for example --- also form the building blocks of
-standard network models.  We briefly outline a few simple models that
-are used in this and following chapters.
-
-
-\begin{table}
-\begin{center}
-\begin{tabular}{c|c|c|c}
-Name & $\boldeta$ & $\quad\theta_n\quad$ & $\rho_{m \to n}$ \\
-\hline
-Empty Model & --- &  --- & $0$ \\
-Dense Model & --- & --- & $1$ \\
-Bernoulli Model & $\rho$ & --- & $\rho$ \\
-Stochastic Block Model & $\{\{\rho_{c \to c'}\}\}$ & $c_n$ & $\rho_{c_m \to c_n}$ \\
-Latent Distance Model & $\gamma_0$ & $\bell_n$ & $\sigma(-||\ell_n - \ell_m||_2^2 + \gamma_0)$
-\end{tabular}
-\end{center}
-\caption{Binary Adjacency Matrix Models}
-\label{tab:A_models}
-\end{table}
-
-Table~\ref{tab:A_models} summarizes a few models for binary adjacency
-matrices. In all cases, the distribution over~$\bA$ factorizes into a
-product over edges,
-\begin{align*}
-  p(\bA \given \btheta, \boldeta)
-  &= \prod_{m=1}^N \prod_{n=1}^N \distBernoulli(a_{m \to n} \given \theta_m, \theta_n, \boldeta) \\
-  &= \prod_{m=1}^N \prod_{n=1}^N \distBernoulli(a_{m \to n} \given \rho_{m \to n}).
-\end{align*}
-The difference is in how the local latent variables,~$\theta_m$
-and~$\theta_n$, and the global parameters,~$\boldeta$, combine to
-determine the probability,~$\rho_{m \to n}$. We describe these models
-below:
-\begin{itemize}
-\item \textit{Empty Model: } The empty model is essentially a null
-  model. According to this model, there are no connections between
-  neurons. Nevertheless, it is useful to enumerate it here because
-  the empty model provides a baseline for more sophisticated models
-  by capturing the null hypothesis that neurons are independent. 
-  
-\item \textit{Dense Model: } On the other extreme, the dense model
-  corresponds to the hypothesis that all pairs of neurons are
-  connected. In the models of neural activity that follow, the
-  dense model will reduce to the standard models in use today, which
-  do not incorporate prior distributions over the network.
-  
-\item \textit{Bernoulli Model: } The Bernoulli model is a
-  spike-and-slab model in which each connection is an independent and
-  identically distributed Bernoulli random variable with
-  probability~$\rho$. This is also known as an Erd\"os-R\'enyi model.
-  
-\item \textit{Stochastic Block Model (SBM): } In the stochastic block
-  model (SBM) \cite{Nowicki-2001}, each neuron has an associated
-  class,~$c_n$.  The probability of connection depends on the class of
-  the two neurons.  This is the network equivalent of a mixture model.
-  In a Bayesian framework, we assume the class assignments are drawn
-  from a categorical prior,~${c_n \sim \distCategorical(\bpi)}$, and
-  the class weights are given a conjugate, symmetric Dirichlet
-  prior,~${\bpi \sim \distDirichlet(\alpha \bone_C)}$. The connection
-  probabilities are given a conjugate beta prior,~${\beta_{c \from c'}
-    \sim \distBeta(\alpha, \beta)}$.
-  
-\item \textit{Latent Distance Model: } The latent distance model
-  \cite{Hoff-2008} encodes the belief that connection probability
-  should decrease with distance between latent locations. The
-  locations are given spherical Gaussian priors,~$\bell_n \sim
-  \distNormal(0, \eta \bI)$, and the scale is drawn from an inverse
-  gamma prior,~$\eta \sim \distInvGamma(1,1)$. The offset is given a
-  standard normal prior,~$\gamma_0 \sim \distNormal(0, 1)$.
-
-\end{itemize}
-
-% Weight models
-\begin{table}
-\begin{center}
-\begin{tabular}{c|c|c|c}
-Name & $\boldeta$ & $\quad \theta_n \quad$ & $\mu_{m \to n}$ \\
-\hline
-Independent Model & $\mu$ & --- & $\mu$ \\
-Stochastic Block Model & $\{\{ \mu_{c \to c'} \}\}$ & $c_n$ & $\mu_{c_m \to c_n}$ \\
-Latent Distance Model & $\mu_0$ & $\bell_n$ & $-||\bell_n - \bell_m||_2^2 + \mu_0$ 
-\end{tabular}
-\end{center}
-\caption{Weight Models}
-\label{tab:W_models}
-\end{table}
-
-The same ideas can be applied to models for the weight matrix,~$\bW$,
-but rather than modeling the connection probability, we now model the
-mean weight,~$\mu_{m \to n}$. The resulting distribution is of the form,
-\begin{align*}
-  p(\bW \given \btheta, \boldeta)
-  &= \prod_{m=1}^N \prod_{n=1}^N p(w_{m \to n} \given \theta_m, \theta_n, \boldeta) \\
-  &= \prod_{m=1}^N \prod_{n=1}^N p(w_{m \to n} \given \mu_{m \to n}, \boldeta).
-\end{align*}
-
-We do not specify the exact functional form of the distribution since
-this will depend on the model for neural activity. Linear
-autoregressive models with non-negative weights might use a gamma
-prior, whereas nonlinear autoregressive models may use a Gaussian
-distribution. Table~\ref{tab:W_models} lists some examples of weight
-models that are analogous to the adjacency matrix models above.
-While we have only shown models for the mean weight,
-the same latent variables may
-also parameterize the variance of the weight distribution. For example
-in a Gaussian SBM, each directed pair of classes may have an
-associated variance,~$\sigma^2_{c \to c'}$.
-
-
-Probabilistic network models like these are unified under an elegant
-theoretical framework due to Aldous and Hoover
-\cite{Aldous-1981,Hoover-1979}. Conceptually, the Aldous-Hoover
-representation characterizes the class of \textit{exchangeable} random
-graphs, that is, graph models for which the joint probability is
-invariant under permutations of the node labels. Just as de Finetti's
-theorem equates exchangeable sequences to independent draws from a
-random probability measure
-% $\Theta$, the Aldous-Hoover theorem relates random exchangeable graphs to the following generative model:
-%\begin{align*}
-%  u_1,u_2,\ldots&\sim_{i.i.d}\text{Uniform}[0,1],\\
-%  A_{k,k'}&\sim \text{Bernoulli}(\Theta(u_k,u_{k'})),
-%\end{align*}
-%for some random function $\Theta:[0,1]^2\rightarrow [0,1]$.
-, Aldous-Hoover renders the entries of~$\bA$ and~$\bW$ conditionally
-independent given latent variables~$\btheta$ and global
-parameters~$\boldeta$. \citet{Lloyd-2012} and~\citet{orbanz2015bayesian}
-review this theoretical framework and its applications in
-probabilistic machine learning.
-
-% Network models
-\begin{figure}[t!]
-  \centering
-  \textit{~~~~~Adjacency Model} \\
-  % Gaussian row
-  \hspace{1em}
-  \begin{subfigure}[b]{1.25in}
-    \centering
-    \includegraphics[width=\textwidth]{figures/ch3/Dense-Gaussian.png}
-  \end{subfigure}
-  ~
-  \hspace{-.1in}
-  \begin{subfigure}[b]{1.10in}
-    \centering
-    \includegraphics[width=\textwidth]{figures/ch3/Bernoulli-Gaussian.png}
-  \end{subfigure}
-  ~
-  \hspace{-.1in}
-  \begin{subfigure}[b]{1.10in}
-    \centering
-    \includegraphics[width=\textwidth]{figures/ch3/SBM-Gaussian.png}
-  \end{subfigure}
-  ~
-  \hspace{-.1in}
-  \begin{subfigure}[b]{1.10in}
-    \centering
-    \includegraphics[width=\textwidth]{figures/ch3/Distance-Gaussian.png}
-  \end{subfigure}
-  \\
-  \vspace{-.1in}
-  % SBM row
-  \rotatebox{90}{\textit{~~~~~Weight Model}}
-  \begin{subfigure}[b]{1.25in}
-    \centering
-    \includegraphics[width=\textwidth]{figures/ch3/Dense-SBM.png}
-  \end{subfigure}
-  ~
-  \hspace{-.1in}
-  \begin{subfigure}[b]{1.10in}
-    \centering
-    \includegraphics[width=\textwidth]{figures/ch3/Bernoulli-SBM.png}
-  \end{subfigure}
-  ~
-  \hspace{-.1in}
-  \begin{subfigure}[b]{1.10in}
-    \centering
-    \includegraphics[width=\textwidth]{figures/ch3/SBM-SBM.png}
-  \end{subfigure}
-  ~
-  \hspace{-.1in}
-  \begin{subfigure}[b]{1.10in}
-    \centering
-    \includegraphics[width=\textwidth]{figures/ch3/Distance-SBM.png}
-  \end{subfigure}
-  \\
-  % Distance row
-  \vspace{-.1in}
-  \hspace{1em}
-  \begin{subfigure}[b]{1.25in}
-    \centering
-    \includegraphics[width=\textwidth]{figures/ch3/Dense-Distance.png}
-  \end{subfigure}
-  ~
-  \hspace{-.1in}
-  \begin{subfigure}[b]{1.10in}
-    \centering
-    \includegraphics[width=\textwidth]{figures/ch3/Bernoulli-Distance.png}
-  \end{subfigure}
-  ~
-  \hspace{-.1in}
-  \begin{subfigure}[b]{1.10in}
-    \centering
-    \includegraphics[width=\textwidth]{figures/ch3/SBM-Distance.png}
-  \end{subfigure}
-  ~
-  \hspace{-.1in}
-  \begin{subfigure}[b]{1.10in}
-    \centering
-    \includegraphics[width=\textwidth]{figures/ch3/Distance-Distance.png}
-  \end{subfigure}
-  \\
-  \vspace{-.1in}
-  \caption[Examples of network models]{Example network models.  Each
-    row corresponds to a fixed weight matrix,~$\bW$, for three
-    different weight models, and each column corresponds to a fixed
-    adjacency matrix,~$\bA$, for four different adjacency models. The
-    panels show the elementwise product of the two. Color denotes the
-    weight (blue is negative, red is postiive).  In the SBM, the rows
-    and columns are sorted by type, and in the distance model, they
-    are sorted by location. }
-  \label{fig:network_models}
-\end{figure}
-
-Figure~\ref{fig:network_models} shows how a variety of networks can be
-constructed by combining different priors on the weights (rows) with
-priors on the pattern of connectivity (columns). Each row corresponds
-to a fixed weight matrix drawn from either an independent model, a
-stochastic block model (SBM), or a latent distance model. In these
-cases, the weights are Gaussian distributed with unit variance and
-model-specific mean. Each column corresponds to a fixed adjacency
-matrix drawn from either a dense model, an independent
-Bernoulli model, an SBM, or a latent distance model. The matrices show
-the element-wise product, which encodes a weighted, directed
-network. 
-
-
-\section{Hawkes Processes}
-Hawkes processes \cite{Hawkes-1971} are a special type of point process
-that allow spikes to influence the future firing rate. This is achieved
-via a linear superposition of Poisson processes. Before jumping into the
-details, a brief primer on Poisson processes is in order.
-
-\subsection{Poisson Processes}
-\sloppy Point processes are fundamental statistical objects that yield
-random finite sets of events~${\{s_m\}_{m=1}^M \subset \mcV}$,
-where~$\mcV$ is a compact subset of~${\reals^D}$.  When modeling
-neural spike trains, we typically let~${\mcV}$ equal the
-interval~${[0,T]}$. The Poisson process is the canonical example. It
-is governed by a nonnegative firing rate or intensity
-function,~${\lambda(t): \mcV \rightarrow\reals_+}$. The number of
-events in a subset~${\mcV'\subset\mcV}$ follows a Poisson distribution
-with mean~${\int_{\mcV'}\lambda(t)\mathrm{d}t}$. Moreover, the number
-of events in disjoint subsets are independent.
-
-We use the notation~${\{s_m\}_{m=1}^M\sim\PP(\lambda(t))}$ to indicate
-that a set of events~$\{s_m\}_{m=1}^M$ is drawn from a Poisson process
-with rate~$\lambda(t)$. There are many ways to sample a Poisson
-process; one way is to first sample a Poisson number of events with
-mean~${\int_{\mcV} \lambda(t) \mathrm{d}t}$ and then sample the individual
-event times,~$s_m$, independently from the density,
-\begin{align*}
-  p(t) &= \frac{\lambda(t)}{\int_{\mcV} \lambda(t) \, \mathrm{d}t}.
-\end{align*}
-Thus, after accounting for the~$M!$ permutations,
-the likelihood of a set of events is given by,
-\begin{align}
-  \nonumber
-  p(\{s_m\}_{m=1}^M \given \lambda(t))
-  &= \distPoisson \left(M \, \bigg| \, \int_{\mcV} \lambda(t) \, \mathrm{d} t \right)
-  \left( \prod_{m=1}^M \frac{\lambda(s_m)}{\int_{\mcV} \lambda(t) \, \mathrm{d}t} \right)  M! \\
-  \nonumber
-  &= \frac{M!}{M!} \left(\int_{\mcV} \lambda(t) \, \mathrm{d} t \right)^M
-  \exp \left \{-\int_{\mcV} \lambda(t) \, \mathrm{d} t \right \} 
-  \left( \prod_{m=1}^M \frac{\lambda(s_m)}{\int_{\mcV} \lambda(t) \, \mathrm{d}t} \right) \\
-  \label{eq:poisson_lkhd}
-  &=\exp\left\{-\int_{\mathcal{V}}\lambda(t)\mathrm{d}t \right\}
-  \prod_{m=1}^M\lambda(s_m).
-\end{align}
-
-\paragraph{Poisson Superposition Principle}
-We will make use of a special property of Poisson processes called the
-\emph{Poisson superposition principle}, which states that if
-\begin{align*}
-  \{s_{m}\}_{m=1}^{M} &\sim \PP(\lambda(t)), & 
-  \{s'_{m}\}_{m=1}^{M'} &\sim \PP(\lambda'(t))
-\end{align*}
-are independent Poisson process realizations, then
-\begin{align*}
-\{s_{m}\}_{m=1}^{M} \cup \{s'_{m}\}_{m=1}^{M'} \sim \PP(\lambda(t)+\lambda'(t)).
-\end{align*}
-By induction, this extends to the sum of~$K$ independent Poisson
-processes as well.
-
-Equivalently, suppose we are given sets of spikes drawn independently
-from ~$K$ Poisson processes with rates~${\lambda_1(t), \ldots,
-  \lambda_K(t)}$.  Call the union of the spikes~${\{s_m,
-  \omega_m\}}$, where~${s_m \in [0,T]}$ is the time of the spike
-and~${\omega_m \in \{1, \ldots, K\}}$ says which process it came
-from. Let~${\lambda_{\mathsf{tot}}(t) = \sum_{k=1}^K \lambda_k(t)}$.
-The likelihood of the full set of spikes is,
-\begin{align*}
-  p(\{s_m, \omega_m\}_{m=1}^M \given \{\lambda_k(t)\}_{k=1}^K)
-  &= \prod_{k=1}^K \PP(\{s_m: \omega_m=k\} \given \lambda_k(t)) \\
-  &= \prod_{k=1}^K \left[
-    \exp\left\{-\int_0^T \lambda_k(t) \, \mathrm{d}t\right\}
-    \prod_{m=1}^M \lambda_k(s_m)^{\bbI[\omega_m = k]} \right] \\
-  &= \exp\left\{-\int_0^T \lambda_{\mathsf{tot}}(t) \, \mathrm{d}t\right\}
-  \prod_{m=1}^M \prod_{k=1}^K \lambda_k(s_m)^{\bbI[\omega_m = k]}.
-\end{align*}
-
-The Poisson superposition principle says that the marginal distribution
-summing over all possible process assignments,~$\{\omega_m\}$, is a Poisson
-process with rate~$\lambda_{\mathsf{tot}}(t)$. That is,
-\begin{align*}
-  p(\{s_m\}_{m=1}^M \given \{\lambda_k(t)\}_{k=1}^K)
-  &= \sum_{\omega_1=1}^K \cdots \sum_{\omega_M=1}^K p(\{s_m, \omega_m\}_{m=1}^M \given \{\lambda_k(t)\}_{k=1}^K) \\
-  &= \exp\left\{-\int_0^T \lambda_{\mathsf{tot}}(t) \, \mathrm{d}t\right\}
-  \prod_{m=1}^M \sum_{\omega_m=1}^K \prod_{k=1}^K \lambda_k(s_m)^{\bbI[\omega_m = k]} \\
-  &= \exp\left\{-\int_0^T \lambda_{\mathsf{tot}}(t) \, \mathrm{d}t\right\}
-  \prod_{m=1}^M \lambda_{\mathsf{tot}}(s_m) \\
-  &= \PP(\{s_m\} \given \lambda_{\mathsf{tot}}(t)).
-\end{align*}
-Furthermore, the conditional distribution of~$\omega_m$ is,
-\begin{align*}
-  p(\omega_m=k \given s_m, \{\lambda_k(t)\}_{k=1}^K)
-  &= \frac{\lambda_k(s_m)}{\sum_{k'=1}^K \lambda_{k'}(s_m)}.
-\end{align*}
-In other words, given a set of spikes drawn from rate~$\lambda_{\mathsf{tot}}(t)$,
-we can attribute each spike to one of the~$K$ additive contributions
-to the rate function by sampling a categorical distribution with probabilities
-given by the relative rate at the time of the spike. This is known as
-\emph{Poisson thinning}.
-
-\subsection{Including Spike History with Hawkes Processes}
-Though Poisson processes have many nice properties, they cannot
-capture interactions between events. For this we turn to a more
-general model known as Hawkes processes \cite{Hawkes-1971}. A Hawkes
-process consists of~$N$ point processes and gives rise to sets of
-\emph{marked} events $\{s_m,c_m\}_{m=1}^M$,
-where~${c_m\in\{1,\ldots,N\}}$ specifies the process on which
-the~$m$-th event occurred.  Each of the~$N$ processes is a
-\emph{conditionally Poisson process} with a rate~${\lambda_n(t\given
-  \mcH_t)}$ that depends on the preceding
-events,~$\mcH_t=\{s_m:s_m<t\}$.
-This allows for event-driven dynamics that are not possible in Poisson
-processes.  Moreover, the Hawkes process reduces to a set of
-independent Poisson processes when the firing rate is independent of
-the history.
-
-Hawkes processes have additive interactions. Each process has a
-``background rate'' $\lambda_{0,n}(t)$, and each event~$s_m$ on
-process ${c_m=n}$ adds a nonnegative impulse response~$h_{n \to
-  n'}(t-s_m)$ to the intensity of other processes~$n'$. Causality and
-locality of influence are enforced by requiring~$h_{n \to n'}(\Delta
-t)$ to be zero for~${\Delta t \notin[0,\Delta t_{\mathsf{max}}]}$.
+As a simple illustration, consider the following generative
+process. Suppose a neuron has two states, an \emph{up} state and an
+\emph{down} state. In the \emph{up} state, it spikes at a high
+rate, say 100Hz, and in the \emph{down} state it rarely fires, say at 10Hz.
+Assume that every 50ms the neuron flips a coin to decide what state it
+will be in and then fires a random number of spikes according to the
+rate associated with its current state. For the sake of simplicity, 
+assume the precise spike times are uniformly distributed over the 50ms
+interval. Once the interval has elapsed, the neuron
+flips another coin and its rate immediately changes to reflect its new
+state.   Our goal is to infer the latent state of
+the neuron given the observed spikes.
 
 \begin{figure}[t]
 \centering%
-\includegraphics[width=\linewidth]{figures/ch2/Hawkes-wide} 
-\vspace{-0.25cm}
-\caption[Illustration of a Hawkes process]{Illustration of a Hawkes
-  process. Events induce impulse responses on connected processes and
-  spawn ``child'' events. See the main text for a complete
-  description.}
-\label{fig:hawkes}
+\includegraphics[width=5.5in]{figures/ch1/figure1} 
+\caption[Simple neuron with up and down states]{A simple neuron that
+  randomly switches between an \textit{up} and a \textit{down} state
+  every 50ms. Here, time bins are colored blue and yellow depending on
+  the latent state,~$z_t$. Each state has an associated firing rate from
+  which a Poisson number of spikes,~$s_t$, is drawn. Precise spike
+  times are uniformly distributed over the 50ms interval.}
+\label{fig:updown}
+\vspace{-0.5cm}
 \end{figure}
 
-By the superposition theorem for Poisson processes, these additive
-components can be considered independent processes, each giving rise
-to their own events.  This suggests a convenient latent variable
-representation in which each event is attributed to either the
-background rate or the impulse response of a preceding event.  We
-augment our data with a latent random
-variable~${\omega_m \in\{0,\ldots, m-1\}}$ to indicate the \emph{origin} of
-the~$n$-th event ($0$ if the event is due to the background rate and
-${1\ldots m-1}$ if it was spawned by a preceding event). The augmented
-Hawkes likelihood is then the product of likelihoods of each Poisson
-process:
-\begin{multline*}
-p(\{(s_m,c_m,\omega_m)\}_{m=1}^M \given \{\lambda_{0,n}(t)\}, \{\{h_{n \to n'}(\Delta t)\}\}) = \\
-\prod_{n=1}^N p(\{s_{m}: c_{m}=k \wedge \omega_{m}=0\} \given \lambda_{0,n}(t))\;\times\\
-\prod_{m=1}^M \prod_{n=1}^N p(\{s_{m'}: c_{m'}=k \wedge \omega_{m'}=m\} \given h_{c_m \to n}(t-s_m)),
-\end{multline*}
-where the densities in the product are Poisson process likelihoods
-given by Equation~\ref{eq:poisson_lkhd}.
 
-Figure~\ref{fig:hawkes} illustrates a causal cascades of events for a
-simple network of three processes (I-III).  The first event is caused
-by the background rate~(${\omega_1=0}$), and it induces impulse responses
-on processes II and III. Event~2 is spawned by the impulse on the
-third process~(${\omega_2=1}$), and feeds back onto processes I and II. In
-some cases a single parent event induces multiple children, e.g.,
-event~4 spawns events~{5a-c}. In this simple example, processes excite
-one another, but do not excite themselves. Next we will introduce more
-sophisticated models for such interaction networks.
+Clearly, this generative story contains many simplifying assumptions
+and omits a great amount of detail. In addition to assuming that
+spiking is adequately captured by firing rates, the notion that a
+neuron has only two firing rates and that it randomly switches between
+them is obviously a gross simplification. Nevertheless, this very
+simple model captures some patterns of spiking that have been observed
+in experiment \cite{cowan1994spontaneous, shu2003turning}. 
 
-\section{The Network Hawkes Model}\label{sec:basic_model}
-In order to combine Hawkes processes and random network models, we
-decompose the Hawkes impulse response $h_{n \to n'}(\Delta t)$ as
-follows:
+\sloppy We can formalize this generative story with a probabilistic
+model that specifies a distribution over latent states and observed
+spike counts. Let~$s_t \in \naturals$ denote the number of spikes
+counted in the~$t$-th time bin, and~$z_t \in \{\textit{up},
+\textit{down}\}$ denote the corresponding state of the neuron. The
+assumption that states are drawn from a coin flip corresponds to the
+prior distribution, ${z_t \sim \distCategorical(\bpi)}$,
+where~${\bpi \in [0,1]^2}$ is a vector that specifies the probability
+of \textit{up} and \textit{down} states.  Implicitly, we have assumed
+that~${\bpi=\big[\tfrac{1}{2}, \tfrac{1}{2} \big]}$, though this need
+not be the case.  We previously said that the neurons fire a random
+number of spikes according to their state-dependent firing rate; now
+we will formalize this by assuming,~${s_{t} \sim
+  \distPoisson(\lambda_{z_t} \cdot \Delta t)}$, where ${\Delta t =
+  0.05\text{s}}$, ${\lambda_{\textit{up}} = 100\,\text{spikes/s}}$,
+and ${\lambda_{\textit{down}} = 10\,\text{spike/s}}$.
+
+Figure~\ref{fig:updown} shows a neural spike train sampled from this
+generative model. The time bins are colored blue or yellow depending
+on whether the neuron is in the \textit{up} or \textit{down} state,
+respectively.  The precise spike times are denoted by black vertical
+lines with circular endpoints. Above, the vector of observed spike
+counts, ${\bs = \big[s_1, \ldots, s_T \big]}$, and the vector of
+latent states,~${\bz = \big[z_1, \ldots, z_T \big]}$, are shown.  We
+will use this notation throughout the thesis: bold symbols like~$\bs$
+will denote arrays of random variables; lowercase bold symbols will
+typically denote vectors
+
+The generative procedure defines the \emph{likelihood} of any given
+set of observed spike counts and corresponding latent states. This can
+be written as a conditional distribution where the state probabilities
+and firing rates are given. We have,
 \begin{align}
-\label{eq:ir_decomp}
-h_{n \to n'}(\Delta t) &= a_{n \to n'} \cdot w_{n \to n'} \cdot \hbar(\Delta t; \theta_{n \to n'}).
+  \label{eq:lkhd_chain_rule}
+  p(\bs, \bz \given \bpi, \blambda) 
+  &= p(\bz \given \bpi) \, p(\bs \given \bz, \blambda) \\
+  \label{eq:lkhd_factorized}
+  &= \prod_{t=1}^T p(z_t \given \bpi) \, p(s_t \given \lambda_{z_t}) \\
+  \label{eq:lkhd_factorized_forms}
+  &= \prod_{t=1}^T \distCategorical(z_t \given \bpi) \, \distPoisson(s_t \given \lambda_{z_t} \cdot \Delta t).
 \end{align}
-Here,~$a_{n \to n'}$ is an entry in the binary adjacency
-matrix,~${\bA\in\{0,1\}^{N \times N}}$,
-and~$w_{n \to n'}$ is the corresponding entry in the non-negative
-weight matrix,~${\bW \in\reals_+^{N\times N}}$. Together these specify
-the \emph{sparsity structure} and \emph{strength} of the interaction
-network, respectively. The non-negative function~${\hbar(\Delta t;
-  \theta_{n \to n'})}$ captures the temporal aspect of the
-interaction. It is parameterized by~${\theta_{n \to n'}}$ and
-satisfies two properties: a) it has bounded support for~${\Delta t \in
-  [0,\Delta t_{\mathsf{max}}]}$, and~b) it integrates to one. In other
-words,~$\hbar$ is a probability density with compact support.
+Since~$\Delta t$ is a constant, we do not include it as a random
+variable in the joint distribution or explicitly condition on it.
 
-Decomposing the impulse response as in Equation~\ref{eq:ir_decomp} has
-many advantages. It allows us to express our separate beliefs about
-the sparsity structure of the interaction network and the strength of
-the interactions by using probabilistic network models as priors
-on~$\bA$ and~$\bW$.  The empty graph model recovers independent
-background processes, and the complete graph recovers the standard
-Hawkes process introduced by \citet{Hawkes-1971}.  Making~$\hbar$ a
-probability density endows~$\bW$ with units of ``expected number of
-events'' and allows us to compare the relative strength of
-interactions. The form suggests an intuitive generative model: for
-each impulse response draw~${k \sim \text{Poisson}(w_{n \to n'})}$
-number of induced events and draw the~$k$ child event times
-i.i.d.\ from~$\hbar$. As we will see, this enables computationally
-tractable conjugate priors.
+The probabilistic model specifies the particular factorization of the
+likelihood implied by the generative story.
+Eq.~\ref{eq:lkhd_chain_rule} simply applies the product rule of
+probability, which does not reflect any loss of generality. However,
+in going from \eqref{eq:lkhd_chain_rule} to
+\eqref{eq:lkhd_factorized}, we have asserted that the latent
+states~$z_t$ and~$z_{t'}$ are conditionally independent given~$\bpi$,
+and that the spike counts~$s_{t}$ and~$s_{t'}$ are conditionally
+independent given their corresponding latent states. This conditional
+independence assumption, which was implicit in the generative story,
+is made explicit when we factor the likelihood into a product over
+time bins.  Eq.~\ref{eq:lkhd_factorized_forms} specifies the
+functional form of the conditional distributions.  When we hypothesize
+relationships between different variables, we are making assertions
+about the factorization and the form of the likelihood.  In
+Section~\ref{sec:motifs}, we explore different patterns of conditional
+dependence that provide the building blocks of models for dynamic
+data.
 
-Intuitively, the background rates,~$\lambda_{0,n}(t)$, explain events
-that cannot be attributed to preceding events. In the simplest case
-the background rate is constant. However, there are often fluctuations
-in overall intensity that are shared among the processes, and not
-reflective of process-to-process interaction, as we will see in the
-daily variations in trading volume on the S\&P100 and the seasonal
-trends in homicide. To capture these shared background fluctuations,
-we use a sparse log Gaussian Cox process \cite{Moller-1998} to model
-the background rate:
+So far, we have assumed that the firing rates and state probabilities are known, but in practice 
+this is a bit unreasonable. To complete the probabilistic model, we need 
+to combine the likelihood function with a \emph{prior distribution} that 
+captures our uncertainty about these parameters. 
+For example, a more reasonable hypothesis is that neurons have 
+two firing rates, and while we do not know their exact values, we can 
+specify a distribution over them,~$p(\blambda)$. Similarly, we may not know 
+the exact probability of each state,~$\bpi$, but perhaps we can specify 
+a prior,~$p(\bpi)$, that captures our intuition that the states should
+be equally likely \emph{a priori}.
+Putting this all together, we can now write down the \emph{joint
+  distribution} of our probabilistic model --- the
+product of the likelihood and the prior distributions:
+\begin{align}
+  \label{eq:full_joint}
+  p(\bs, \bz, \bpi, \blambda \given \alpha, \beta, \gamma) 
+  &= p(\bs, \bz \given \bpi, \blambda) \,
+  p(\bpi \given \gamma) \, 
+     p(\blambda \given \alpha, \beta).
+\end{align}
+
+When constructing a probabilistic model, we can express these prior
+intuitions and simultaneously make inference a bit easier by using
+\emph{conjugate} prior distributions.
+
+
+% Prior distributions on parameters
+\subsubsection{Conjugate Prior Distributions}
+A conjugate prior ensures that the conditional distribution of a
+parameter, given the data, will have a tractable form.  Specifically,
+the conditional distribution will have the same form as the prior.
+For example, take the parameter,~$\lambda_{\textit{up}}$. If we look
+at the likelihood as a function of~$\lambda_{\textit{up}}$ and ignore
+terms that do not depend on this parameter, we have,
 \begin{align*}
-  \lambda_{0,n}(t)
-  & = \mu_{n} + \alpha_{n}\exp\{\by(t)\}, \\
-  \by(t) &\sim \mathcal{GP}(\boldsymbol{0},K(t,t')).
-\end{align*}
-
-The kernel~${K(t,t')}$ describes the covariance structure of the
-background rate that is shared by all processes. For example, a
-periodic kernel may capture seasonal or daily fluctuations. The
-offset~${\mu_n}$ accounts for varying background intensities among
-processes, and the scaling factor~$\alpha_n$ governs how sensitive
-process~$n$ is to these background fluctuations (when~${\alpha_n=0}$
-we recover the constant background rate).
-
-Finally, in some cases the process identities,~${c_m}$, must also be
-inferred. With gang incidents in Chicago we may have only a
-location,~${\bx_m\in\reals^2}$. In this case, we may place a spatial
-Gaussian mixture model over the~$c_m$'s, as in
-\citet{Cho-2013}. Alternatively, we may be given the label of the
-community in which the incident occurred, but we suspect that
-interactions occur between clusters of communities. In this case we
-can use a simple clustering model or a nonparametric model like that
-of \citet{Blundell-2012}.
-
-\section{Bayesian Inference with Gibbs Sampling}
-We present a Gibbs sampling procedure for inferring the model
-parameters,~$\bA$,~$\bW$,~$\btheta$,$\{\lambda_{0,n}(t)\}$, and, if
-necessary,~${\{c_m\}}$. In order to simplify our Gibbs updates, we
-will also sample a set of parent assignments for each
-event~$\{\omega_m\}$. Incorporating these parent variables enables
-conjugate prior distributions for~$\bW$,~$\theta_{n \to n'}$, and, in
-the case of constant background rates,~$\lambda_{0,n}$.
-
-By combining
-Equations~\ref{eq:poisson_lkhd}~and~\ref{eq:hawkes_likelihood}, we can
-write the joint likelihood, with the auxiliary parent variables, as,
-\begin{multline}
-  \label{eq:complete_likelihood}
-  p(\{s_m, c_m, \omega_m\}_{m=1}^M \given \{\lambda_{0,n}(t)\}_{n=1}^N, \{h_{n \to n'}(\Delta t)\}) = \\
-  \prod^N_{n=1} \bigg[
-  \exp\left\{ -\int_0^T \lambda_{0,n}(t)\mathrm{d}t \right\} \,
-  \prod^M_{m=1}
-   \lambda_{0,n}(s_m)^{\bbI[c_m=n] \bbI[\omega_m = 0]} \bigg]\\
-  \quad\times \prod_{m=1}^M \prod_{n'=1}^N \bigg[
-  \exp\left\{-\int^T_{s_m} h_{c_m,n'}(t - s_m) \mathrm{d}t \right\} \\
-  \prod_{m'=1}^M h_{c_m^{~},c_{m'}}(s_{m'}-s_m)^{\bbI[c_{m'}=n'] \bbI[\omega_{m'}=m]}\bigg].
-\end{multline}
-The second line corresponds to the likelihood of the background
-processes; the third and fourth correspond to the likelihood of the
-induced processes triggered by each spike.
-
-\paragraph{Sampling weights $\bW$.} 
-To derive the updates for weights, recall from
-Equation~\ref{eq:ir_decomp} that~${w_{n \to n'}}$ only
-appears in the impulse responses for which~${c_m=n}$
-and~${c_{m'}=n'}$, so the likelihood is propotional to,
-\begin{align*}
-  p(\{s_m,c_m, &\omega_m\}^M_{m=1} \given a_{n \to n'}, w_{n \to n'}, 
-  \theta_{n \to n'}) \\
-  &\propto \prod_{m=1}^M\left[
-    \exp\left\{-\int^T_{s_m} a_{n \to n'} \cdot w_{n \to n'} \cdot \hbar(t - s_m; \theta_{n \to n'}) \, \mathrm{d}t
-    \right\} \right]^{\bbI[c_m=n]} \\
-  &\qquad \times \prod_{m=1}^M \prod_{m'=1}^M \bigg[
-    w_{n \to n'}\bigg]^{\bbI[c_{m}=n] \bbI[c_{m'}=n'] \bbI[\omega_{m'}=m]}.
-\end{align*}
-If~${a_{n \to n'}=0}$, the impulse response is deterministically zero
-and, as a result, no spikes on neuron~$n'$ will be attributed to spikes
-on neuron~$n$. Thus, the likelihood reduces to the prior,~$p(w_{n \to n'})$.
-If~${a_{n \to n'}=1}$, we have to consider the likelihood.
-Assume that there are no spikes after~${T-\Delta t_{\mathsf{max}}}$. Then,
-\begin{align*}
-  -\int^T_{s_m} a_{n \to n'} \cdot w_{n \to n'} \cdot
-  \hbar(t - s_m; \theta_{n \to n'}) \, \mathrm{d}t
-  &= -w_{n \to n'}  \int^T_{s_m} \hbar(t - s_m; \theta_{n \to n'}) \, \mathrm{d}t \\
-  &= - w_{n \to n'},
-\end{align*}
-since~$\hbar$ is a density defined on~$[0,\Delta t_{\mathsf{max}}]$.
-With this approximation, the conditional distribution of~$w_{n \to n'}$
-reduces to,
-\begin{align*}
-  p(\{s_m,c_m, \omega_m\}^M_{m=1} \given a_{n \to n'}=1, w_{n \to n'}) 
-  \propto 
-  e^{-M_n \cdot w_{n \to n'}}  \,
-  (w_{n \to n'})^{M_{n \to n'}}.
-\end{align*}
-where
-\begin{align*}
-  M_{n} &= \sum_{m=1}^M \bbI[c_{m}=n], \\
-  M_{n \to n'} &= \sum_{m=1}^M \bbI[c_{m}=n] \, \bbI[c_{m'}=n'] \, \bbI[\omega_{m'}=m].
-\end{align*}
-These sufficient statistics correspond to the number of events caused
-by an connection~${n \to n'}$ and the total unweighted rate induced by
-events on neuron~$n$.
-
-Now that we have simplified the augmented log likelihood, we see that it is
-conjugate with a gamma prior on the weights,
-${w_{n \to n'}\sim \distGamma(\alpha_w, \beta_w})$.
-The resulting conditional distribution is,
-\begin{multline*}
-  p(w_{n \to n'}\given \{s_m,c_m,\omega_m\}_{m=1}^M, a_{n\to n'}=1, \alpha_w, \beta_w)
-  = 
-  \distGamma(w_{n \to n'} \given \widetilde{\alpha}_{n \to n'}, \widetilde{\beta}_{n \to n'}),
-\end{multline*}
-where
-\begin{align*}
-  \widetilde{\alpha}_{n \to n'} &= \alpha_w + M_{n \to n'}, \\
-  \widetilde{\beta}_{n \to n'} &= \beta_w + M_n.
-\end{align*}
-
-
-\paragraph{Sampling constant background rates.}
-Similarly, the likelihood of a constant background rate,
-${\lambda_{0,n}(t)\equiv\lambda_{0,n}}$, is conjugate with a gamma
-prior~${\lambda_{0,n} \sim
-  \distGamma(\alpha_{\lambda},\beta_{\lambda})}$.  The conditional
-distribution is,
-\begin{align*}
-  p(\lambda_{0,n} \given \{s_m,c_m, \omega_m\}_{m=1}^M, \alpha_\lambda, \beta_\lambda)
+  p(\bs, \bz \given \bpi, \blambda)
+  &\propto \prod_{t=1}^T \left[
+    \distPoisson(s_t \given \lambda_{\textit{up}} \cdot \Delta t)
+    \right]^{\bbI[z_t = \textit{up}]} \\
+  &\propto \prod_{t=1}^T \left[
+    \lambda_{\textit{up}}^{s_t} \,
+    e^{-\lambda_{\textit{up}} \cdot \Delta t}
+    \right]^{\bbI[z_t = \textit{up}]} \\
   &=
-  \distGamma(\lambda_{0,n} \given \widetilde{\alpha}_{0,n},  \widetilde{\beta}_{0,n}),\\
-  \widetilde{\alpha}_{0,n} &= \alpha_{\lambda} + \sum_m \bbI[c_m = n] \, \bbI[\omega_m=0] \\
-  \widetilde{\beta}_{0,n} &= \beta_\lambda + T
+  \lambda_{\textit{up}}^{s_{\textit{up}}} \,
+  e^{-\lambda_{\textit{up}} \cdot t_{\textit{up}}},
 \end{align*}
-
-This conjugacy no longer holds for log Gaussian Cox process background
-rates, but conditioned upon the parent variables, we must simply fit a
-log Gaussian Cox process for those events for which~${\omega_m=0}$. We use
-elliptical slice sampling \cite{Murray-2010} for this purpose.
-
-\paragraph{Sampling impulse response parameters $\theta_{n \to n'}$.}
-The logistic-normal density with parameters~${\theta_{n \to
-    n'}=\{\mu_{n \to n'},\tau_{n \to n'}\}}$ provides a flexible model
-for the impulse response:
+where
 \begin{align*}
-  \hbar(\Delta t ; \,  \mu_{n \to n'}, \tau_{n \to n'})
-  &=\frac{1}{Z}\exp\left\{\frac{-\tau_{n \to n'}}{2}
-  \left(\sigma^{-1}\left(\frac{\Delta t}{\Delta t_{\mathsf{max}}}\right)
-  - \mu_{n \to n'} \right)^2 \right\} \\
-  \sigma^{-1}(x) &= \ln(x/(1-x))\\ Z &=
-  \frac{\Delta t(\Delta t_{\sf{max}}-\Delta t)}{\Delta t_{\mathsf{max}}}
-  \left(\frac{\tau_{n \to n'}}{2\pi}\right)^{-\frac{1}{2}}.
+  s_{\textit{up}} &= \sum_{t=1}^T s_t \cdot \bbI[z_t = \textit{up}], \\
+  t_{\textit{up}} &= \sum_{t=1}^T \Delta t \cdot \bbI[z_t = \textit{up}],
 \end{align*}
-Given the auxiliary parent variables, the likelihood is conjugate with
-a normal-gamma prior~${\mu_{n \to n'},\tau_{n \to n'} \sim
-  \mathcal{NG}(\mu_\mu,\kappa_\mu,\alpha_\tau,\beta_\tau)}$.
-The sufficient statistics are,
+and~$\bbI[x]$ is an indicator function that equals one if~$x$ evaluates to true
+and equals zero otherwise.
+
+%This likelihood is conjugate with a gamma prior,
+Now consider a gamma prior distribution,
 \begin{align*}
-x_{m \to m'} &\triangleq \ln(s_{m'}-s_m)-\ln(t_{\sf{max}}-(s_{m'}-s_m)), \\
-%r_{n \to n'} &= \sum_{m=1}^M \sum_{m'=1}^M \bbI[c_m=n] \, \bbI[c_{m'}=n'] \, \bbI[\omega_{m'}=m], \\
-\bar{x}_{n \to n'} &= \frac{1}{M_{n \to n'}} \sum_{m=1}^M \sum_{m'=1}^M \bbI[c_m=n] \, \bbI[c_{m'}=n'] \, \bbI[\omega_{m'}=m] \,x_{m \to m'}, \\
-v_{n \to n'} &= \sum_{m=1}^M \sum_{m'=1}^M \bbI[c_m=n] \, \bbI[c_{m'}=n'] \, \bbI[\omega_{m'}=m] \, (x_{m \to m'} - \bar{x})^2.
+  p(\lambda_{\textit{up}} \given \alpha, \beta)
+  &= \distGamma(\lambda_{\textit{up}} \given \alpha, \beta) \\
+  &\propto \lambda_{\textit{up}}^{\alpha - 1} \,
+  e^{-\lambda_{\textit{up}} \cdot \beta}.
 \end{align*}
-Intuitively, these correspond to the number of events caused by an
-interaction and the mean and variance of their (transformed) delays.
-%The conditional distribution is,
-%\begin{align*}
-%  \mu_{n \to n'},\tau_{n \to n'} \given \{s_m,c_m, \omega_m\}_{m=1}^M) &\sim
-%  \mathcal{NG}(\mu_\mu,\kappa_\mu,\alpha_\tau,\beta_\tau)
-%\end{align*}
-The parameters of the normal-gamma conditional distribution are,
+The conditional distribution over~$\lambda_{\textit{up}}$ given the
+observed spike counts, the latent states, and the prior is
+proportional to the likelihood times the prior. This simplifies to,
 \begin{align*}
-  \widetilde{\mu}_{n \to n'} &= \frac{\kappa_\mu \mu_\mu + M_{n \to n'} \bar{x}_{n \to n'}}{\kappa_\mu + M_{n \to n'}}, 
-  &
-  \widetilde{\kappa}_{n \to n'} &= \kappa_\mu + M_{n \to n'}, \\
-  \widetilde{\alpha}_{n \to n'} &= \alpha_{\tau} + \frac{M_{n \to n'}}{2},
-  & 
-  \widetilde{\beta}_{n \to n'} &= \frac{v_{n \to n'}}{2} + \frac{M_{n \to n'} \kappa_\mu}{M_{n \to n'} + \kappa_\mu}\frac{(\bar{x}_{n \to n'} - \mu_\mu)^2}{2}.
+  p(\lambda_{\textit{up}} \given \bs, \bz, \alpha, \beta)
+  &\propto p(\bs, \bz \given \bpi, \blambda) \,
+  p(\lambda_{\textit{up}} \given \alpha, \beta) \\
+  &\propto \lambda_{\textit{up}}^{s_{\textit{up}} + \alpha - 1} \,
+  e^{-\lambda_{\textit{up}} (t_{\textit{up}} +\beta)} \\
+  &\propto \distGamma(\lambda_{\textit{up}} \given
+  s_{\textit{up}} + \alpha, \,
+  t_{\textit{up}} + \beta).
 \end{align*}
+Since both the prior and the the conditional distribution
+over~$\lambda_{\textit{up}}$ are in the gamma family, we say gamma
+prior is conjugate with this product-of-Poissons likelihood.
+Moreover, the parameters of conditional distribution only depend
+on~$\bs$ and ~$\bz$ through simple \emph{sufficient
+  statistics},~$s_{\textit{up}}$ and~$t_{\textit{up}}$. A Dirichlet
+prior distribution on the state probability, ~${\distDirichlet(\bpi
+  \given \gamma)}$, is similarly conjugate with the
+product-of-Categorical likelihood that links~$\bpi$ and~$\bz$.  In
+fact, conjugate priors exist for all likelihoods in the
+\emph{exponential family}. These ideas are thoroughly discussed in
+standard Bayesian statistics and machine learning textbooks
+like~\citet{Gelman13, Murphy-2012}.
 
-\paragraph{Collapsed Gibbs sampling $\bA$ and $\bomega$.}
-With Aldous-Hoover graph priors, the entries in the binary adjacency
-matrix~$\bA$ are conditionally independent given the parameters of the
-prior. The likelihood introduces dependencies between the rows
-of~$\bA$, but each column can be sampled in parallel. Gibbs updates
-are complicated by strong dependencies between the graph and the
-parent variables,~$\omega_m$. Specifically, if~${\omega_{m'}=m}$, then
-we must have~${a_{c_{m},c_{m'}}=1}$. To improve the mixing of our
-sampling algorithm, first we
-update~${\bA\given\{s_m,c_m\},\bW,\theta_{n \to n'}}$ by marginalizing
-the parent variables. By the Poisson superposition principle, the marginal
-distribution is still a Poisson process:
+
+% Latent variables (states at each time)
+% Parameters rates associate with each state
+\paragraph{Latent Variables, Parameters, and Hyperparameters}
+As our models get increasingly complicated, we will often distinguish
+between the different types of random variables. The states,~$\bz$,
+are called \emph{local latent variables} because there is one for each
+data point.  The unknown latent state probability and the
+firing rates,~${ \{\bpi, \blambda\} }$, are either called \emph{parameters} or
+\emph{global latent variables} because their dimension is fixed. The
+remaining values,~${\{ \alpha, \beta, \gamma \} }$,
+are called \emph{hyperparameters}. These are constants that we set
+prior to performing inference.  Typically, these can be tuned
+cross-validation, or simply set based on intuition and physical
+constraints. For conciseness, we will refer to the set of
+all parameters as~$\btheta$ and the set of hyperparameters
+as~$\boldeta$.
+
+
+\subsection{Representations of Spike Trains}
+% Notation for sets of spike times or spike count matrices
+One of the first decisions we must make is how to
+represent our data. In this thesis we will focus solely on modeling
+spike trains, which are sequences of discrete events in time. These
+spike trains typically come from spike sorting algorithms applied to
+extracellular recordings from multi-electrode arrays
+\cite{lewicki1998review}, or from
+deconvolution algorithms applied to optically recorded calcium
+fluorescence traces \cite{pnevmatikakis2016simultaneous,
+  vogelstein2010fast}. Reducing the data to a set of spike times often 
+results in an enormous compression. Rather than considering electrode 
+potentials, which may be sampled at upwards of 10kHz, or calcium 
+fluorescence traces, which are highly autocorrelated due to the relatively 
+slow dynamics of calcium concentration in cells, we can instead consider 
+only the times of action potentials.
+
+% While this thesis treats the spike trains as given, it is also possible to
+% work directly with the observed extracellular recordings or calcium
+% fluorescence and treat the spike train as a latent variable.  Then,
+% the spike train must be inferred along with the rest of the model's
+% latent variables and parameters, cf. \cite{pillow2013model}. As we just 
+% mentioned, this will typically incur a substantial cost, but it may be 
+% worthwhile if there is considerable uncertainty in the spike timing 
+% and if precise timing is important to the overarching model.
+
+The most general representation 
+of a spike train is as set of real-valued times for each neuron.
+In Figure~\ref{fig:updown}, this corresponds to the locations of
+each black spike.
+When there is more than one neuron, we have a set of
+\emph{marked} spike times, which we call,
 \begin{align*}
-  p(a_{n \to n'} \given \{s_m, c_m\}, &\bA_{\neg n \to n'}, \bW, \btheta) \\
-  &\propto p(\{s_m, c_m\}, \bA, \bW, \btheta) \\
-  &= \sum_{\omega_1} \cdots \sum_{\omega_M} p(\{s_m, c_m, \omega_m\}, \bA, \bW, \btheta) \\
-  &\propto \PP \big(\{s_m: c_m=n'\} \, \big| \, \lambda_{n'}(t \given \mcH_t)\big)
-  \times p(a_{n \to n'}) \\
-  &= \exp \left \{ -\int_0^T \lambda_{n'}(t \given \mcH_t) \, \mathrm{d}t \right\}
-  \prod_{m=1}^M \left[ \lambda_{n'}(s_m \given \mcH_t)^{\bbI[c_m=n']} \right]
-  p(a_{n \to n'}),
+  \mcS = \left \{ (s_m, c_m) \right \}_{m=1}^M \subset [0, T] \times \{1, \ldots, N\}.
 \end{align*}
-where~$\lambda_{n'}(t \given \mcH_t)$ depends on~$\bA$,~$\bW$, and~$\btheta$
-through,
+Each member of this set consists of a real-valued spike time~$s_m$ in
+the interval~$[0, T]$, and an integer,~$c_m \in \{1, \ldots, N\}$,
+that specifies the index of the cell that generated this spike. $M$ is 
+the total number of spikes on all neurons.
+
+% In the working example of a neuron with an \emph{up} and \emph{down}
+% state there is only one neuron ($N=1$), so the cell markers would be
+% trivially equal to~$c_m=1$.
+This continuous-time representation is
+warranted when the temporal resolution of the data is considerably
+higher than the timescale of typical action potentials. For example,
+multielecrode arrays typically have sampling intervals of~$0.1$ms or
+smaller, whereas the width of action potentials is on the order
+of~$1$ms. This allows us to specify the spike time as an effectively
+real-valued number.  
+% Calcium imaging methods typically have much lower temporal
+% resolution and are often sampled at lower rates, but by deconvolving
+% spike trains it may be possible to obtain effectively higher
+% resolution than the raw data affords.
+
+We typically model sets of discrete events like these as realizations
+of a \emph{marked point process} \cite{daley2003introduction1}. Such a
+process is defined by its non-negative firing rates\footnote{In the
+  point process literature, these firing rates are called
+  \emph{conditional intensity functions}.},
+${\{\lambda_n(t \given \mcH_t)\}_{n=1}^N}$, where $\mcH_t$ captures
+the history of the process through time~$t$. For example, the history
+may include the previous spikes,~${\mcH_t = \{(s_m, c_m): s_m < t\}}$,
+as well as some external covariates.  If we consider a small time
+window,~${[t, t+\Delta t)}$, and take the limit as~$\Delta t$
+approaches zero,~${\lambda_n(t \given \mcH_t) \cdot \Delta t}$ is the
+expected number of spikes fired by neuron~$n$ in the
+window~${[t, t+\Delta t)}$. Our goal is then to specify flexible and
+interpretable conditional intensity
+functions. 
+
+The limiting perspective on the conditional intensity functions
+suggestions an alternative, discrete-time representation.  Rather than
+modeling a set of continuous spike times and conditional firing rates,
+we may instead represent a spike count matrix,~$\bS$, and the
+corresponding rate matrix,~$\bLambda$, where,
 \begin{align*}
-  \lambda_{n'}(t \given \mcH_t) &= \lambda_{0,n'} +
-  \sum_{m=1}^M a_{c_m \to n'} \cdot w_{c_m \to n'} \cdot \hbar(t-s_m; \theta_{c_m \to n'}).
+  \bS &= 
+        \begin{bmatrix}
+          s_{1,1} & \cdots & s_{1,N} \\
+          & & \\
+          \vdots  &        & \vdots  \\ 
+          & & \\
+          s_{T,1} & \cdots & s_{T,N}
+        \end{bmatrix}, 
+  & & &
+  \bLambda &= 
+        \begin{bmatrix}
+          \lambda_{1,1} & \cdots & \lambda_{1,N} \\
+          & & \\
+          \vdots  &        & \vdots  \\ 
+          & & \\
+          \lambda_{T,1} & \cdots & \lambda_{T,N}
+        \end{bmatrix}.
 \end{align*}
-Importantly, the integral of the rate function appearing in the
-likelihood can be computed without numerical quadrature,
-\begin{align*}
-  \int_0^T \lambda_{n'}(t \given \mcH_t) \, \mathrm{d}t
-  &= \lambda_{0,n'} T +
-  \sum_{m=1}^M a_{c_m \to n'} \cdot w_{c_m \to n'}
-  \int_0^T  \hbar(t-s_m; \theta_{c_m \to n'}) \, \mathrm{d}t \\
-  &\approx \lambda_{0,n'} T + \sum_{m=1}^M a_{c_m \to n'} \cdot w_{c_m \to n'} \\
-  &= \lambda_{0,n'} T + \sum_{n=1}^N a_{n \to n'} \cdot w_{n \to n'} \cdot M_{n}.
-\end{align*}
-Again, the approximation stems from spikes that occur in the final
-interval of the recording,~${(T-\Delta t_{\mathsf{max}}, T]}$.
+Here,~$s_{t,n} \in \naturals$ denotes the number of spikes fired in
+the~$t$-th time bin by the~$n$-th neuron, and~${\lambda_{t,n} \in \reals_+}$ denotes 
+the corresponding firing rate. Sometimes, the effects we
+are interested in studying occur at relatively slow time scales, so
+discretizing may provide valuable compression while retaining most of
+the relevant information. For example, if we are studying neural
+dynamics on the order of minutes, then simply knowing how many spikes
+occurred each second may provide most of the relevant information, while
+precise spike timing may be superfluous.
 
-The first step in the collapsed update is to iterate over the
-entries in~$\bA$, updating one at a time according to their
-conditional distribution with the auxiliary variables,~$\bomega$,
-integrated out. To improve efficiency, note that columns of~$\bA$
-(i.e. sets of incoming connections), are conditionally
-independent of one another. This allows us to parallelize over
-columns and achieve an~$\mcO(N)$ speedup.
+However, the primary reason to discretize spike times into a matrix of
+counts is that the statistics and machine learning community have
+developed a much broader set of models for matrices than for sets of
+continuous time events.  In the next section, we will explore a number
+of common modeling motifs that can be applied to time series data
+represented as matrices, and many of the chapters of this thesis will
+focus on extending these motifs in novel ways.
 
-Once the adjacency matrix has been resampled, the parent variables
-are updated by Poisson thinning --- that is, by sampling from their
-discrete conditional distribution. Again, these are all conditionally
-independent, so the~$M$ auxiliary variables can be sampled in parallel.
-We have implemented our inference algorithm on GPUs to capitalize
-on this parallelism.
 
-%\paragraph{Sampling process identities $c_m$.}
-%As with the adjacency matrix, we use a collapsed Gibbs sampler to
-%marginalize out the parent variables when sampling the process
-%identities. Unfortunately, the~$c_m$'s are not conditionally
-%independent and hence must be sampled sequentially.
+\subsection{Motifs of Time Series Models}
+\label{sec:motifs}
+The art of probabilistic modeling is in balancing conflicting concerns:
+our model should capture as much of the relevant structure in the data 
+as possible, drawing on our intuition and our existing knowledge of the 
+system, yet at the same time we wish to limit the complexity of the model
+so that we may perform inference efficiently. One of the ways that we 
+accomplish this balancing act is by composing our model out of common,
+well-studied motifs. 
 
-\paragraph{Computational concerns.}
-Compact impulse responses limit the number of potential event parents
-and significantly reduce the memory requirements and running time of
-our algorithm. If the average firing rate is constant, the expected
-number of potential parents per event will be linear in $N$. Summing
-the per-event contributions to the log likelihood can be done
-in~${\mathrm{O}(\log M)}$ time using standard parallel
-reductions. Hence, after parallelizing over the columns of $\bA$ and
-the parents~$\omega_m$, one step of our sampling algorithm
-takes~${\mathrm{O}(N(N+\log M))}$ time
-%when process identities are known
-%, and~${\mathrm{O}((N+M)(N+\log M))}$ time otherwise.
-On the datasets used in the following experiments, our GPU
-implementation
-%\footnote{\url{https://github.com/slinderman}}
-achieves 5-50 iterations per second.
+Motifs correspond to factorizations of probabilistic model.  To
+visualize these motifs, we represent the probabilistic model in the
+form of a directed acylcic graph. Each node in the graph corresponds
+to a random variable, and shaded nodes indicate which variables are
+observed. The edges represent conditional dependencies. For example,
+in the mixture model shown in Figure~\ref{fig:motifs}, the spike
+count~$s_2$ has incoming edges from the corresponding latent
+state~$z_2$ and the firing rates,~$\blambda$.  Thus, the joint
+probability distribution contains the factor,~$p(s_2 \given z_2,
+\blambda)$. Since the graph is directed and acyclic, we can read off
+the factors starting with the root nodes,~$p(\bpi)$ and~$p(\blambda)$,
+and ending with the leaf nodes, ~$p(s_t \given z_t, \blambda)$. In
+this way, the graph captures the factorization of the joint
+probability distribution and specifies a particular subset of all
+possible joint distributions over this set of variables.
 
-\section{Stability of Network Hawkes Processes}
-\label{sec:stability}
-
-\begin{figure*}[!ht]
-\vspace{-.5em}
-\begin{center}
-\begin{subfigure}[b]{.22\textwidth}
-\caption{}
-\label{fig:stability_p_w}
-%\vspace{-.9em}
-\includegraphics[height=1.25in]{figures/ch2/stability_p_w} 
-\end{subfigure}
-~
-\begin{subfigure}[b]{.22\textwidth}
-\caption{}
-%\vspace{-1em}
-\label{fig:stability_max_rho}
-\includegraphics[height=1.25in]{figures/ch2/stability_max_rho} 
-\end{subfigure}
-~
-\hspace{1em}
-\begin{subfigure}[b]{.22\textwidth}
-\caption{}
-\label{fig:stability_1_5}
-%\vspace{-.5em}
-%\vspace{.8em}
-\includegraphics[height=1.2in]{figures/ch2/stability_1_5} 
-\end{subfigure}
-~
-\begin{subfigure}[b]{.22\textwidth}
-%\vspace{.7em}
-\caption{}
-\label{fig:stability_8_12}
-%\vspace{-.5em}
-\includegraphics[height=1.2in]{figures/ch2/stability_8_12} 
-\end{subfigure}
-\end{center}
-\vspace{-1em}
-\caption[Distribution of the maximum eigenvalue for Erd\H{o}s-Renyi
-  graphs with gamma weights]{Empirical and theoretical distribution of
-  the maximum eigenvalue for Erd\H{o}s-Renyi graphs with gamma
-  weights. (a) Four gamma weight distributions. The colors correspond
-  to the curves in the remaining panels. (b) Sparsity that
-  theoretically yields ${99\%}$ probability of stability as a function
-  of~${p(W)}$ and~$N$. (c) and (d) Theoretical (solid) and empirical
-  (dots) distribution of the maximum eigenvalue. Color corresponds to
-  the weight distribution in (a) and intensity indicates~$N$
-  and~$\rho$ shown in (b).}
-\label{fig:stability}
-\end{figure*}
-
-Due to their recurrent nature, Hawkes processes must be constrained to
-ensure their positive feedback does not lead to infinite numbers of
-events. A stable system must satisfy
-%\footnote{In this
-%  context~${\lambda_{\mathsf{max}}}$ refers to an eigenvalue rather
-%  than a rate, and~$\odot$ denotes the Hadamard product.}
-\begin{align*}
-  \lambda_{\mathsf{max}}=\max\; |\,\mathrm{eig}(\bA\odot\bW)\,| < 1
-\end{align*}
-(c.f. \citet{Daley-1988}).
-%When we are conditioning on finite datasets
-%we do not have to worry about this.
-%We simply place weak priors on the
-%network parameters, e.g., a beta prior on the sparsity~${\rho}$ of an
-%Erd\H{o}s-Renyi graph, and a Jeffreys prior on the scale of the gamma
-%weight distribution.
-For the generative model, we would like
-to set our hyperparameters such that the prior distribution places
-little mass on unstable networks. In order to do so, we use tools from
-random matrix theory.
-
-The circular law describes the asymptotic eigenvalue distribution for
-$N \times N$~random matrices with entries that are i.i.d. with zero
-mean and variance~$\sigma^2$. As~$N$ grows, the eigenvalues are
-uniformly distributed over a disk in the complex plane centered at the
-origin and with radius~$\sigma\sqrt{N}$. In our case, however, the
-mean of the entries,~${\mu=\mathbb{E}[a_{n \to n'} \cdot w_{n \to
-      n'}]}$, is not zero. \citet{Silverstein-1994} has analyzed such
-``noncentral'' random matrices and shown that the largest eigenvalue
-is asymptotically distributed
-as~${\lambda_{\sf{max}} \sim \distNormal(\mu N,\, \sigma^2)}$.
-
-% Replacing this paragraph with the simple statement that
-%\lambda_{\sf{max}}\sim\distNormal(\mu K, \sigma^2).
-%\citet{Silverstein-1994} has shown that we can analyze noncentral
-%random matrices by considering them to be perturbations about the
-%mean. Consider~${\bA\odot\bW=\bV+\bU}$, where~${\bV=\mu K e_K e_K^T}$
-%is a deterministic rank-one matrix with every entry equal to~$\mu$,
-%${e_K\in\reals^K}$ is a column vector with all entries equal
-%to~${K^{-1/2}}$, and~$\bU$ is a random matrix with i.i.d.\ zero-mean
-%entries. Then, as~$K$ approaches infinity, the largest eigenvalue
-%will come from~$\bV$ and will be distributed
-%as~${\lambda_{\sf{max}}\sim\distNormal(\mu K, \sigma^2)}$, and the
-%remaining eigenvalues will be uniformly distributed over the complex
-%disc.
-
-In the simple case of~${w_{n \to n'}\sim \distGamma(\alpha,\beta)}$
-and~${a_{n \to n'}\sim\distBernoulli(\rho)}$, we have ${\mu = \rho
-  \alpha/\beta}$ and
-${\sigma=\sqrt{\rho((1-\rho)\alpha^2+\alpha)}/\beta}$. For a
-given~$N$,~$\alpha$ and~$\beta$, we can tune the sparsity
-parameter~$\rho$ to achieve stability with high probability. We simply
-set~$\rho$ such that the minimum of~$\sigma\sqrt{N}$ and, say,~${\mu N
-  + 3\sigma}$, equals one. Figures~\ref{fig:stability_p_w}
-and~\ref{fig:stability_max_rho} show a variety of weight distributions
-and the maximum stable~$\rho$. Increasing the network size, the mean,
-or the variance will require a concomitant increase in sparsity.
-
-This approach relies on asymptotic eigenvalue distributions, and it is
-unclear how quickly the spectra of random matrices will converge to
-this distribution. To test this, we computed the empirical eigenvalue
-distribution for random matrices of various size, mean, and
-variance. We generated~$10^4$ random matrices for each weight
-distribution in Figure~\ref{fig:stability_p_w} with sizes~$N=4$,~$64$,
-and~$1024$, and~$\rho$ set to the theoretical maximum indicated by
-dots in Figure~\ref{fig:stability_max_rho}. The theoretical and
-empirical distributions of the maximum eigenvalue are shown in
-Figures~\ref{fig:stability_1_5} and~\ref{fig:stability_8_12}. We find
-that for small mean and variance weights, for
-example~$\distGamma(1,5)$ in the Figure~\ref{fig:stability_1_5}, the
-empirical results closely match the theory. As the weights grow
-larger, as in~${\distGamma(8,12)}$ in~\ref{fig:stability_8_12}, the
-empirical eigenvalue distributions have increased variance and lead to
-a greater than expected probability of unstable matrices for the range
-of network sizes tested here. We conclude that networks with strong
-weights should be counterbalanced by strong sparsity limits, or
-additional structure in the adjacency matrix that prohibits excitatory
-feedback loops.
-
-\section{Synthetic Results}
-\label{sec:synth}
-Our inference algorithm is first tested on synthetic data generated
-from the network Hawkes model. We perform two tests: a) a link
-prediction task where the process identities are given and the goal is
-to simply infer whether or not an interaction exists, and b) an event
-prediction task where we measure the probability of held-out event
-sequences.
-
-The network Hawkes model can be used for link prediction by
-considering the posterior probability of interactions~$P(a_{n \to
-  n'}\given \{s_m,c_m\})$. By thresholding at varying probabilities we
-compute a ROC curve. A standard Hawkes process assumes a complete set
-of interactions~($a_{n \to n'}\equiv 1$), but we can similarly threshold
-its inferred weight matrix to perform link prediction.
-
-Cross correlation provides a simple alternative measure of
-interaction. By summing the cross-correlation over offsets~${\Delta
-  t\in[0,\Delta t_{\mathsf{max}})}$, we get a measure of directed
-  interaction. A probabilistic alternative is offered by the
-  generalized linear model for point processes (GLM), a popular model
-  for spiking dynamics in computational neuroscience
-  \cite{Paninski-2004}. The GLM allows for constant background rates
-  and both excitatory and inhibitory interactions. Impulse responses
-  are modeled with linear basis functions. Area under the impulse
-  response provides a measure of directed excitatory interaction that
-  we use to compute a ROC curve. See the supplementary material for a
-  detailed description of this model.
-\begin{figure}[t]
-  \begin{center}
-  \begin{subfigure}[T]{.4\textwidth}
-    \caption{}
-    \includegraphics[width=\textwidth]{figures/ch2/synth_link_pred} 
-    \label{fig:synth_link_pred}
-  \end{subfigure}
-  ~ ~ ~ ~
-  \begin{subfigure}[T]{.4\textwidth}
-    \caption{}
-    \includegraphics[width=\textwidth]{figures/ch2/synth_pred_ll}
-    \label{fig:synth_pred_ll}
-  \end{subfigure}
-  \end{center}
-  \vspace{-1em}
-  \caption[Synthetic link prediction and predictive log likelihood]{
-    \textbf{(a)} Comparison of models on a link prediction test
-    averaged across ten randomly sampled synthetic networks of 30
-    nodes each. The network Hawkes model with the correct
-    Erd\H{o}s-Renyi graph prior outperforms a standard Hawkes model,
-    GLM, and simple thresholding of the cross-correlation matrix.
-    \textbf{(b)} Comparison of predictive log likelihoods, compared to
-    a baseline of a Poisson process with constant rate. Improvement in
-    predictive likelihood over baseline is normalized by the number of
-    events in the test data to obtain units of ``bits per spike.'' The
-    network Hawkes model outperforms the competitors in all sample
-    networks.}
-\end{figure}
-
-% Table of results
-\begin{table}
-  \begin{center}
-    \begin{tabular}{l|c}
-      \textbf{Financial Model} & \textbf{Pred. log lkhd. (bits/spike)} \\
-      \hline
-      Indep. LGCP & $0.594$ \\
-      Std. Hawkes & $0.912$ \\
-      Net. Hawkes (Erd\H{o}s-Renyi) & $0.903$ \\
-      Net. Hawkes (Latent Distance) & $0.888$ \\
-      %Net. Hawkes (SBM) & $0.894$ \\
-    \end{tabular}
-  \end{center}
-    \caption{Comparison of financial models on a event prediction task, relative to a homogeneous Poisson process baseline.}
-    \label{tab:financial_pred_ll}
-\end{table}
-
-We sampled ten network Hawkes processes of~$30$ nodes each with
-Erd\H{o}s-Renyi graph models, constant background rates, and the
-priors described in Section~\ref{sec:basic_model}. The Hawkes
-processes were simulated for~${T=1000}$ seconds. We used the models
-above to predict the presence or absence of interactions. The results
-of this experiment are shown in the ROC curves of
-Figure~\ref{fig:synth_link_pred}. The network Hawkes model accurately
-identifies the sparse interactions, outperforming all other models.
-With the Hawkes process and the GLM we can evaluate the log likelihood
-of held-out test data. On this task, the network Hawkes outperforms
-the competitors for all networks. On average, the network Hawkes model
-achieves~$2.2\pm.1$ bits/spike improvement in predictive log
-likelihood over a homogeneous Poisson
-process. Figure~\ref{fig:synth_pred_ll} shows that on average the
-standard Hawkes and the GLM provide only 60\% and 72\%, respectively,
-of this predictive power. See the supplementary material for further
-analysis.
+The edges of the graph do not, however, specify the type of the random
+variable or functional form of the factors. For example, a node may
+indicate either a discrete or a continuous random variable, and an
+edge may indicate either a linear or a nonlinear dependence
+pattern. In this way, two models may share the same graph but have
+fundamentally different interpretations. This is true of mixture
+models and factor analysis models shown in Figure~\ref{fig:motifs}.
+Some patterns of factorization, types, and dependencies are used
+over and over again and form the foundational
+building blocks for more complex models.
+Next, we discuss a few of the common motifs shown in Figure~\ref{fig:motifs}.
 
 \begin{figure}[t]
-  \vspace{-1em}
-  \begin{center}
-    \begin{subfigure}[T]{.75\textwidth}
-      \centering
-      \includegraphics[width=.65\linewidth]{figures/ch2/financial_embedding} 
-  \end{subfigure}
-  \\
-  \vskip1ex
-  \begin{subfigure}[T]{.75\textwidth}
-    \centering
-    \includegraphics[width=\textwidth]{figures/ch2/financial_hinton} 
-  \end{subfigure}
-  \end{center}
-  \vspace{-.5em}
-  \caption[Financial embedding and dynamics eigenvectors]{
-    \textbf{Top}: A sample from the posterior distribution over
-    embeddings of stocks from the six largest sectors of the S\&P100
-    under a latent distance graph model with two latent
-    dimensions. Scale bar: the characteristic length scale of the
-    latent distance model. The latent embedding tends to embed stocks
-    such that they are nearby to, and hence more likely to interact
-    with, others in their sector.
-    \textbf{Bottom}: Hinton diagram of
-    the top 4 eigenvectors. Size indicates magnitude of each stock's
-    component in the eigenvector and colors denote sectors as in the
-    top panel, with the addition of Materials (aqua), Utilities
-    (orange), and Telecomm (gray). We show the eigenvectors
-    corresponding to the four largest eigenvalues
-    ${\lambda_{\mathsf{max}}=0.74}$ (top row) to ${\lambda_4=0.34}$
-    (bottom row).}
-  \label{fig:financial_embedding}
+  \centering%
+\includegraphics[width=5.5in]{figures/ch1/figure2b-copy} 
+\vspace{-.25in}
+\caption[Motifs of time series models]{Motifs of time series models.
+  By introducing conditional dependencies and layers of random
+  variables, we construct models that reflect sophisticated hypotheses
+  about the structure underlying the data.  See
+  Section~\ref{sec:motifs} for detailed description.}
+\label{fig:motifs}
 \end{figure}
 
-\section{Trades on the S\&P 100}
-\label{sec:financial}
-As an example of how Hawkes processes may discover interpretable
-latent structure in real-world data, we study the trades on the
-S\&P~100 index collected at 1s intervals during the week of Sep.~28
-through Oct.~2,~2009. Every time a stock price changes by~${\pm0.1\%}$
-of its current price an event is logged on the stock's process,
-yielding a total of~${N=100}$ processes and~${M=182,037}$ events.
 
-Trading volume varies substantially over the course of the day, with
-peaks at the opening and closing of the market. This daily variation
-is incorporated into the background rate via a log Gaussian Cox
-process (LGCP) with a periodic kernel (see supplementary material). We
-look for short-term interactions on top of this background rate with
-time scales of~${\Delta t_{\textsf{max}}=60\mathrm{s}}$.
+\paragraph{Mixture Models}
+% Discrete latent states
+Our working example from Section~\ref{sec:generative_models} is an
+instance of a simple mixture model.  The firing rate takes assumes
+only two values, and the observed spike counts are a mixture of counts
+drawn from the \textit{up} state and counts from the \textit{down}
+state. We can easily extend this to populations of neurons and
+mixtures of more than two states.  Suppose there are now~$K$ states,
+such that~${z_t \in \{1, \ldots, K\}}$. Furthermore, we generalize the
+rates~$\lambda_{\textit{up}}$ and~$\lambda_{\textit{down}}$, to
+vectors of rates, one for each neuron and state.  Changing notation
+slightly, let~${\bmu_k =
+  \big[ \mu_{k,1}, \ldots, \mu_{k,N}\big]}$ denote a vector
+of rates where $\mu_{k,n}$ is the firing rate of
+the~${n\text{-th}}$ neuron in state~$k$.
 
-% Chicago results
-\begin{figure}[!t]
-  \begin{center}
-    \begin{subfigure}[T]{.32\textwidth}
-      \begin{subfigure}[T]{\textwidth}
-        \begin{center}
-          \caption{}
-          \includegraphics[width=\linewidth]{figures/ch2/icpsr_pred_ll}
-          \label{fig:chicago_predll}
-        \end{center}
-      \end{subfigure}
-      \begin{subfigure}[B]{\textwidth}
-        \vspace{1em}
-        \begin{center}
-          \caption{}
-          \includegraphics[width=.7\linewidth]{figures/ch2/icpsr_interactions}\\
-          \label{fig:chicago_interactions}
-        \end{center}
-      \end{subfigure}
-    \end{subfigure}
-    ~
-    \begin{subfigure}[B]{.32\textwidth}
-      \caption{}
-      \includegraphics[width=\linewidth]{figures/ch2/icpsr_map} 
-      \label{fig:chicago_map}
-    \end{subfigure}
-    \begin{subfigure}[B]{.28\textwidth}
-      \caption{}
-      \includegraphics[width=\linewidth]{figures/ch2/icpsr_rate1} \\
-      \includegraphics[width=\linewidth]{figures/ch2/icpsr_rate2} \\ 
-      \includegraphics[width=\linewidth]{figures/ch2/icpsr_rate3} \\
-      \includegraphics[width=\linewidth]{figures/ch2/icpsr_rate4} 
-      \label{fig:chicago_rates}
-    \end{subfigure}
-  \end{center}
-\vspace{-1em}
-\caption[Inferred gang interactions in the city of Chicago]{
-  Inferred interactions among clusters of community areas in the city of Chicago.
-  \textbf{(a)} Predictive log likelihood for ``communities'' and ``clusters''  process identity models and four graph models. 
-%Empty corresponds to independent LGCPs and Complete corresponds to the standard Hawkes process. 
-  Panels \textbf{(b-d)} present results for the model with the highest predictive log likelihood: an Erd\H{o}s-Renyi graph with~${N=4}$ clusters.
-  \textbf{(b)} The weighted interaction network in units of induced homicides over the training period (1980-1993).
-  \textbf{(c)} Inferred clustering of the 77 community areas.
-  \textbf{(d)} The intensity for each cluster, broken down into the offset, the shared background rate, and the interactions (units of~${10^{-3}}$ homicides per day per square kilometer).}
-\label{fig:chicago}
-\end{figure}
+In a mixture model, the latent states are discrete, the time bins are
+conditionally independent, and the dependence of~$s_t$ on~$z_t$
+and~$\bmu$ is linear.  To see the latter claim, note that that the
+instantaneous firing rate can be written, ${\lambda_{t,n} =
+  \sum_{k=1}^K \bbI[z_t=k] \cdot \mu_{k,n}}$. These provide multiple
+dimensions along with the mixture model may be generalized.
 
-In Figure~\ref{tab:financial_pred_ll} we compare the
-predictive performance of independent LGCPs, a standard Hawkes process
-with LGCP background rates, and the network Hawkes model with LGCP
-background rates under two graph priors. The models are trained on
-four days of data and tested on the fifth. Though the network Hawkes
-is slightly outperformed by the standard Hawkes, the difference is
-small relative to the performance improvement from considering
-interactions, and the inferred network parameters provide
-interpretable insight into the market structure.
+%We can write the full rate
+%matrix,~$\bLambda$, as the outer product of a ~${T \times K}$
+%indicator matrix,~$\bZ$, and an~${N \times K}$ rate
+%matrix,~$\bC$. Let~$\be_k$ denote a length-$K$ column vector that is all zero
+%except for a single one in the~$k$-th position.
+%Then,~${\bLambda = \bZ \bC^\trans}$, where,
+%\begin{align}
+%  \bZ = 
+%        \begin{bmatrix}
+%          - & \be_{z_1}^\trans & - \\
+%            &                  &   \\
+%            &  \vdots          &   \\
+%            &                  &   \\
+%          - & \be_{z_T}^\trans & - 
+%        \end{bmatrix}, 
+%  \qquad
+%  \bC = 
+%        \begin{bmatrix}
+%          | &  & | \\
+%          \blambda_1 & \cdot \cdot & \blambda_K \\
+%          | &  & | 
+%        \end{bmatrix}.
+%\end{align}
+%Now that we have framed the mixture model as a simple factorization of 
+%the rate matrix, a number of connections and extensions become clear.
 
-In the latent distance model for~$\bA$, each stock has a latent
-embedding~${\bx_k\in\reals^2}$ such that nearby stocks are more likely
-to interact, as described in
-Section~\ref{sec:graph_models}. Figure~\ref{fig:financial_embedding}
-shows a sample from the posterior distribution over embeddings
-in~$\reals^2$ for~${\rho=0.2}$ and~${\tau=1}$. We have plotted stocks
-in the six largest sectors, as listed on Bloomberg.com. Some sectors,
-notably energy and financials, tend to cluster together, indicating an
-increased probability of interaction between stocks in the same
-sector. Other sectors, such as consumer goods, are broadly
-distributed, suggesting that these stocks are less influenced by
-others in their sector. For the consumer industry, which is driven by
-slowly varying factors like inventory, this may not be surprising.
+\paragraph{Hidden Markov Models}
+First, let's address the conditional independence of time bins in the
+mixture model. According to this model, the distribution over latent
+states factors into a product,~${p(\bz \given \bpi) = \prod_t p(z_t
+  \given \bpi)}$.  This is clearly ignoring the temporal dynamics of
+neural data. Instead, a simple hypothesis is that the states have
+Markovian dynamics,
+\begin{align*}
+  p(\bz \given \bpi^{(0)}, \bP) &= p(z_1 \given \bpi^{(0)}) \prod_{t=2}^T p(z_t \given z_{t-1}, \bP) \\ 
+  &= \distCategorical(z_1 \given \bpi^{(0)}) \prod_{t=2}^T \distCategorical(z_t \given \bpi^{(z_{t-1})}),
+\end{align*}
+where~$\bpi^{(0)} \in [0,1]^K$ is a discrete probability distribution over
+initial states, and
+\begin{align*}
+  \bP &=
+        \begin{bmatrix}
+          \text{---} &  \bpi^{(1)}  & \text{---} \\
+            &  \vdots &   \\
+          \text{---} &  \bpi^{(K)}  & \text{---}
+        \end{bmatrix},
+\end{align*}
+is a~${K \times K}$ transition matrix where the row,~${\bpi^{(k)} \in
+  [0,1]^K}$, specifies a discrete conditional distribution over~$z_t$
+given~${z_{t-1}=k}$.  This is known as a hidden Markov model (HMM),
+and the corresponding graphical model is shown in
+Figure~\ref{fig:motifs}. Chapter~\ref{chap:hmms} studies some of the
+challenges involved in selecting the number of states,~$K$, in a
+nonparametric way.
 
-The Hinton diagram in the bottom panel of
-Figure~\ref{fig:financial_embedding} shows the top 4 eigenvectors of
-the interaction network. All eigenvalues are less than 1, indicating
-that the system is stable. The top row corresponds to first
-eigenvector~(${\lambda_{\mathsf{max}}=0.74}$). Apple~(\texttt{AAPL}),
-J.P. Morgan~(\texttt{JPM}), and Exxon Mobil~(\texttt{XOM}) have
-notably large entries in the eigenvector, suggesting that their
-activity will spawn cascades of self-excitation.
-% Removing this since it is entirely speculative
-%The fourth eigenvector~(${\lambda_4=0.34}$) is dominated by Walgreens~(\texttt{WAG}) and CVS~(\texttt{CVS}), suggesting bursts of activity in these drug stores.
-%, perhaps due to encouraging quarterly reports during flu season \cite{Walgreens-NYT-2009}.
+\paragraph{Autoregressive Models}
+% Autoregressive observations
+In an HMM, correlations in spike counts from one bin to the next arise from 
+correlations in the underlying latent states. Alternatively, we may directly 
+model the rate as a function of previous spike counts. For example, consider 
+an autoregressive model with linear dynamics,
+\begin{align}
+  \label{eq:ar_model}
+  \lambda_{t,n} &= \sum_{m=1}^N \sum_{d=1}^D w_{n \from m}^{(d)} \cdot s_{t-d, m}.
+\end{align}
+The weight,~$w_{n \from m}^{(d)}$, specifies the influence that spikes
+on neuron~$m$ have on the rate of neuron~$n$ at an offset of~$d$ time bins
+in the future. 
+Unlike the HMM, which has an
+autoregressive model for latent states, here the
+autoregression governs the rates directly.
+Moreover, this
+autoregressive model sums over the spike counts of all neurons over
+the past~$D$ time bins, allowing delayed interactions.
+Figure~\ref{fig:motifs} shows the graph structure of an autoregressive model
+in the special case that~$D=1$.
 
-\section{Gangs of Chicago}
-\label{sec:chicago}
-In our final example, we study spatiotemporal patterns of gang-related
-homicide in Chicago. Sociologists have suggested that gang-related
-homicide is mediated by underlying social networks and occurs in
-mutually-exciting, retaliatory patterns \cite{Papachristos-2009}. This
-is consistent with a spatiotemporal Hawkes process in which processes
-correspond to gang territories and homicides incite further homicides
-in rival territories.
+Since the
+firing rates must be non-negative, the weights must be as well.  That
+is,~$w_{n \from m}^{(d)} \in \reals_+$.
+This implicitly instantiates
+the hypothesis that interactions between spikes on one neuron and
+the rate of another is always excitatory~---~a spike can never
+decrease the future firing rate. While this is not the most
+biologically realistic model given our knowledge of excitatory and
+inhibitory synapses, it is important to remember that this is simply a
+descriptive model of firing rate dynamics, and it does not necessarily
+map onto physical synaptic connections. As we will see in
+Chapters~\ref{chap:hawkes} and~\ref{chap:discrete_hawkes}, the weights
+inferred by this type of excitatory autoregressive model can still
+provide useful insight into the structure of neural activity.
 
-We study gang-related homicides between 1980 and 1995
-\cite{ICPSR}. Homicides are labeled by the community in which they
-occurred. Over this time-frame there were~${M=1637}$ gang-related
-homicides in the~${77}$ communities of Chicago.
+\paragraph{Nonlinear Autoregressive Models}
+In order to capture both excitatory and inhibitory autoregressive weights,
+we need to introduce a nonlinear function that ensures a non-negative firing 
+rate. Specifically, assume that,
+\begin{align*}
+  \psi_{t,n} &= \sum_{m=1}^N \sum_{d=1}^D w_{n \from m}^{(d)} \cdot s_{t-d,m}, \\
+  \lambda_{t,n} &= g \left( \psi_{t,n} \right).
+\end{align*}
+The nonlinear
+function~${g(\cdot): \reals \to \reals_+}$ 
+maps a real valued ``activation,''~$\psi_{t,n}$, into a non-negative
+firing rate,~$\lambda_{t,n}$. It is common to use an exponential or a
+sigmoidal nonlinearity. In this formulation the
+weights may be either positive
+or negative to reflect either excitatory or inhibitory interactions,
+respectively. Chapter~\ref{chap:nonlinear_hawkes} derives efficient
+inference algorithms for nonlinear autoregressive models like these.
 
-We evaluate our model with an event-prediction task, training on
-1980-1993 and testing on 1994-1995. We use a LGCP temporal background
-rate in all model variations. Our baseline is a single process with a
-uniform spatial rate for the city.  We test two process identity
-models: a)~the ``community'' model, which considers each community a
-separate process, and b)~the ``cluster'' model, which groups
-communities into processes. The number of clusters is chosen by
-cross-validation (see supplementary material). For each process
-identity model, we compare four graph models: a)~independent LGCPs
-(\emph{empty}), b)~a standard Hawkes process with all possible
-interactions (\emph{complete}), c)~a network Hawkes model with a
-sparsity-inducing Erd\H{o}s-Renyi graph prior, and d)~a network Hawkes
-model with a latent distance model that prefers short-range
-interactions.
+\paragraph{Factor Models}
+HMM's introduced dynamics to the mixture model and nonlinear
+autoregressive models generalized the linear functional dependence.
+Factor models generalize the discrete nature of the random variables
+with a continuous analogue. For example, consider a model in which the
+discrete variable~${z_t \in \{1, \ldots, K\}}$ is replaced by a
+discrete probability distribution~${\bpi_t \in [0,1]^K}$. The rate
+is then a non-negative combination,
+\begin{align*}
+  \lambda_{t,n} &= \sum_{k=1}^K \pi_{t,k} \cdot \mu_{k,n}
+\end{align*}
+This is naturally interpreted as a \emph{mixed membership model} in
+which the rates at each time bin derive from a mixture of discrete
+latent states with mixing weights~$\bpi_t$. In text modeling, this motif
+is the basis of the latent Dirichlet allocation (LDA)
+model~\cite{blei2003latent}
 
-The community process identity model improves predictive performance
-by accounting for higher rates in South and West Chicago where gangs
-are deeply entrenched. Allowing for interactions between community
-areas, however, results in a decrease in predictive power due to
-overfitting (there is insufficient data to fit all~${77^2}$ potential
-interactions). Interestingly, sparse graph priors do not help. They
-bias the model toward sparser but stronger interactions which are not
-supported by the test data. These results are shown in the
-``communities'' group of Figure~\ref{fig:chicago_predll}. Clustering
-the communities improves predictive performance for all graph models,
-as seen in the ``clusters'' group. Moreover, the clustered models
-benefit from the inclusion of excitatory interactions, with the
-highest predictive log likelihoods coming from a four-cluster
-Erd\H{o}s-Renyi graph model with interactions shown in
-Figure~\ref{fig:chicago_interactions}. Distance-dependent graph priors
-do not improve predictive performance on this dataset, suggesting that
-either interactions do not occur over short distances, or that local
-rivalries are not substantial enough to be discovered in our
-dataset. More data is necessary to conclusively say which.
+Alternatively, we may replace the discrete latent state with a continuous
+one,~$\bx_t \in \reals^K$. As in the nonlinear autoregressive model,
+we can retain the linear form and introduce an elementwise nonlinearity
+to ensure non-negative firing rates:
+\begin{align*}
+  p(\bx) &= \prod_{t=1}^T \distNormal(\bx_t \given \bzero, \bSigma), \\
+  \psi_{t,n} &= \sum_{k=1}^K x_{t,k} \cdot c_{k,n}, \\
+  \lambda_{t,n} &= g(\psi_{t,n}).
+\end{align*}
+Here,~$c_{k,n}$ is an entry in the real valued matrix~$\bC \in
+\reals^{K \times N}$, and~${\bSigma = \diag \left([ \sigma^2_1,
+    \ldots, \sigma^2_K ] \right)}$.  This corresponds to a factor
+analysis model. Unlike standard factor analysis, however, here the
+observations are discrete spike counts rather than Gaussian
+observations.
 
-Looking into the inferred clusters in Figure~\ref{fig:chicago_map} and
-their rates in~\ref{fig:chicago_rates}, we can interpret the clusters
-as ``safe suburbs'' in gold, ``buffer neighborhoods'' in green, and
-``gang territories'' in red and blue. Self-excitation in the blue
-cluster (Figure~\ref{fig:chicago_interactions}) suggests that these
-regions are prone to bursts of activity, as one might expect during a
-turf-war. This interpretation is supported by reports of ``a burst of
-street-gang violence in 1990 and 1991'' in West Englewood
-(${41.77^\circ}$N, ${-87.67^\circ}$W) \cite{Block-1993}.
+\paragraph{Linear Dynamical Systems}
+In the same way that HMM's extended mixture models with temporal
+dynamics, linear dynamical systems (LDS's) extend factor models with
+linear autoregressive dynamics in the latent state.  We simply replace
+the prior on~$\bx$ with a model of the form,
+\begin{align*}
+  p(\bx) &= \distNormal(\bx_1 \given \bzero, \bSigma) \prod_{t=2}^T \distNormal(\bx_t \given \bA \bx_{t-1}, \bSigma),
+\end{align*}
+where~$\bA \in \reals^{K \times K}$ specifies the linear dynamics of
+the latent state.  The elementwise nonlinear mapping from latent
+states to firing rates is the same as in the factor model, but now the
+linear autoregressive nature of the dynamics induces correlations in
+spike counts from one time bin to the next.
 
-Figure~\ref{fig:chicago_rates} also shows a significant increase in
-the homicide rate between 1989 and 1995, consistent with reports of
-escalating gang warfare \cite{Block-1993}. In addition to this
-long-term trend, homicide rates show a pronounced seasonal effect,
-peaking in the summer and tapering in the winter. A LGCP with a
-quadratic kernel point-wise added to a periodic kernel captures both
-effects.
+% Switching LDS
 
-\section{Related Work}
-\citet{Gomez-2010} introduced one of the earliest algorithms for
-discovering latent networks from cascades of events. They developed a
-highly scalable approximate inference algorithm, but they did not
-explore the potential of random network models or emphasize the point
-process nature of the data.
-%Coupling their approach with the random network models studied here
-%could lead to scalable and insightful models.  Multivariate point
-%processes are of great interest to the machine learning community as
-%they are intuitive models for a variety of natural phenomena. We have
-%leveraged previous work on Poisson processes with Gaussian process
-%intensities in our background rate models \cite{Cunningham-2008}.
-\citet{Simma-2010} studied this problem from the context of Hawkes
-processes and developed an expectation-maximization inference
-algorithm.
-%An expectation-maximization inference algorithm for Hawkes processes
-%was put forth by \citet{Simma-2010} and applied to very large social
-%network datasets.
-We have adapted their latent variable formulation in our
-fully-Bayesian inference algorithm and introduced a framework for
-prior distributions over the latent network.
-
-Others have considered special cases of the model we have
-proposed. \citet{Blundell-2012} combine Hawkes processes and the
-Infinite Relational Model (a specific exchangeable graph model with an
-Aldous-Hoover representation) to cluster processes and discover
-interactions. \citet{Cho-2013} applied Hawkes processes to gang
-incidents in Los Angeles. They developed a spatial Gaussian mixture
-model (GMM) for process identities, but did not explore structured
-network priors. We experimented with this process identity model but
-found that it suffers in predictive log likelihood tests (see
-supplementary material).
-
-Recently, \citet{Iwata-2013} developed a stochastic EM algorithm for
-Hawkes processes, leveraging similar conjugacy properties, but without
-network priors. \citet{Zhou-2013} have developed a promising
-optimization-based approach to discovering low-rank networks in Hawkes
-processes, similar to some of the network models we explored.
-
-\citet{Perry-2013} derived a partial likelihood inference algorithm
-for Hawkes processes with a similar emphasis on structural patterns in
-the network of interactions. They provide an estimator capable of
-discovering homophily
-%(the tendency for similar processes to interact) 
-and other network effects. Our fully-Bayesian approach generalizes
-this method to capitalize on recent developments in random network
-models \cite{Lloyd-2012}.
-% and allows for nonparametric background rates.
-
-Finally, generalized linear models (GLMs) are widely used in
-computational neuroscience \cite{Paninski-2004}. GLMs allow for both
-excitatory and inhibitory interactions, but, as we have shown, when
-the data consists of purely excitatory interactions, Hawkes processes
-outperform GLMs in link- and event-prediction tests.
-
-\section{Conclusion}\label{discussion}
-%We developed a framework for discovering directed network structure
-%in spiking datasets. We introduced an auxiliary variable formulation
-%of the multivariate Hawkes process which supports arbitrary
-%Aldous-Hoover graph priors, Gaussian process background rates, and
-%models of unobserved process identities. Our Markov chain Monte Carlo
-%algorithm leverages conjugate priors and several opportunities for
-%parallelism. Additionally, we leveraged results from random matrix
-%theory to analyze the conditions under which some random network
-%models will be stable. Our applications uncovered interpretable
-%latent networks in a variety of synthetic and real-world problems.
-
-%Networks are powerful tools for describing the interactions we
-%observe in nearly all areas of science. However, these networks are
-%not always explicitly observable. Our fully-Bayesian approach allows
-%us to reason about uncertainty in the latent network structure,
-%taking into account noisy observations and prior beliefs. This work
-%unites implicit network models and Hawkes process
-%observations. Generalizing this framework to other observation models
-%is a promising future direction.
-
-We developed a framework for discovering latent network structure from
-spiking data. Our auxiliary variable formulation of the multivariate
-Hawkes process supported arbitrary Aldous-Hoover graph priors, log
-Gaussian Cox process background rates, and models of unobserved
-process identities.
-%With parallel MCMC, we reasoned about uncertainty in the latent network in a fully-Bayesian manner. 
-Our parallel MCMC algorithm allowed us to reason about uncertainty in
-the latent network in a fully-Bayesian manner.  We leveraged results
-from random matrix theory to analyze the conditions under which random
-network models will be stable, and our applications uncovered
-interpretable latent networks in a variety of synthetic and real-world
-problems.
-%Generalizing beyond the Hawkes observation model is a promising avenue for future work.
+\paragraph{Hierarchical Extensions}
+These motifs --- continuous and discrete latent states, linear autoregressive 
+dynamics, and nonlinear link functions --- provide a foundation for 
+constructing probabilistic models for spike trains. Atop this foundation 
+we may layer additional random variables reflecting hypotheses about shared 
+structure. For example, a switching linear dynamical system (Figure~\ref{fig:motifs})
+combines discrete \emph{and} continuous latent states. 
+Likewise, Chapters~\ref{chap:hawkes}, \ref{chap:discrete_hawkes},
+and~\ref{chap:nonlinear_hawkes} consider structured prior distributions on 
+the weights of autoregressive models, and Chapter~\ref{chap:hmms} considers 
+nonparametric Bayesian priors on the number of states in an HMM. Once the 
+dynamics model has been specified, it is easy to test a variety of hypotheses
+about hierarchical structure. In order to fit these models, however, we need 
+efficient inference algorithms that capitalize on the compositional structure 
+of the model.
 
 
+% Inference in this model is not quite as straightforward as in the
+% Gaussian case. In Chapter~\ref{chap:discussion}, we discuss some ways
+% in which the ideas of Chapter~\ref{chap:nonlinear_hawkes} could be
+% extended to
+
+\section{Bayesian Inference}
+\label{sec:inference_algorithms}
+Given an observed spike train, our goal is to compute the posterior
+distribution over latent variables,~$\bz$, and parameters,~$\btheta$,
+of the model.  For example, in an HMM the latent variables are just
+the dynamic latent states, and the parameters
+are~${\btheta = \{\bA, \bC\}}$, the transition matrix and the
+state--rate matrix. Bayes' rule relates the posterior distribution to
+the joint distribution of our probabilistic model,
+\begin{align}
+  \label{eq:bayes_rule}
+  p(\bz, \btheta \given \bs) 
+  &= \frac{p(\bs, \bz, \btheta)}{p(\bs)} 
+   = \frac{p(\bs, \bz, \btheta)}{\int p(\bs, \bz, \btheta) \, \mathrm{d}\bz \, \mathrm{d}\btheta} .
+\end{align}
+Unfortunately, the denominator in Eq.~\ref{eq:bayes_rule} involves an 
+integral over latent variables and parameters that is intractable for 
+all but the simplest models. Instead, we must resort to approximate 
+algorithms like Markov Chain Monte Carlo (MCMC) and mean field variational 
+inference. We will briefly describe each of these in turn.
+
+\subsection{Markov Chain Monte Carlo}
+Markov Chain Monte Carlo (MCMC) algorithms are a workhorse of modern
+machine learning, and many texts are devoted to the subject,
+e.g.~\citet{geyer1992practical, gilks2005markov, robert2013monte}.  The
+fundamental idea is to generate a collection of samples from the
+posterior distribution and use them to estimate expectations.
+Specifically, if we can collect a set of
+samples,
+\begin{align*}
+  \left \{ \big(\bz^{(1)}, \btheta^{(1)} \big), 
+           \ldots, 
+           \big(\bz^{(L)}, \btheta^{(L)} \big) 
+  \right\},
+\end{align*}
+where
+\begin{align*}
+  \bz^{(\ell)}, \btheta^{(\ell)} &\sim p(\bz, \btheta \given \bs),
+\end{align*}
+then we can form a Monte Carlo estimate of the expectation of a function~$f(\bz, \btheta)$
+with respect to the posterior,
+\begin{align*}
+  \bbE_{p(\bz, \btheta \given \bs)} \left[ f(\bz, \btheta) \right] 
+  &\approx \frac{1}{L} \sum_{\ell = 1}^L f \big(\bz^{(\ell)}, \btheta^{(\ell)} \big).
+\end{align*}
+When the samples are independently drawn from the posterior, the strong 
+law of large numbers ensures that the Monte Carlo estimate converges to 
+the true expectation almost surely, which implies that these Monte Carlo
+estimates are unbiased. Moreover, if the function~$f$ is real-valued, 
+the variance of the Monte Carlo estimator scales as~$\mcO(L^{-1})$
+regardless of the dimension of~$\bz$ and~$\btheta$.
+
+
+To collect these samples, we design a Markov chain to stochastically
+explore the space of latent variables and parameters.  
+%For notational clarity, we will now refer to these collectively as~${\bx = (\bz, \btheta)}$.  
+The chain iteratively samples a new state according to its transition
+operator,~${\mcT \big((\bz, \btheta) \to (\bz', \btheta') \big)}$,
+which specifies a the probability of transitioning from state~${(\bz,
+  \btheta)}$ to state~${(\bz', \btheta')}$.  Each state the Markov
+chain visits is taken as a sample. If we design the Markov chain
+appropriately, we can guarantee that the transition operator will
+asymptotically visit states according to their posterior probability.
+
+When states are sampled with a Markov chain, it is no longer true that
+the samples are independent. In fact, the transition operator will
+often lead to relatively local updates, which in turn lead to autocorrelation
+in the sequence of samples. This does not affect the bias of Monte
+Carlo estimate, but it does affect the constant in the
+asymptotic~$\mcO(L^{-1})$ convergence rate. However, in addition to 
+the increased variance, MCMC algorithms also suffer from a transient 
+bias due to the fact that the initial state is not drawn from the 
+posterior distribution (we would 
+not be using MCMC if we could sample from the posterior directly!). Fortunately, the transient bias 
+of the Monte Carlo estimator also decays as~$\mcO(L^{-1})$. Since the 
+mean squared error of an estimator is equal to its variance plus its 
+ bias squared, and since both variance and bias scale inversely with~$L$, 
+the asymptotic effect of the transient bias is insignificant compared to 
+that of the variance. 
+
+The critical property of our Markov chain is that, asymptotically, it
+visits states with probability equal to the true posterior
+probability.  For this asymptotic guarantee to hold, the posterior
+distribution must be invariant with respect to the transition
+operator, which is defined by the following equivalence,
+\begin{align}
+  \label{eq:invariance}
+  p(\bz, \btheta \given \bs) 
+  &= \int  p \big(\bz', \btheta' \given \bs \big) \,
+    \mcT \big((\bz', \btheta') \to (\bz, \btheta) \big) \, 
+    \mathrm{d}\bz' \, \mathrm{d}\btheta'. 
+\end{align}
+Intuitively, an invariant, or ``stationary,'' distribution with
+respect to~$\mcT$ has the property that if we randomly sample a state
+from the stationary distribution and apply the transition operator,
+the resulting state will be drawn from the stationary distribution as
+well. When~$\bz$ and~$\btheta$ are discrete, the stationary
+distribution is an eigenvector of a transition matrix with eigenvalue
+one.
+
+In addition to leaving the posterior distribution invariant, the
+Markov chain must also converge to this stationary distribution
+regardless of where it starts. If this property holds, the Markov
+chain is \emph{ergodic}, and the posterior distribution is the unique
+stationary distribution of the chain. One simple sufficient condition
+that ensures ergodicity is that the transition probability be strictly
+positive for all states.
+
+Designing an MCMC algorithm thus boils down to designing a valid
+transition operator. This is typically done by composing a sequence of
+operators,~${\mcT = \mcT_1 \circ \ldots \circ \mcT_K}$, each of which
+leaves the stationary distribution intact. While there are many ways
+of developing these transition operators, one of the most common 
+is to sample from the conditional distribution of one variable 
+while holding the rest fixed. This leads to an algorithm called 
+Gibbs sampling \cite{geman1984stochastic}.
+
+\subsubsection{Gibbs Sampling}
+Consider a transition operator,~$\mcT_{\bz}$, that only updates~$\bz$,
+holding ~$\btheta$ constant. In order to update~$\bz$, it samples from
+the conditional distribution,~$p(\bz \given \btheta, \bs)$. To see
+that this transition operator leaves the posterior distribution
+invariant, we plug it into Eq.~\ref{eq:invariance}:
+\begin{align*}
+  \int \mcT_{\bz} \big((\bz', \btheta') \to (\bz, \btheta) \big) \, 
+    &p \big(\bz', \btheta' \given \bs \big) \, 
+    \mathrm{d}\bz' \, \mathrm{d}\btheta' \\
+  &= \int p(\bz \given \btheta', \bs) \, \delta_{\btheta'}(\btheta) \,
+    p \big(\bz', \btheta' \given \bs \big) \, 
+    \mathrm{d}\bz' \, \mathrm{d}\btheta' \\
+  &= 
+  \int p(\bz \given \btheta', \bs) \, \delta_{\btheta'}(\btheta) \,
+    p \big(\btheta' \given \bs \big) \,
+     \underbrace{\int
+    p \big(\bz' \given \btheta', \bs \big) \, 
+    \mathrm{d}\bz'}_{=1}  \mathrm{d}\btheta' \\
+  &= p(\bz \given \btheta, \bs) \, p(\btheta \given \bs) \\
+  &= p(\bz, \btheta \given \bs).
+\end{align*}
+The same holds for a transition operator that
+samples~${p(\btheta \given \bz, \bs)}$, or even a single element of these
+sets,~${p(\theta_j \given \btheta_{\neg j}, \bz, \bs)}$.
+Here,~$\theta_j$ is one parameter, like the transition matrix in an
+HMM, and~$\btheta_{\neg j}$ is the set of all other parameters except
+for the~$j$-th.
+
+Many compositional models are designed such that these conditional
+distributions are in fact easy to sample from. For example, if the
+model is defined with conjugate prior distributions, as described
+above, the conditional distributions have closed forms that can
+often be sampled exactly. Moreover, some model motifs enable more
+efficient types of Gibbs updates outlined below:
+
+\begin{itemize}
+\item \textsc{Block Gibbs Sampling}:
+  In some cases, entire subsets or ``blocks'' of random variables can 
+  be updated by a single transition operator. Consider the conditional
+  distribution over a single latent state in an HMM,~$z_t$, given all other
+  variables,  
+  \begin{align*}
+    p(z_t \given \bs, \bz_{\neg t}, \btheta) 
+    &\propto p(z_t \given z_{t-1}, \btheta) \,
+    p(z_{t+1} \given z_t, \btheta) \,
+    p(\bs_t \given z_t, \btheta).
+  \end{align*}
+  A na\"ive Gibbs sampling algorithm would enumerate the $K$~possible
+  values of~$z_t$, compute their posterior probability, and sample
+  accordingly. However, this would be horribly inefficient when the
+  states are highly correlated. Given~$z_{t-1}$ and~$z_{t+1}$, the
+  state~$z_t$ may essentially be deterministic. Thus, even if there is
+  genuine uncertainty over the state sequence as a whole, this simple
+  transition operator may get stuck in a single state sequence
+  assignment.  This is an example of ``poor mixing.''
+
+  Instead, we could try to update the entire state sequence at once. 
+  The conditional distribution of~$\bz$ is proportional to the joint 
+  distribution,
+  \begin{align*}
+    p(\bz \given \bs, \btheta) 
+    &\propto p(z_1 \given \btheta) \, p(\bs_1 \given z_1, \btheta)
+      \prod_{t=2}^T p(z_t \given z_{t-1}, \btheta) \, 
+      p(\bs_t \given z_t, \btheta).
+  \end{align*}
+  While there are~$K^T$ possible assignments of~$\bz$, since the
+  conditional distribution is chain structured (each state depends
+  only on the previous state and the current spike counts), we can
+  actually sample this distribution using dynamic programming
+  without enumerating all possible assignments.
+  
+\item \textsc{Block Parallel Gibbs Sampling}:
+  A special case of block Gibbs sampling occurs when an entire block 
+  of variables is conditionally independent given the rest. For example,
+  consider the conditional distribution over~$\bz$ in a mixture model,
+  \begin{align*}
+    p(\bz \given \btheta, \bs) 
+    &\propto \prod_{t=1}^T p(z_t \given \btheta) \,
+      p(\bs_t \given z_t, \btheta).
+  \end{align*}
+  Since the conditional distribution factors into a product, the individual
+  latent variables are conditionally independent of one another. That is, the 
+  update to~$z_t$ does not depend on the updated value of~$z_{t'}$. This 
+  allows us to sample new latent states in parallel using as many processors
+  or threads as we have at our disposal.
+
+\item \textsc{Collapsed Gibbs Sampling}: Another special case of block
+  Gibbs sampling occurs when the conditional distribution can be
+  factored using the product rule. For example, consider a model with
+  two highly correlated latent variables,~$z_1$ and~$z_2$.  Na\"ively
+  alternating between sampling~${p(z_1 \given z_2, \btheta, \bs)}$ and
+  ${p(z_2 \given z_1, \btheta, \bs)}$ will lead to poor mixing, so we
+  would like to update them jointly.  Suppose, however, that it is
+  challenging to directly sample the full conditional
+  distribution~$p(z_1, z_2 \given \btheta, \bs)$. By the sum and product rules
+  of probability,
+  \begin{align*}
+    p(z_1, z_2 \given \btheta, \bs) 
+    &= p(z_2 \given z_1, \btheta, \bs) \, 
+      p(z_1 \given \btheta, \bs) \\
+    &= p(z_2 \given z_1, \btheta, \bs) \, 
+      \int p(z_1, z_2 \given \btheta, \bs) \, \mathrm{d}z_2.
+  \end{align*}
+  If it is possible ``collapse'' the second variable and obtain a
+  tractable closed form solution for~$p(z_1 \given \btheta, \bs)$,
+  then we can sample the pair of variables jointly in a two step
+  procedure. First, sample~$z_1$ from its marginal conditional
+  distribution, $p(z_1 \given \btheta, \bs)$, and then
+  sample~${p(z_2 \given z_1, \btheta, \bs)}$. We use this technique 
+  in the spike-and-slab models of Chapter~\ref{chap:nonlinear_hawkes}.
+  
+\item \textsc{Augmented Gibbs Sampling}: Just as it is possible to
+  collapse some variables during block updates, in other cases it is
+  possible to introduce \emph{auxiliary} variables that render the
+  conditional distributions conjugate, and hence easy to work
+  with. For example, in some cases~$p(\bz \given \btheta, \bs)$ is
+  challenging to sample from, but by introducing an auxiliary
+  variable,~$\bomega$, it becomes easy to sample from the conditional
+  distributions of the full model,~$p(\bs, \bz, \bomega, \btheta)$.
+  It is as if we ``un-collapse''~$\bomega$
+  and then perform augmented Gibbs sampling in two steps,
+  \begin{align*}
+    \bz' &\sim p(\bz \given \bomega, \btheta, \bs), \\
+    \bomega' &\sim p(\bomega \given \bz', \btheta, \bs).
+  \end{align*}
+  As long as the original joint distribution,~$p(\bs, \bz, \btheta)$,
+  is equal to the marginal distribution,~${\int p(\bs, \bz, \bomega,
+    \btheta) \, \mathrm{d}\bomega}$, the samples~${\{\bz^{(\ell)},
+    \btheta^{(\ell)}\}}$ will be distributed according to~$p(\bz,
+  \btheta \given \bs)$.  Thus, simply discarding the samples
+  of~$\bomega$ leaves a set of samples drawn from the desired
+  posterior.  This technique of \emph{data augmentation} is a powerful
+  tool that we use throughout this thesis.
+\end{itemize}
+
+
+\subsection{Mean Field Variational Inference}
+Variational inference methods \cite{jordan1999introduction,
+  wainwright2008graphical} take a fundamentally different approach to
+approximating the posterior distribution. Rather than collecting a set
+of samples, variational methods attempt to find the distribution
+within a tractable family of distributions that most closely matches
+the true posterior. Thus, inference becomes an optimization problem.
+
+Let's assume the variational posterior is parameterized by~$\bvartheta$,
+and call the variational distribution,~$q(\bz, \btheta ; \bvartheta)$.
+\footnote{We use a semicolon to indicate that~$q(\bz, \btheta)$ is
+  parameterized by~$\bvartheta$.  Since~$\bvartheta$ is not a random
+  variable,~$q$ is not strictly a conditional distribution and the
+  vertical bar notation is inappropriate.}  To find the
+optimal~$q(\cdot)$, we optimize a functional,~$\mcL[q]$, called the
+\emph{variational lower bound}, which provides a lower bound on the
+log marginal likelihood,~${\log p(\bs)}$.  Specifically, we can write
+the log marginal likelihood as an expectation with respect to~$q$,
+\begin{align*}
+  \log p(\bs) 
+  &= \bbE_{q(\bz, \btheta ; \bvartheta)} \left[ \log \frac{p(\bs, \bz, \btheta)}{p(\bz, \btheta \given \bs)} \right] \\
+  &= \bbE_{q(\bz, \btheta ; \bvartheta)} \left[ \log \frac{p(\bs, \bz, \btheta)}{q(\bz, \btheta; \bvartheta)} \right]
+   + \bbE_{q(\bz, \btheta; \bvartheta)} \left[ \log \frac{q(\bz, \btheta; \bvartheta)}{p(\bz, \btheta \given \bs)} \right] \\
+  &= \mcL[q(\bz, \btheta; \bvartheta)] + \KL(q(\bz, \btheta; \bvartheta) \barbar p(\bz, \btheta \given \bs) \\
+  &\geq \mcL[q(\bz, \btheta; \bvartheta)].
+\end{align*}
+where~$\KL(q \barbar p)$ is the KL-divergence between distributions~$q$ and~$p$. 
+The last line follows from the fact that the KL-divergence is non-negative
+and equal to zero if and only if the distributions are identical. Thus, 
+optimizing this functional is equivalent to minimizing the KL-divergence
+between the variational distribution and the true posterior.
+
+Our goal is to maximize the variational lower bound over a
+parameterized family of tractable distributions,~$\mcQ$. In \emph{mean field
+variational inference}, we take~$\mcQ$ to be the family of fully
+factorized distributions,
+\begin{align*}
+  \mcQ &= \left \{ q: q(\bz, \btheta; \bvartheta) \propto \prod_{t=1}^T q_t(z_t; \vartheta_t) \prod_{j=1}^J q_j(\theta_j; \vartheta_j) \right\}.
+\end{align*}
+We will set these parameters,~$\bvartheta$, in order to maximize the
+variational lower bound over the set of distributions in~$\mcQ$.
+
+In general, this objective function is not concave, so we should not
+expect to find a global optimum. However, we can still use local
+optimization and multiple random restarts with the hope of finding a
+decent local optimum.  For mean field variational inference, a simple
+approach is to perform coordinate ascent on the parameters of one
+variational factor at a time, holding the rest fixed. Given the
+equivalence between maximizing the variational lower bound and
+minimizing the KL-divergence, we can derive the general form of a mean
+field update. Consider updating the variational factor
+for~$\theta_j$. We have,
+\begin{align}
+  \nonumber
+  \KL(q \barbar p) 
+  &= \bbE_{q(\bz, \btheta; \bvartheta)} \left[ \log q(\bz, \btheta) \right] 
+  - \bbE_{q(\bz, \btheta; \bvartheta)} \left[ \log p(\bz, \btheta \given \bs) \right] \\
+  \nonumber
+  &\simeq \bbE_{q(\bz, \btheta; \bvartheta)} \left[ \log q(\bz, \btheta; \bvartheta) \right] 
+  - \bbE_{q(\bz, \btheta; \bvartheta_)} \left[ \log p(\bs, \bz, \btheta) \right]  \\
+  \nonumber
+  &\simeq \bbE_{q_j(\theta_j; \vartheta_j)} \left[ \log q_j(\theta_j ; \vartheta_j) \right] 
+  - \bbE_{q(\theta_j; \vartheta_j)} \left[ \bbE_{q(\bz, \btheta_{\neg j} ; \bvartheta_{\neg j})} \big[ \log p(\bs, \bz, \btheta) \big] \right] \\
+  \label{eq:separate_expectations}
+  &\simeq \KL \big( q_j(\theta_j; \vartheta_j) \barbar \widetilde{p}_j(\theta_j) \big),
+\end{align}
+where~$\simeq$ denotes equality up to an additive term that is
+constant with respect to~$\theta_j$, and
+\begin{align}
+  \label{eq:optimal_factor}
+  \widetilde{p}_j(\theta_j) 
+  &\propto \exp \left \{ \bbE_{q(\bz, \btheta_{\neg j} ; \bvartheta_{\neg j})} \big[ \log p(\bs, \bz, \btheta) \big] \right \}.
+\end{align}
+We are able to separate the expectations in the third line of
+Eq.~\ref{eq:separate_expectations} because of the factorized form
+of~$q(\bz, \btheta; \bvartheta)$.
+Since KL-divergence is minimized when the two
+distributions are equal, the optimal~$q_j(\theta_j; \vartheta_j)$, given the
+variational factors for the remaining variables, is equal
+to~$\widetilde{p}_j(\theta_j)$.  As in the Gibbs sampling algorithms
+developed before, the expectation in Eq.~\ref{eq:optimal_factor} is
+often greatly simplified by the factorization of the joint
+distribution in our probabilistic model. Moreover, when the model 
+is constructed out of conjugate distributions, these mean field 
+updates can be computed in closed form.
+
+\paragraph{Structured Mean Field}
+Just as block Gibbs sampling enables more efficient updates for sets
+of correlated random variables, structured mean field algorithms allow
+groups of random variables to share a variational factor.  For
+example, in an HMM, we can group the latent states~$\bz$ together in a
+shared factor,~$q(\bz)$, that does not necessarily factor into a
+product over time bins.
+If the optimal shared factor given by Eq.~\ref{eq:optimal_factor} has
+a tractable form, we can perform coordinate ascent on the variational
+lower bound by updating the parameters of the shared factor,
+rather than sequentially updating individual factors for each time bin.
+As a result, our coordinate ascent algorithm converges much more rapidly.
+The only other requirement is that it must be possible to compute the
+expectations with respect to the shared factor. In the case of HMMs,
+the same type of dynamic programming algorithm that enables efficient
+block sampling also enables efficient calculation of expectations. 
+
+\subsection{Model Comparison}
+Now that we have developed the tools to formulate models and perform
+Bayesian inference, we need a way to compare and criticize our models.
+The easiest way, and the primary way used throughout this thesis, is
+to compare the models based on how well they predict 
+held-out data. Suppose that at the beginning of the experiment, we reserve
+a set of spike counts,~$\bs_{\mathsf{test}}$, to be used for model
+comparison. Once we have used Bayesian inference to compute a
+posterior distribution over the models parameters and latent variables,
+we can then compute the predictive likelihood,
+\begin{align}
+  \label{eq:predictive_likelihood}
+  p(\bs_{\mathsf{test}} \given \bs_{\mathsf{train}})
+  &= \int p(\bs_{\mathsf{test}} \given \bz_{\mathsf{test}}, \btheta) \,
+  p(\bz_{\mathsf{test}} \given \btheta) \,
+  p(\btheta \given \bs_{\mathsf{train}}) \,
+  \mathrm{d}\bz_{\mathsf{test}} \, \mathrm{d} \btheta.
+\end{align}
+Notice that this is an expectation with respect to the \emph{posterior}
+distribution of~$\btheta$ given the training data, and a \emph{marginal}
+distribution in that it involves an integration over the latent variables
+associated with the test data. As usual, this integral is typically
+intractable, but we can construct a Monte Carlo estimate given 
+samples from the approximate posterior,
+\begin{align*}
+  p(\bs_{\mathsf{test}} \given \bs_{\mathsf{train}})
+  &\approx \frac{1}{L} \sum_{\ell=1}^L
+  p(\bs_{\mathsf{test}} \given \bz_{\mathsf{test}}^{(\ell)}, \btheta^{(\ell)}) \,
+\end{align*}
+where
+\begin{align*}
+  \btheta^{(\ell)} &\sim p(\btheta \given \bs_{\mathsf{train}}), \\
+  \bz_{\mathsf{test}}^{(\ell)} &\sim   p(\bz_{\mathsf{test}} \given \btheta^{(\ell)}).
+\end{align*}
+When Bayesian inference is performed with MCMC, the samples~$\{\btheta^{(\ell)}\}$
+are simply the states visited by the Markov chain. When variational methods
+are used, we assume the variational posterior is such that~$q(\btheta)$ is
+easy to sample from.
+
+This is by no means the only method of comparing models. In ``fully
+Bayesian'' analyses, it is common to compare models on the basis of
+their \emph{marginal likelihood},~$p(\bs)$. Recall that this is the
+quantity that variational methods attempt to lower bound. Unfortunately,
+we cannot evaluate the tightness of variational lower bounds because
+they depend on the KL-divergence, which is intractable.
+
+Instead, we may resort to other methods of approximating the marginal
+likelihood. Notice that,
+\begin{align}
+  \label{eq:marginal_likelihood}
+  p(\bs)
+  &= \int p(\bs \given \bz, \btheta) \,
+  p(\bz \given \btheta) \,
+  p(\btheta) \,
+  \mathrm{d}\bz \, \mathrm{d} \btheta.
+\end{align}
+is equal to the predictive likelihood
+in the absence of training data. Unfortunately, training data plays the crucial
+role of winnowing the posterior distribution over parameters. Without this constraint, simple Monte Carlo estimates
+like those used to approximate the predictive likelihood will suffer from
+extremely high variance. Instead, more sophisticated methods, like annealed
+importance sampling \cite{neal2001annealed} are typically employed. 
+
+Finally, another means of evaluating and criticizing models is via
+\emph{posterior predictive checks} (PPCs) \cite{box1980sampling,
+  Gelman13, blei2014build}.  Though we do not make use of them in this
+thesis, we note that they provide a slightly different view on model
+performance. Rather than assessing how well the model predicts
+held-out data, they assess how well statistics of data simulated from
+the posterior distribution match statistics calculated from samples of
+the real data. Rather than evaluating how well one model performs
+relative to another, PPCs assess how well the model explains important
+aspects of the data.
+
+\section{The Frontier of Modeling and Inference}
+With this background, we have the basic tools necessary to formulate
+models, perform Bayesian inference, and evaluate model performance.
+However, as we incorporate more structure into our model and scale up
+to larger datasets, inference quickly becomes computationally
+intractable. This thesis is about extending the frontier of models and
+motifs at our disposal by leveraging model structure to develop
+efficient inference algorithms. One of the major techniques we use is
+the introduction of auxiliary variables that render the model
+conjugate and enable block parallel Gibbs samplers or structured mean
+field algorithms. Essentially, these methods provide nice ``axes''
+for inference. By adding dimensions to our posterior, it is sometimes
+easier to make two simple updates rather than one hard update.  These
+insights enable us to push the frontier of modeling and inference for
+complex discrete datasets like neural spike trains, and extend the
+set of motifs in our modeling toolkit.

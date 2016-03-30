@@ -1,0 +1,18 @@
+\chapter{Dynamical Systems with Discrete Observations}
+
+In the final chapter on modeling neural data, I will expand upon the 
+Cosyne abstract that Aaron Tucker, Matt Johnson, and I submitted this 
+year \cite{linderman2016cosyne}. 
+We show how the \polyagamma augmentation strategy can be leveraged 
+to render the observations conjugate with linear Gaussian latent structure. 
+This allows us to use off-the-shelf inference tools for Gaussian LDS 
+models. It also allows us to extend to switching variants of the LDS 
+by including another layer of discrete, Markovian states. 
+While these models apply directly to Bernoulli and negative-binomial 
+observations, we can approximate Poisson observations as a limit of the 
+negative binomial. Alternatively, we can use a Poisson thinning model with 
+multinomial conditionals to exactly simulate the Poisson model. If time 
+and space allow, we will introduce this novel approach in this chapter.
+Finally, I will compare these models on the basis of their ability to generalize to 
+held out spike counts. Since this is the final chapter, we will also 
+provide a comparison against the models introduced in preceding chapters.

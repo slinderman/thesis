@@ -20,10 +20,13 @@
 
 \begin{document}
 
-\doublespacing
+%\doublespacing
+\onehalfspacing
+%\linespread{2.0}
 
 % include each chapter...
 \setcounter{chapter}{\jobname}  % start chapter numbering at 0
+\addtocounter{chapter}{-1}
 \include{chapters/chapter\jobname}
 
 \setstretch{1.2}

@@ -1,743 +1,597 @@
-
-\chapter{Dynamic Network Models}
-
-Learning and memory in the brain are implemented by complex,
-time-varying changes in neural circuitry. The computational rules
-according to which synaptic weights change over time are the subject
-of much research, and are not precisely understood. Until recently,
-limitations in experimental methods have made it challenging to test
-hypotheses about synaptic plasticity on a large scale.  However, as
-such data become available and these barriers are lifted, it becomes
-necessary to develop analysis techniques to validate plasticity
-models.  Here, we present a highly extensible framework for modeling
-arbitrary synaptic plasticity rules on spike train data in populations
-of interconnected neurons. We treat synaptic weights as a (potentially
-nonlinear) dynamical system embedded in a fully-Bayesian generalized
-linear model (GLM). In addition, we provide an algorithm for inferring
-synaptic weight trajectories alongside the parameters of the GLM and
-of the learning rules. Using this method, we perform model comparison
-of two proposed variants of the well-known spike-timing-dependent
-plasticity (STDP) rule, where nonlinear effects play a substantial
-role. On synthetic data generated from the biophysical simulator
-NEURON, we show that we can recover the weight trajectories, the
-pattern of connectivity, and the underlying learning rules.
-
+\chapter{Scalable Inference for Discrete-Time Hawkes Processes}
+ 
+Networks capture our intuition about relationships in the world.  They
+describe the friendships between Facebook users, interactions in
+financial markets, and synapses connecting neurons in the brain.
+These networks are richly structured with cliques of friends, sectors
+of stocks, and a smorgasbord of cell types that govern how neurons
+connect.  Some networks, like social network friendships, can be
+directly observed, but in many cases we get but a glimpse of the
+network through the actions of its constituents and an understanding
+of how the network mediates that activity.  In this work, we focus on
+the problem of latent network discovery in the case where the
+observable activity takes the form of a mutually-excitatory point
+process, also known as a Hawkes process.  We build on previous work
+that has taken a Bayesian approach to this problem, specifying prior
+distributions over the latent network structure and a likelihood of
+observed activity given this network.  We extend this work with a
+computationally efficient discrete-time formulation and a stochastic
+variational inference (SVI) algorithm that allows us to scale our
+approach to long sequences of observations.  We demonstrate our
+algorithm on the calcium imaging data used in the Chalearn neural
+connectomics challenge.
 
 \section{Introduction}
-Synaptic plasticity is believed to be the fundamental building block
-of learning and memory in the brain. Its study is of crucial
-importance to understanding the activity and function of neural
-circuits. With innovations in neural recording technology providing
-access to the simultaneous activity of increasingly large populations
-of neurons, statistical models are promising tools for formulating and
-testing hypotheses about the dynamics of synaptic
-connectivity. Advances in optical techniques \cite{Packer-2012,
-  Hochbaum-2014}, for example, have made it possible to simultaneously
-record from and stimulate large populations of synaptically connected
-neurons. Armed with statistical tools capable of inferring
-time-varying synaptic connectivity, neuroscientists could test
-competing models of synaptic plasticity, discover new learning rules
-at the monosynaptic and network level, investigate the effects of
-disease on synaptic plasticity, and potentially design stimuli to
-modify neural networks.
 
-Despite the popularity of GLMs for spike data, relatively little work
-has attempted to model the time-varying nature of neural interactions.
-Here we model interaction weights as a dynamical system governed by
-parametric synaptic plasticity rules. To perform inference in this
-model, we use particle Markov Chain Monte Carlo (pMCMC)
-\cite{Andrieu-2010}, a recently developed inference technique for
-complex time series.  We use this new modeling framework to examine
-the problem of using recorded data to distinguish between proposed
-variants of spike-timing-dependent plasticity (STDP) learning rules.
+Networks are abstractions of the relationships and connections between
+real-world objects, such as people, stocks, or neurons.  These
+connections reflect relationships like ``Wilson and Brady are
+friends,'' or ``When neuron A fires it excites neuron B.''  Sometimes
+the networks themselves are observed data, as in the case of social
+network friendships, but often our view of the network is indirect.
+We are left to infer the latent connections between objects based on
+our observations of their behavior.  In our neural example, recording
+techniques can often provide a measure of the neurons' activity but
+cannot resolve the individual synaptic connections between neurons.
+Given our knowledge of how synapses work, however, we might infer that
+if one neuron consistently fires shortly after another then there is
+likely an excitatory connection between them.
 
+This is one example of the \emph{latent network discovery} problem.
+We improve upon previous work by providing a discrete-time analogue of
+the Hawkes process that is considerably more efficient on datasets
+with high rates of activity, and by devising an efficient stochastic
+variational inference (SVI) algorithm that can scale to long sequences
+of observations.  Most previous work has relied upon Markov chain
+Monte Carlo (MCMC) methods for inference, which must consider the
+entire observation sequence when evaluating the likelihood of a state,
+and which can be prone to poor convergence.  SVI provides an
+alternative method of inference that can work with mini-batches (small
+subsets) of observations per iteration, and has been shown to yield
+dramatic improvements in a variety of large-scale machine learning
+problems.
+
+% Hawkes figure
+\begin{figure}[t]
+  \begin{center}
+    % Figure 1a
+    \begin{subfigure}[b]{2.34in}
+      \caption{Hawkes process dynamics}
+      \centering
+      \includegraphics[width=\textwidth]{figures/ch2b/figure1a.pdf} 
+      \label{fig:hawkes_a}
+    \end{subfigure}
+    % Figure 1b
+    \begin{subfigure}[b]{0.81in}
+      \caption{Weighted Network}
+      \centering
+      \includegraphics[width=\textwidth]{figures/ch2b/figure1b.pdf} 
+      \label{fig:hawkes_b}
+    \end{subfigure}
+    % Figure 1c
+    \begin{subfigure}[b]{2.10in}
+      \caption{Impulse responses}
+      \centering
+      \includegraphics[width=\textwidth]{figures/ch2b/figure1c.pdf} 
+      \label{fig:hawkes_c}
+    \end{subfigure}
+  \end{center}
+  % Main caption
+  \caption[Components of the discrete time Hawkes process model]{
+    Components of the Network Hawkes process model.
+    \textbf{(a)} Events induce weighted impulse responses on downstream processes, spawning more events according to the Hawkes process dynamics.
+    \textbf{(b)} Underlying these dynamics is a weighted, directed network. Here, the network is a stochastic block model with two clusters of processes (red and blue). Processes primarily connect to others of the same type, though there is a small probability of connection from red to blue.
+    \textbf{(c)} We model the impulse responses as a convex combination of normalized basis functions.}
+\label{fig:discrete_hawkes}
+\end{figure}
+% End figure  1
+
+\section{The Discrete Time Network Hawkes Model}
+Hawkes processes \cite{Hawkes-1971} are multivariate point processes
+that relate excitatory interaction networks to sets of discrete
+events.  As with the more familiar Poisson process, the number of
+observed events in a particular time window follows a Poisson
+distribution, but in a Hawkes process disjoint time intervals are no
+longer independent.  This is because the Hawkes process allows events
+to influence the future intensity, or rate.  For example, suppose we
+have a Hawkes process with two constituent processes.  An event on the
+first process could add an \emph{impulse response} to the future rate
+of the second process.  More generally, a multivariate Hawkes process
+consists of~$N$ individual point processes with
+rates~${\{\lambda_n(t)\}_{n=1}^N}$ that depend upon the events that
+have occurred up to time~$t$.
+
+Hawkes processes have additive, excitatory interactions.  Each event
+adds a nonnegative impulse response to the future rate of connected
+processes.  In continuous time, the rate of the~$n$-th process is
+\begin{align}
+\label{eq:cont_hawkes_rate}
+ \lambda_{n}(t) &= \lambda_n^{(0)} + \sum_{m=1}^{M} h_{c_{m} \to n}(t-s_{m}),
+\end{align}
+where~${\{s_m, c_m\}_{m=1}^{M}}$ is a set of marked spikes where~$s_m
+\in [0,T]$ denotes the time of the spike and~${c_m \in \{1, \ldots
+  ,N\}}$ is the neuron on which it occurred. The rate is a linear
+function of the background rate,~$\lambda_n^{(0)}$, and the impulse
+response functions,~${h_{n' \to n}(\Delta t)}$, that govern the
+amplitude of influence that events on neuron~$n'$ have on the rate of
+neuron~$n$ at time lag~${\Delta t}$. As before, causality and locality
+of influence are enforced by limiting the support of the impulse responses
+to~$(0, \Delta t_{\mathsf{max}}]$.
+
+
+The fundamental limitation of the previously developed continuous time
+models is that the number of values that the auxiliary
+variable~$\omega_m$ can take grows with the number of events which
+occurred before time~$s_{m}$. For datasets with high rates of
+activity, this can quickly become the limiting factor of the inference
+algorithm.  At the same time, it is often reasonable to assume that
+events do not interact on time scales faster that~$\Delta t$. This
+motivates a discrete time formulation in which we bin events in bins
+of width~$\Delta t$ and ignore potential interactions between events
+in the same bin. Then the rate becomes,
+\begin{align}
+\label{eq:disc_hawkes_rate}
+\lambda_{t,n} &= \lambda_n^{(0)} +
+\sum_{n' = 1}^N \sum_{t'=1}^{t-1} s_{t',n'} \cdot h_{n' \to n}[t-t'], \\
+s_{t,n} &\sim \distPoisson(\lambda_{t,n} \cdot \Delta t),
+\end{align}
+where~$s_{t,n}$ is the number of spikes fired by neuron~$n$ at time~$t$
+and~${h_{n' \to n}[t-t']}$ is an impulse response function describing
+the influence that events on neuron~$n'$ have on the
+rate of process~$n$ at discrete time lag~${t-t'}$. As we will show,
+under this formulation the auxiliary variables only assume a fixed set
+of values independent of the rate.
+
+In order to incorporate the network model as a prior distribution for
+the Hawkes process, we follow the approach of~\citet{Linderman-2014}
+and decompose the impulse response function into the product of a
+scalar weight that specifies the strength of the interaction and a
+probability mass function that specifies the time course of
+interaction:
+\begin{align*}
+  h_{n \to n'}[d]
+  &= a_{n \to n'} \cdot w_{n \to n'} \cdot \hbar[d; \, \btheta_{n \to n'}] 
+\end{align*}
+for~${d \in\{1,\ldots,D\}}$.  
+
+The function~${\hbar[d]: \{1, \ldots, D\} \to
+  [0,1]}$ is now a probability mass function.  We model itas a convex
+combination of basis functions,~$\bphi_b$, that integrate to one,
+\begin{align*}
+  \hbar[d; \, \btheta_{n \to n'}]
+  &\triangleq \sum_{b=1}^B \theta_{n \to n'}^{(b)} \cdot \phi_b[d], \\
+  \sum_{d=1}^D \phi_b[d] \cdot \Delta t  &= 1, \\
+  \sum_{b=1}^B \theta_{n \to n'}^{(b)} &= 1.
+\end{align*}
+We enforce this constraint with a Dirichlet
+prior~${\btheta_{n \to n'} \sim \distDirichlet(\bgamma)}$.
+
+Plugging this into~Eq.~\ref{eq:disc_hawkes_rate} yields,
+\begin{align*}
+  \lambda_{t,n'} &=
+  \lambda_{n'}^{(0)} +
+  \sum_{n = 1}^N  \sum_{b=1}^B a_{n \to n'} \cdot w_{n \to n'} \cdot 
+  \theta_{n \to n'}^{(b)} \sum_{t'=1}^{t-1} s_{t',n} \cdot \phi_b[d] \\
+  &=
+  \lambda_{n'}^{(0)} +
+  \sum_{n' = 1}^N  \sum_{b=1}^B a_{n \to n'} \cdot w_{n \to n'} \cdot
+  \theta_{n \to n'}^{(b)} \cdot  \widehat{s}_{t,n,b},
+\end{align*}
+where
+\begin{align*}
+  \widehat{s}_{t,n,b} &\triangleq \left(\bs_n \ast \bphi_b\right)[t],
+\end{align*}
+is the discrete convolution of the~$n$-th spike train with
+the~$b$-th basis function evaluated at the~$t$-th time bin.
+Since both the spike trains and the basis functions are given,
+these can be precomputed.
+
+%Intuitively, the weight~$W_{k\to k'}$ specifies how many child events
+%on process~$k'$ will be caused by a single event on process~$k$.
+%Then, $G_{k \to k'}[d]$ specifies the probability that the child event
+%will occur at lag~$d \Delta t$.  In fact, this procedure is the basis
+%of a recursive algorithm for generating samples from the discrete time
+%Hawkes process.
+
+Figure~\ref{fig:discrete_hawkes} illustrates the basic components of the model.
+We have a stochastic block model with two types of processes (red and
+blue) that preferentially interact with processes of the same type.
+Events induce weighted impulse responses on downstream processes
+according to an underlying latent network (Fig.~\ref{fig:hawkes_b}).
+The impulse responses,~${\hbar_{n \to n'}[d]}$, are modeled as a convex
+combination of basis functions (Fig~\ref{fig:hawkes_c}).  The impulse
+response is weighted according to the strength of the
+connection,~$w_{n \to n'}$ before being added to the rate of
+downstream processes. \todo{update the figure}
+
+\section{Inference with Gibbs Sampling}
+
+% Discrete vs continuous figure
+\begin{figure}{r}{2.5in}
+  \centering
+  \includegraphics[width=2.5in]{figures/ch2b/discrete_cont_comparison}
+  \caption[Runtime comparison of continuous and discrete time Hawkes models]{
+    Comparison of run time per Gibbs sweep for the discrete and continuous network Hawkes formulations. Best fit lines added.}
+  \label{fig:disc_vs_cont}
+\end{figure}
+
+As before, we begin by introducing auxiliary parent variables for each
+entry~$s_{t,n}$.  By the superposition theorem for Poisson processes,
+each event can be attributed to either the background rate or one of
+the impulse responses.
+
+Let~${\omega_{t,n'}^{(n,b)} \in \{0,\ldots, s_{t,n'}\}}$ denote how
+many of the events that occurred in the~$t$-th time bin on the~$n'$-th
+neuron are attributed to the~$b$-th basis function of the~$n$-th
+neuron.  Similarly, let~${\omega_{t,n'}^{(0)}}$ denote the number of
+events attributed to the background process. We combine these
+auxiliary variables into vectors,~${\bomega_{t,n'}\triangleq
+  \left[\omega_{t,n'}^{(0)}, \omega_{t,n'}^{(1,1)}, \ldots,
+    \omega_{t,n'}^{(N,B)} \right]}$.
+
+Due to the Poisson superposition principle, these parent variables are
+conditionally multinomial distributed.  For time~$t$ and neuron~$n'$,
+we resample
+\begin{align*}
+\bomega_{t,n'} &\sim \distMultinomial \left(s_{t,n'}, \bu_{t,n'} \right) & 
+u_{t,n'}^{(0)} &= \frac{\lambda_{0,n'}[t]}{\lambda_{n'}[t]}, &
+u_{t,n'}^{(n,b)} &= \frac{\hat{s}_{t,n,b} \cdot a_{n \to n'} \cdot w_{n \to n'} \cdot \theta_{n \to n'}^{(b)}}{\lambda_{n'}[t]}\, .
+\end{align*}
+Given this attribution, the likelihood factorizes into a product of
+Poisson distributions,
+\begin{multline*}
+  p(\bomega \given \blambda) =
+  \left[\prod_{t=1}^T \prod_{n'=1}^N \distPoisson(\omega_{t,n'}^{(0)} \given \lambda_{n'}^{(0)} \Delta t)\right]  \\
+  \times
+  \left[ \prod_{t=1}^T \prod_{n=1}^N \prod_{n'=1}^N \prod_{b=1}^B
+    \distPoisson(\omega_{t,n'}^{(n,b)} \given
+    \hat{s}_{t,n,b} \cdot a_{n \to n'} \cdot w_{n \to n'} \cdot \theta_{n\to n'}^{(b)} \cdot \Delta t)\right].
+\end{multline*}
+
+\paragraph{Gibbs sampling the background rates.}
+We use conjugate priors for the constant background rates, weights,
+and impulse responses.  For the constant background rates we have,
+${\lambda_{n'}^{(0)} \sim\distGamma(\alpha_\lambda, \beta_\lambda)}$,
+which results in the conditional distribution
+\begin{align*}
+\lambda_{n'}^{(0)} \given \{\omega_{t,n'}^{(0)}\} &\sim
+\distGamma(\alpha_\lambda^{(n)}, \beta_\lambda^{(n)}), \\
+\alpha_\lambda^{(n)} &= \alpha_\lambda + \sum_{t=1}^T \omega_{t,n'}^{(0)}, \\
+\beta_\lambda^{(n)} &= \beta_\lambda + T \Delta t\,.
+\end{align*}
+
+\paragraph{Gibbs sampling impulse responses.}
+The likelihood of the impulse responses,~$\btheta_{n \to n'}$ is
+proportional to a Dirichlet distribution.  Combined with
+a~$\text{Dirichlet}(\bgamma)$ prior this yields
+\begin{align*}
+  \btheta_{n \to n'} \given \{\omega_{t,n}^{(n',b)}\}, \bgamma
+  &\sim \distDirichlet\left( \bgamma_{n \to n'} \right), \\
+  \gamma_{n \to n'}^{(b)} &=  \gamma_b + \sum_{t=1}^T \omega_{t,n'}^{(n, b)}\,.
+\end{align*}
+
+\paragraph{Gibbs sampling the weighted adjacency matrix.}
+As before, the weights are conjugate with a gamma
+prior,~$\distGamma(\kappa, \nu)$.  Given the adjacency matrix~$\bA$
+and the auxiliary parent variables, the conditional distribution is,
+\begin{align*}
+  w_{n \to n'} \given a_{n \to n'}\!=\!1
+  &\sim \distGamma(\kappa^{(n,n')}, \nu^{(n,n')}), \\
+  \kappa^{(n,n')} &= \kappa +\! \sum_{t=1}^T \sum_{b=1}^B \omega_{t,n'}^{(n,b)}, \\
+  \nu^{(n,n')} &= \nu +\! \sum_{t=1}^T s_{t,n}.
+\end{align*}
+As in the previous chapter, in order to resample~$\bA$, we iterate over
+each entry and sample from the marginal distribution after integrating
+out the parents. We assume the parameters of the network prior can be
+sampled efficiently -- a reasonable assumption for many random network
+models.
+
+The continuous time representation introduces a latent ``parent''
+variable for each event in the dataset, and the parent can be any one
+of the events that occurred in the preceding window of influence. Call
+the number of potential parents~$M$. The discrete time representation
+has a multinomial r.v. for each time bin that contains at least one
+event, and the support of this multinomial is always a fixed
+size,~${NB+1}$.  When the rate of events is high, $NB+1 \ll M$,
+allowing for dramatic improvements in efficiency in the discrete case.
+
+Figure~\ref{fig:disc_vs_cont} shows the time per full Gibbs sweep as a
+function of the number of events per discrete time bin for the
+discrete and continuous formulations. The discrete formulation incurs
+a constant penalty whereas the continuous formulation quickly grows
+with the event rate. For low rates, the continuous formulation can be
+advantageous, but the discrete model is vastly superior in many
+realistic settings. For example, Linderman and Adams worked with
+trades on the S\&P100, which occur tens or hundreds of times per
+second for each stock. Since the complexity of their algorithm grows
+with the number of events, they down-sampled the data to consider only
+the times when a stock price significantly changed.
+
+\section{Stochastic Variational Inference}
+The discrete time formulation offers advantageous complexity compared
+to the continuous analogue, but it still must resample the entire set
+of parents each iteration in order to maintain the invariance of the
+posterior distribution. In many cases, a mini-batch of time bins can
+provide substantial information about the global parameters of the
+model, and rapid progress can be made by iterating quickly over
+subsets of the data. This motivates our derivation of a stochastic
+variational inference (SVI) algorithm for the network Hawkes process.
+
+Variational methods optimize a lower bound on the marginal likelihood
+by minimizing the KL-divergence between a tractable approximating
+distribution and the true posterior. Since the data-local parents
+variables are conditionally independent given the global
+parameters~($\bW$,~$\btheta$,~etc.), our variational approach will
+easily extend to the stochastic setting in which we compute unbiased
+estimates of the gradient of the variational objective using
+mini-batches of data.
+
+The primary impediment to deriving a variational approximation is the
+nonconjugacy of the spike-and-slab prior on the weights.  To overcome
+this, we approximate the spike-and-slab prior with a mixture of gamma
+distributions, as has previously explored by~\citet{Grabska-2013}:
+\begin{align*}
+q(a_{n \to n'}) &= \distBernoulli(a_{n \to n'} \given \widetilde{p}_{n \to n'}), \\
+q(w_{n \to n'} \given a_{n \to n'}) &=
+\begin{cases} 
+\distGamma(w_{n \to n'} \given \widetilde{\kappa}_1^{(n, n')}, \widetilde{\nu}_1^{(n,n')}, a_{n \to n'} =1), \\
+\distGamma(w_{n \to n'} \given \widetilde{\kappa}_0^{(n, n')}, \widetilde{\nu}_0^{(n, n')}, a_{n \to n'} =0)\,.
+\end{cases}
+\end{align*}
+As~$\kappa_0 \to 0$ and~$v_0\to \infty$, the gamma distribution
+approaches a spike at zero.
+
+We use a fully-factorized variational approximation except for a joint
+factor for each connection,~$a_{n\to n'}$ and $w_{n \to n'}$.  Since
+the model is fully conjugate, the factors are easily derived.
+
+% Parents
+\paragraph{Variational updates for parent variables,~$q(\bomega_{t, n'})$} 
+For the parent variables, the variational updates are
+\begin{align*}
+q(\bomega_{t,n'}) &= \distMultinomial(\bomega_{t, n'} \given s_{t,n'}, \widetilde{\bu}_{t,n'}), \\
+\widetilde{u}_{t,n'}^{(0)} &= \frac{1}{Z} \exp\left\{\mathbb{E}_{\blambda}[\ln \lambda_{n'}^{(0)}]\right\}, \\
+\widetilde{u}_{t,n'}^{(n,b)} &= \frac{1}{Z} \hat{s}_{t,n,b} \exp\left\{\mathbb{E}_{\btheta} [\ln \theta_{n \to n'}^{(b)}] + \mathbb{E}_W[\ln w_{n \to n'}]\right\},
+\end{align*}
+where~$Z$ is the normalization constant.
+
+% Background rates
+\paragraph{Variational updates for background rates,~$q(\lambda_n^0)$}
+The variational form parameters of the gamma distribution over
+background rates are
+\begin{align*}
+q(\lambda_n^0) &= \distGamma(\lambda_n^{0} \given \widetilde{\alpha}_{\lambda}^{(n)}, \widetilde{\beta}_{\lambda}^{(n)}),  \\
+\widetilde{\alpha}_{\lambda}^{(n)} &= \alpha_\lambda + \sum_{t=1}^T \mathbb{E}_{\bomega}\left[ \omega_{t,n}^{(0)}\right], \\
+\widetilde{\beta}_{\lambda}^{(n)} &= \beta_\lambda + T \Delta t\,.
+\end{align*}
+
+
+% Impulse response parameters
+\paragraph{Variational approximation for impulse response parameters,~$q(\btheta_{n \to n'})$}
+With the conjugate prior formulation the variational parameter updates
+for the Dirichlet distributed impulse response parameters are
+\begin{align*}
+q(\btheta_{n \to n'}) &= \distDirichlet(\bn_{n \to n'} \given \widetilde{\bgamma}^{(n,n')}), \\
+\widetilde{\gamma}_b^{(n,n')} &= \gamma_{b} + \sum_{t=1}^T \mathbb{E}_{\bomega}\left[\omega_{t,n'}^{(n,b)}\right]\,.
+\end{align*}
+
+% Weights and adjacent matrix
+\paragraph{Variational approximation for the weighted adjacency matrix.}
+The primary motivation for adopting a weakly sparse mixture of gamma
+distributions is to derive an efficient variational inference
+algorithm.  The mixture-of-gammas prior is conjugate with the Poisson
+observations, and hence the variational distribution is also a mixture
+of gammas:
+\begin{align*}
+  q(w_{n \to n'} \given a_{n \to n'}=1)
+  &= \distGamma(w_{n \to n'} \given
+  \widetilde{\kappa}^{(n,n')}_1,
+  \widetilde{\nu}^{(n,n')}_1) \\
+  \widetilde{\kappa}^{(k,k')}_1
+  &= \kappa + \sum_{t=1}^T \sum_{b=1}^B \mathbb{E}_{\bomega}\left[\omega_{t,n'}^{(n,b)}\right] \\
+  \widetilde{\nu}^{(n,n')}_1
+  &= \nu + \sum_{t=1}^T s_{t,n}\,,
+\end{align*}
+and likewise for the ``spike'' factor,
+\begin{align*}
+  q(w_{n \to n'} \given a_{n \to n'}=0)
+  &= \distGamma(w_{n \to n'} \given
+  \widetilde{\kappa}^{(n,n')}_0,
+  \widetilde{\nu}^{(n,n')}_0) \\
+  \widetilde{\kappa}^{(k,k')}_0
+  &= \kappa_0 + \sum_{t=1}^T \sum_{b=1}^B \mathbb{E}_{\bomega}\left[\omega_{t,n'}^{(n,b)}\right] \\
+  \widetilde{\nu}^{(n,n')}_0
+  &= \nu_0 + \sum_{t=1}^T s_{t,n}\,,
+\end{align*}
+
+% Adjacency matrix
+This leaves us with~$q(a_{n \to n'})$, which is Bernoulli distributed
+with parameter~$\widetilde{p}_{n \to n'}$.  Collecting all the terms
+that include~$A_{n \to n'}$ and lack~$w_{n \to n'}$ yields
+\begin{multline*}
+ \frac{\widetilde{p}_{n \to n'}}{1-\widetilde{p}_{n \to n'}} =  \\
+ \frac{\exp\{\mathbb{E} [\ln p] \} }{\exp\{\mathbb{E}[\ln (1-p)] \}} \times 
+\frac{ (\exp\{\mathbb{E} [\ln \nu] \})^{\kappa} }{ \Gamma(\kappa)} \times 
+\frac{\Gamma(\widetilde{\kappa}^{(n,n')}_1)}{ (\widetilde{\nu}^{(n,n')}_1)^{\widetilde{\kappa}^{(n,n')}_1} } \times
+\frac{\Gamma(\kappa_0)}{ (\nu_0)^{\kappa_0} } \times
+\frac{(\widetilde{\nu}^{(n,n')}_0)^{\widetilde{\kappa}^{(n,n')}_0}}{ \Gamma(\widetilde{\kappa}^{(n,n')}_0)}\,.
+\end{multline*}
+
+% network model
+As with Gibbs sampling, we assume a variational approximation for the network model can be derived, and provide access to the necessary expectations,~$\mathbb{E}[\ln p]$, $\mathbb{E}[\ln(1-p)]$,~$\mathbb{E}[\nu]$ and~$\mathbb{E}[\ln \nu]$. 
+
+As aforementioned, the time bin are conditionally independent given the network weights and the adjacency matrix -- a common pattern exploited by stochastic variational inference (SVI) algorithms \cite{Hoffman-2013}.
+These methods optimize the variational objective using stochastic gradient methods that work with mini-batches of data.
+Often, a mini-batch of data can provide valuable information about the global parameters, in our case the network and background rates. 
+Quickly iterating over these global parameters allows us to reach good modes of the posterior distribution in a fraction of the time that standard variational Bayes and Gibbs sampling require, since those methods must process the entire dataset before making an update.
+SVI does require some tuning, however. In particular, we must set a mini-batch size and a step size schedule.
+In this work, we fix the mini-batch size to~${T_{\mathsf{mb}}=1024}$ and set the  step size at iteration~$i$ to~${(i+1)^{-0.5}}$.
+These parameters may be  tuned with general purpose hyperparameter optimization techniques \cite{Snoek-2012}.
+
+%% Synthetic Results 
+\section{Synthetic Results}
+
+% Predictive log likelihood vs run time (Short dataset)
+\begin{figure}[t!]
+  \begin{center}
+    % Short dataset
+    \begin{subfigure}[b]{0.48\linewidth}
+      \caption{Short dataset: $T=10^4$}
+      \centering
+      \includegraphics[width=2.625in]{figures/ch2b/figure2a.pdf} 
+      \label{fig:synth_pll_short}
+    \end{subfigure}
+    ~
+    % Longer dataset
+    \begin{subfigure}[b]{0.48\linewidth}
+      \caption{Long dataset: $T=10^5$}
+      \centering
+      \includegraphics[width=2.625in]{figures/ch2b/figure2b.pdf} 
+      \label{fig:synth_pll_long}
+    \end{subfigure}
+    %
+    \caption[Predictive log likelihood versus wall clock time]{
+      Predictive log likelihood versus wall clock time for three Bayesian inference algorithms on a dataset of~$K=50$ processes and~$T=10^4$ and~$T=10^5$ time bins on the left and right, respectively.}
+    \label{fig:synth_pll}
+  \end{center}
+\end{figure}
+
+
+We assess the performance of the proposed inference algorithms on a synthetic dataset generated by a strongly sparse Hawkes process with~${K=50}$ processes.
+We used a stochastic block model network prior with~${C=5}$ clusters, each consisting of ten densely connected processes~(${p_{c\to c}=0.4}$), with sparse connections to processes in other clusters~(${p_{c\to c'}=0.01}$).
+All weights share the same scale of~$v=5.0$, though this information is not provided \emph{a priori}.
+We simulate~${T=10^5}$ time bins in steps of size~${\Delta t=1}$.
+The processes have an mean background rate of~$1.0$ event per time bin and, due to the network interactions, the average total rate of the processes is~$16.7 \pm 12.0$ events per bin.
+Referring to Figure~\ref{fig:disc_vs_cont}, this is a regime that favors the discrete model.
+We initialized by performing MAP estimation on the first~$T_{\mathsf{init}}=10^4$.
+Then we trained the model using Gibbs sampling, batch variational Bayesian inference (VB), and stochastic variational inference (SVI) 
+
+We trained the models on only the first~$10^4$ time bins, the same that were used for initialization.
+We evaluated the algorithms in terms of their predictive log likelihood on a held-out dataset of length~$T_{\mathsf{test}}=10^3$.
+Figure~\ref{fig:synth_pll_short} shows the results as a function of wall-clock time.
+We find that SVI obtains competitive predictive log likelihood in a matter of minutes.
+Batch VB and Gibbs converge at a considerably slower rate, though they eventually match the SVI predictive likelihood after hours of computation.
+The MAP estimate, even with cross validated regularization, underperforms the other competing algorithms.
+
+This trend is amplified when we consider the entire training set of size~$T=10^5$.
+Figure~\ref{fig:synth_pll_long} illustrates the power of SVI in handling these large time datasets.
+Considerable information about the global parameters (e.g., the network) can be gained from just a mini-batch of time points.
+Hence, we can make rapid improvements in predictive log likelihood very quickly.
+By contrast, each step of the Gibbs and batch VB algorithms is approximately 10 times slower, and even after computing sufficient statistics over the entire dataset, the algorithm is only able to make limited progress per iteration.
+
+% Some results on a connectomics dataset
+\section{Connectomics Results}
+
+% Connectomics results
+\begin{figure}[t!]
+  \begin{center}
+    % a. the data
+    \begin{subfigure}[b]{0.32\linewidth}
+      \caption{}
+      \centering
+      \includegraphics[width=\textwidth]{figures/ch2b/figure3a.pdf} 
+      \label{fig:connectomics_data}
+    \end{subfigure}
+    % b. True network with block structure
+    ~
+    % c. ROC
+    \begin{subfigure}[b]{0.32\linewidth}
+      \caption{}
+      \centering
+      \includegraphics[width=\textwidth]{figures/ch2b/figure3d.pdf} 
+      \label{fig:connectomics_prc}
+    \end{subfigure}
+    ~
+    % d. Precision Recall
+    \begin{subfigure}[b]{0.32\linewidth}
+      \caption{}
+      \centering
+      \includegraphics[width=\textwidth]{figures/ch2b/chalearn_confidence.pdf} 
+      \label{fig:connectomics_zscore}
+    \end{subfigure}
+    % Main caption
+    \caption[Discrete time Hawkes process applied to connectomics challenge]{
+      Application of the network Hawkes model to a connectomics challenge.
+      \textbf{(a)} The data is in the form of a calcium fluorescence trace, which we preprocess to extract neural spike times.
+      \textbf{(b)} We measure performance on a link prediction task using a precision-recall curve and find that the posterior estimates of SVI provide the best estimates on some networks. In addition to an estimate of the connection probability and weight, SVI provides an estimate of the posterior uncertainty.
+      \textbf{(c)} Inferred $\mathbb{E}_q[\bA] / \text{std}_q[\bA]$ for the first 20 neurons. True connections are outlined in black.}
+    \label{fig:connectomics}
+  \end{center}
+\end{figure}
+
+We tested these inference algorithms on the data from the Chalearn neural connectomics challenge\footnote{\url{http://connectomics.chalearn.org}} \cite{Stetter-2012}.
+The data consist of calcium fluorescence traces,~$\bF$, from six networks of~$K=100$ neurons each. We use ten minutes of data at 50Hz sampling frequency to yield~$T=3\times 10^6$ entries in~$\bS$.
+In this case, the networks are purely excitatory, and each action potential, or spike, increases the probability of the downstream neurons firing as a result.
+This matches the underlying intuition of the Hawkes process model, making it a natural choice.  
+
+In order to apply the Hawkes model, we first convert the fluorescence traces into a spike count matrix using OOPSI, a Bayesian inference algorithm based on a model of calcium fluorescence \cite{Vogelstein-2010}.
+The output is a filtered fluorescence trace,~$\widehat{\bF}$, and a probability of spike for each time bin.
+We threshold this at probability~$0.7$ to get a~$T\times K$ binary spike matrix,~$\bs$.
+This preprocessing is shown in Figure~\ref{fig:connectomics_data}.
+
+Figure~\ref{fig:connectomics_prc} shows the precision-recall curve we used to evaluate the algorithms' performance on network recovery. As a baseline, we compare against simple thresholding of the cross correlation matrix. On Network 6, SVI offers the best network inference. Table 5 shows the results on the other five networks using the same model parameters. On 4/5 of these networks, the Bayesian methods offer the best performance. 
+
+Figure~\ref{fig:connectomics_zscore} illustrates one of the main advantages of the fully Bayesian inference algorithm -- calibrated estimates of posterior uncertainty. Here we show the SVI algorithm's estimate of the posterior mean of~$\bA$ normalized by the posterior standard deviation for a subset of 20 neurons from Network 6. We also outline the true connections to show that the most confident predictions are more likely to correspond to true connections. Such estimates of the posterior uncertainty are not available with standard heuristic methods or point estimates.
+
+% A fancy table with results for each of the networks
+\begin{table}
+  \centering
+  \resizebox{\textwidth}{!}{%
+    \begin{tabular}{ c||c|c||c|c||c|c||c|c||c|c }
+      %\hline
+      %\multirow{3}{*} \textbf{Algorithm} 
+      & \multicolumn{2}{c||}{Network 1}
+      & \multicolumn{2}{c||}{Network 2}
+      & \multicolumn{2}{c||}{Network 3}
+      & \multicolumn{2}{c||}{Network 4}
+      & \multicolumn{2}{c}{Network 5} \\
+      \cline{2-11}
+      Algorithm
+      & ROC & PRC
+      & ROC & PRC
+      & ROC & PRC
+      & ROC & PRC
+      & ROC & PRC \\
+      %\hhline{=#=|=#=|=#=|=#=|=#=|=}
+      \hline
+      xcorr & 0.596 & 0.139 & 0.591 & 0.133 & \bf{0.701} & \bf{0.198} & 0.745 & 0.296 & 0.798 & 0.359  \\
+      \hline
+      MAP & 0.607 & 0.174 & \bf{0.619} & \bf{0.143} & 0.698 & 0.178 & \bf{0.790} & 0.334 & \bf{0.859} & 0.408 \\
+      \hline
+      SVI  & \bf{0.649} & \bf{0.184} & 0.605 & 0.141  & 0.673 & 0.176 & 0.774 & \bf{0.342}  & 0.844 & \bf{0.410}\\
+      \hline
+    \end{tabular}
+  }
+  \caption[Comparison of inference algorithms on the Chalearn connectomics challenge]{Comparison of inference algorithms on link prediction for five networks from the Chalearn connectomics challenge. Performance is measured by area under the ROC curve and area under the precision recall curve (PRC). In four of the five networks a Hawkes process model provides the best results.}
+\end{table}
+
+\begin{comment}
 \section{Related Work}
-The GLM is a probabilistic model that considers spike trains to be
-realizations from a point process with conditional rate~$\lambda(t)$
-\cite{Paninski-2004, Truccolo-2005}. From a biophysical perspective,
-we interpret this rate as a nonlinear function of the cell's membrane
-potential. When the membrane potential exceeds the spiking threshold
-potential of the cell,~$\lambda(t)$ rises to reflect the rate of the
-cell's spiking, and when the membrane potential decreases below the
-spiking threshold,~$\lambda(t)$ decays to zero. The membrane potential
-is modeled as the sum of three terms: a linear function of the
-stimulus,~${\bI(t)}$, for example a low-pass filtered input current,
-the sum of excitatory and inhibitory PSPs induced by presynaptic
-neurons, and a constant background rate. In a network of $N$ neurons,
-let~${\mathcal{S}_{n}=\{s_{n,m}\}_{m=1}^{M_n} \subset [0,T]}$ be the
-set of observed spike times for neuron~$n$, where~$T$ is the duration
-of the recording and~$M_n$ is the number of spikes. The conditional
-firing rate of a neuron~$n$ can be written,
-\begin{align}
-  \lambda_{n}(t) &= g\left(b_n + \int_0^t \bk_n(t-\tau) \cdot \bI(\tau)\,\mathrm{d} \tau + \sum_{n'=1}^N\sum_{m=1}^{M_{n'}} h_{n'\to n}(t-s_{n',m}) \cdot \bbI[s_{n',m} < t] \right),
-  \label{eqn:glm_rate}
-\end{align}
-where~$b_n$ is the background rate, the second term is a convolution
-of the (potentially vector-valued) stimulus with a linear stimulus
-filter,~${\bk_n(\Delta t)}$, and the third is a linear summation of
-impulse responses,~$h_{n'\to n}(\Delta t)$, which preceding spikes on
-neuron~$n'$ induce on the membrane potential of neuron~$n$. Finally,
-the rectifying nonlinearity~${g:\reals\to \reals_+}$ converts this
-linear function of stimulus and spike history into a nonnegative
-rate. While the spiking threshold potential is not explicitly modeled
-in this framework, it is implicitly inferred in the amplitude of the
-impulse responses.
+The Hawkes process is closely related to the generalized linear model (GLM) with Poisson observations, which is widely used in computational neuroscience \cite{Paninski-2004, Pillow-2008}.  
+In fact, the Hawkes process is a special case of the Poisson GLM in which the link function is linear and the impulse responses are non-negative. 
+As in the Poisson GLM, the negative log likelihood of the Hawkes process is convex enabling efficient maximum likelihood and maximum a posteriori estimation. 
+The advantage of the Hawkes process is that its linear form allows for elegant fully Bayesian inference -- a task which is non-trivial  in the Poisson GLM due to the lack of conjugacy. With these Bayesian inference algorithms, we can estimate and reason under the posterior uncertainty of the model.
 
-\begin{figure}[t!]
-  \centering
-  \begin{subfigure}[T]{5.25in}
-    \includegraphics[width=\textwidth]{figures/ch4/figure1}    
-  \end{subfigure}
-  \caption[A simple example of a GLM with time-varying synaptic weights]{
-    A simple network of four sparsely connected neurons whose
-    synaptic weights are changing over time. Here, the neurons have
-    inhibitory self connections to mimic refractory effects, and are
-    connected via a chain of excitatory synapses, as indicated by the
-    nonzero entries~$A_{1\to 2}$,~$A_{2 \to 3}$, and~$A_{3\to 4}$. The
-    corresponding weights of these synapses are strengthening over time
-    (darker entries in~$\bW$), leading to larger impulse responses in
-    the firing rates and a greater number of induced post-synaptic
-    spikes (black dots), as shown below.}
-  \label{fig:model_illustration}
-\end{figure}
+One of the earliest applications of Hawkes processes in machine
+learning was the work of~\citet{Simma-2010}, which developed an
+expectation-maximization algorithm based upon the auxiliary variable
+parent formulation. Observing that~$\lambda_{k}(t)$ is a sum of
+impulse responses, \citet{Simma-2010} invoked the Poisson
+superposition principle to motivate a set of auxiliary ``parent''
+variables,~$z_{k,n}$, which denote the origin of the~$n$-th event on
+process~$k$, either the background rate or an impulse response from a
+previous event. Conditioned upon these auxiliary variables, the
+likelihood factorizes over impulse responses.
 
-From this semi-biophysical perspective it is clear that one
-shortcoming of the standard GLM is that it does not account for
-time-varying connectivity, despite decades of research showing that
-changes in synaptic weight occur over a variety of time scales and are
-the basis of many fundamental cognitive processes. This absence is
-due, in part, to the fact that this direct biophysical interpretation
-is not warranted in most traditional experimental regimes, e.g., in
-multi-electrode array (MEA) recordings where electrodes are relatively
-far apart.  However, as high resolution optical recordings grow in
-popularity, this assumption must be revisited; this is a central
-motivation for the present model.
+%\TODO{reference Iwata and Zhou -- stochastic EM, convex optimization}
+Subsequent works leveraged this intuition to extend Hawkes processes with interpretable prior distributions over the network of impulse responses.
+\citet{Blundell-2012} introduced an infinite relational model prior over the network of interactions as well as a Gibbs sampling algorithm for fully Bayesian inference.
+\citet{Dubois-2013} explored the use of infinite relational models as a prior in conjunction with a point process observation model build on a Gibbs sampling algorithm.
+Recently,~\citet{Linderman-2014} developed a general framework for combining random ``spike-and-slab'' network models with Hawkes processes that uses a continuous time formulation and an auxiliary Gibbs sampling inference algorithm.
+\citet{Guo-2014} have developed a similar model that focuses on applying Hawkes processes to language modeling and incorporating features of the discrete events.
 
-There have been a few efforts to incorporate dynamics into the
-GLM. \citet{Stevenson-2011} extended the GLM to take inter-spike
-intervals as a covariates and formulated a generalized bilinear model
-for weights. \citet{Eldawlatly-2010} modeled the time-varying
-parameters of a GLM using a dynamic Bayesian network (DBN). However,
-neither of these approaches accommodate the breadth of synaptic
-plasticity rules present in the literature. For example, parametric
-STDP models with hard bounds on the synaptic weight are not congruent
-with the convex optimization techniques used by \cite{Stevenson-2011},
-nor are they naturally expressed in a DBN. Here we model time-varying
-synaptic weights as a potentially nonlinear dynamical system and
-perform inference using particle MCMC.
+We extend the work of \citet{Linderman-2014} by addressing two shortcomings: the limited scalability of the continuous time formulation which introduces auxiliary variables for each event in the dataset, and the batch nature of their Gibbs sampling algorithm. We address the former by deriving a discrete time version of their model which vastly outperforms the continuous time version on datasets with high rates of activity. To overcome the batch nature of the Gibbs algorithm, we make an approximation to the spike-and-slab network model that renders the model fully conjugate, thereby enabling efficient stochastic variational inference \cite{Hoffman-2013} on mini-batches of data.
+\end{comment}
 
-Nonstationary, or time-varying, models of synaptic weights have also
-been studied outside the context of GLMs. For example,
-\citet{Petreska-2011} applied hidden switching linear dynamical
-systems models to neural recordings. This approach has many merits,
-especially in traditional MEA recordings where synaptic connections
-are less likely and nonlinear dynamics are not necessarily
-warranted. Outside the realm of computational neuroscience and spike
-train analysis, there exist a number of dynamic statistical models,
-such as \citet{West-1985}, which explored dynamic generalized linear
-models. However, the types of models we are interested in for studying
-synaptic plasticity are characterized by domain-specific transition
-models and sparsity structure, and until recently, the tools for
-effectively performing inference in these models have been limited.
-
-
-\section{A Sparse Time-Varying Generalized Linear Model}
-In order to capture the time-varying nature of synaptic weights, we
-extend the standard GLM by first factoring the impulse responses in
-the firing rate of Equation~\ref{eqn:glm_rate} into a product of three
-terms:
-\begin{align}
-\label{eqn:tvwglm_ir}
-h_{n' \to n}(\Delta t, t) \equiv A_{n'\to n}\,W_{n' \to n}(t)\,r_{n' \to n}(\Delta t).
-\end{align}%\todo{weird notation to have both $\Delta t$ and $t$.  why not just parameterize with $t$ and $t'$?}
-Here,~${A_{n'\to n}\in\{0,1\}}$ is a binary random variable indicating
-the presence of a direct synapse from neuron~$n'$ to
-neuron~$n$,~~${W_{n'\to n}(t): [0,T]\to \reals}$ is a non stationary
-synaptic ``weight'' trajectory associated with the synapse, and~$r_{n'
-  \to n}(\Delta t)$ is a nonnegative, normalized impulse response,
-i.e. ~${\int_0^\infty r_{n' \to n}(\tau)\mathrm{d}\tau =
-  1}$. Requiring~${r_{n' \to n}(\Delta t)}$ to be normalized gives
-meaning to the synaptic weights: otherwise~$W$ would only be defined
-up to a scaling factor. For simplicity, we assume~$r(\Delta t)$ does
-not change over time, that is, only the amplitude and not the duration
-of the PSPs are time-varying. This restriction could be adapted in
-future work.
-
-As is often done in GLMs, we model the normalized impulse responses as
-a linear combination of basis functions. In order to enforce the
-normalization of~$r(\cdot)$, however, we use a \emph{convex}
-combination of normalized, nonnegative basis functions. That is,
-\begin{align*}
-r_{n' \to n}(\Delta t) \equiv \sum_{b=1}^B \beta^{(n' \to n)}_{b}\, r_b(\Delta t),
-\end{align*}
-where~${\int_0^\infty r_b(\tau)\,\mathrm{d} \tau = 1,\,\forall b}$ and ${\sum_{b=1}^B \beta^{(n' \to n)}_{b} = 1,\,\forall n,n'}$. The same approach is used to model the stimulus filters,~$\bk_n(\Delta t)$, but without the normalization and non-negativity constraints.
-
-The binary random variables~$A_{n' \to n}$, which can be collected
-into an~${N\times N}$ binary matrix~$\bA$, model the connectivity of
-the synaptic network. Similarly, the collection of weight
-trajectories~${\{\{W_{n' \to n}(t)\}\}_{n',n}}$, which we will
-collectively refer to as~$\bW(t)$, model the time-varying synaptic
-weights. This factorization is often called a \emph{spike-and-slab}
-prior \cite{Mitchell1988}, and it allows us to separate our prior
-beliefs about the structure of the synaptic network from those about
-the evolution of synaptic weights. For example, in the most general
-case we might leverage a variety of random network models
-\cite{Lloyd-2012} as prior distributions for~$\bA$, but here we limit
-ourselves to the simplest network model, the Erd\H{o}s-Renyi
-model. Under this model, each~$A_{n' \to n}$ is an independent
-identically distributed Bernoulli random variable with sparsity
-parameter~$\rho$.
-
-Figure~\ref{fig:model_illustration} illustrates how the adjacency
-matrix and the time-varying weights are integrated into the GLM. Here,
-a four-neuron network is connected via a chain of excitatory synapses,
-and the synapses strengthen over time due to an STDP rule. This is
-evidenced by the increasing amplitude of the impulse responses in the
-firing rates.  With larger synaptic weights comes an increased
-probability of postsynaptic spikes, shown as black dots in the
-figure. In order to model the dynamics of the time-varying synaptic
-weights, we turn to a rich literature on synaptic plasticity and
-learning rules.
-
-\subsection{Learning rules for time-varying synaptic weights}
-Decades of research on synapses and learning rules have yielded a
-plethora of models for the evolution of synaptic weights
-\cite{Caporale-2008}. In most cases, this evolution can be written as
-a dynamical system,
-\begin{align*} \frac{\mathrm{d} \bW(t)}{\mathrm{d} t} &= \ell\left(\bW(t), \, \{s_{n,m} : s_{n,m} < t\} \,\right) + \epsilon(\bW(t), t),
-\end{align*}
-where~$\ell$ is a potentially nonlinear \emph{learning rule} that
-determines how synaptic weights change as a function of previous
-spiking. This framework encompasses rate-based rules such as the Oja
-rule \cite{Oja-1982} and timing-based rules such as STDP and its
-variants. The additive noise,~${\epsilon(\bW(t), t)}$, need not be
-Gaussian, and many models require truncated noise distributions.
-
-Following biological intuition, many common learning rules factor into
-a product of simpler functions. For example, STDP (defined below)
-updates each synapse independently such that~${\mathrm{d}W_{n' \to
-    n}(t)/\mathrm{d}t}$ only depends on~${W_{n'\to n}(t)}$ and the
-presynaptic spike history~${\mathcal{S}_{n<t}=\{s_{n,m} : s_{n,m} <
-  t\}}$. Biologically speaking, this means that plasticity is local to
-the synapse. More sophisticated rules allow dependencies among the
-columns of~$\bW$. For example, the incoming weights to neuron~$n$ may
-depend upon one another through normalization, as in the Oja rule
-\cite{Oja-1982}, which scales synapse strength according to the total
-strength of incoming synapses.
-%Our model can capture all of these rules, leveraging various conditional independence structures as in the the directed graphical model shown in Figure~\ref{fig:graphical_model}.
-
-Extensive research in the last fifteen years has identified the
-relative spike timing between the pre- and postsynaptic neurons as a
-key component of synaptic plasticity, among other factors such as mean
-firing rate and dendritic depolarization \cite{Feldman-2012}. STDP is
-therefore one of the most prominent learning rules in the literature
-today, with a number of proposed variants based on cell type and
-biological plausibility. In the experiments to follow, we will make
-use of two of these proposed variants. First, consider the canonical
-STDP rule with a ``double-exponential" function parameterized by
-$\tau_-$, $\tau_+$, $A_-$, and $A_+$ \cite{Song-2000}, in which the
-effect of a given pair of pre-synaptic and post-synaptic spikes on a
-weight may be written:
-\begin{align}
-\label{eqn:AddSTDP}
- \ell\left(W_{n' \to n}(t), \mathcal{S}_{n'}, \mathcal{S}_{n} \right) &= 
- \;\bbI[t \in \mathcal{S}_{n}]\, \ell_+(\mathcal{S}_{n'}; A_+, \tau_+) 
- \;-\;\bbI[t \in \mathcal{S}_{n'}]\, \ell_-(\mathcal{S}_{n}; A_-, \tau_-),
-\end{align}
-\begin{align*}
-\ell_+(\mathcal{S}_{n'}; A_+, \tau_+) &= \sum_{s_{n',m}\in \mathcal{S}_{n'<t}}  A_+\,e^{(t-s_{n',m})/ \tau_+} &
-\ell_-(\mathcal{S}_{n}; A_-, \tau_-) &= \sum_{s_{n,m}\in \mathcal{S}_{n<t}} A_-\,e^{(t-s_{n,m})/\tau_-}.
-\end{align*}
-This rule states that weight changes only occur at the time of pre- or
-post-synaptic spikes, and that the magnitude of the change is a
-nonlinear function of interspike intervals.
-%However, this model assumes that synaptic weights are unbounded from
-%above and may change sign, both of which are implausible assumptions
-%for a fixed excitatory or inhibitory neuron with saturating synaptic
-%weight.  This type of model may be captured with the generalized
-%bilinear model of \citet{Stevenson-2011} by treating the interspike
-%intervals as covariates.
-
-A slightly more complicated model known as the multiplicative STDP
-rule extends this by bounding the weights above and below
-by~$W_{\mathsf{max}}$ and~$W_{\mathsf{min}}$, respectively
-\cite{Morrison-2008}. Then, the magnitude of the weight update is
-scaled by the distance from the threshold:
-% Mathematically this rule may be written,
-\begin{align}
- \label{eqn:MultSTDP}
- \ell\left(W_{n' \to n}(t), \mathcal{S}_{n'}, \mathcal{S}_{n} \right) = 
- \;&\bbI[t \in \mathcal{S}_{n}]\;  \tilde\ell_+(\mathcal{S}_{n'}; A_+, \tau_+) \;(W_{\mathsf{max}}-W_{n'\to n}(t)), \nonumber \\
-  \;-\; &\bbI[t \in \mathcal{S}_{n'}]\;  \tilde\ell_-(\mathcal{S}_{n}; A_-, \tau_-)\;(W_{n'\to n}(t)-W_{\mathsf{min}}).
-\end{align}
-Here, by setting ${\tilde\ell_\pm = \min(\ell_\pm,1)}$, we enforce
-that the synaptic weights always fall within~${[W_{\mathsf{min}},
-    W_{\mathsf{max}}]}$. With this rule, it often makes sense to set
-$W_{\mathsf{min}}$ to zero.
-
-Similarly, we can construct an additive, bounded model which is
-identical to the standard additive STDP model except that weights are
-thresholded at a minimum and maximum value. In this model, the weight
-never exceeds its set lower and upper bounds, but unlike the
-multiplicative STDP rule, the proposed weight update is independent of
-the current weight except at the boundaries. Likewise, whereas with
-the canonical STDP model it is sensible to use Gaussian noise
-for~$\epsilon(t)$ in the bounded multiplicative model we use truncated
-Gaussian noise to respect the hard upper and lower bounds on the
-weights.  Note that this noise is dependent upon the current
-weight,~$W_{n'\to n}(t)$.
-
-The nonlinear nature of this rule, which arises from the
-multiplicative interactions among the parameters,~${\theta_\ell =
-  \{A_+,\tau_+,A_-,\tau_-,W_{\mathsf{max}}, W_{\mathsf{max}}\}}$,
-combined with the potentially non-Gaussian noise models, pose
-substantial challenges for inference. However, the computational cost
-of these detailed models is counterbalanced by dramatic expansions in
-the flexibility of the model and the incorporation of \emph{a priori}
-knowledge of synaptic plasticity. These learning models can be
-interpreted as strong regularizers of models that would otherwise be
-highly underdetermined, as there are~$N^2$ weight trajectories and
-only~$N$ spike trains. In the next section we will leverage powerful
-new techniques for Bayesian inference in order to capitalize on these
-expressive models of synaptic plasticity.
-
-\section{Inference via particle MCMC}
-The traditional approach to inference in the standard GLM is penalized
-maximum likelihood estimation. The log likelihood of a single
-conditional Poisson process is well known to be,
-\begin{align}
-\label{eqn:glm_lkhd}
-\mathcal{L}\left(\lambda_n(t);\;\{\mathcal{S}_n\}_{n=1}^N, \bI(t)\right)
-&= -\int_0^T \lambda_n(t)\,\mathrm{d} t + \sum_{m=1}^{M_n} \log\left(\lambda_n(s_{n,m})\right),
-\end{align}
-and the log likelihood of a population of non-interacting spike trains
-is simply the sum of each of the log likelihoods for each neuron. The
-likelihood depends upon the
-parameters~${\theta_{\mathsf{GLM}}=\{b_n,\bk_n, \{h_{n'\to n}(\Delta
-  t)\}_{n'=1}^N\}}$ through the definition of the rate function given
-in Equation~\ref{eqn:glm_rate}. For some link functions~$g$, the log
-likelihood is a concave function of~$\theta_{\mathsf{GLM}}$, and the
-MLE can be found using efficient optimization techniques. Certain
-dynamical models, namely linear Gaussian latent state space models,
-also support efficient inference via point process filtering
-techniques \cite{Smith-2003}.
-
-Due to the potentially nonlinear and non-Gaussian nature of STDP,
-these existing techniques are not applicable here. Instead we use
-particle MCMC~\cite{Andrieu-2010}, a powerful technique for inference
-in time series. Particle MCMC samples the posterior distribution over
-weight trajectories,~$\bW(t)$, the adjacency matrix~$\bA$, and the
-model parameters~$\theta_{\mathsf{GLM}}$ and~$\theta_\ell$, given the
-observed spike trains, by combining particle filtering with MCMC.  We
-represent the conditional distribution over weight trajectories with a
-set of discrete particles.  Let the instantaneous weights at
-(discretized) time~$t$ be represented by a set of~$P$
-particles,~${\{\bW_{t}^{(p)}\}_{p=1}^P}$. The particles live
-in~$\reals^{N \times N}$ and are assigned normalized \emph{particle
-  weights}\footnote{Note that the particle weights are \emph{not} the
-  same as the synaptic weights.},~$\omega_p$, which approximate the
-true distribution via~${\Pr(\bW_{t}) \approx \sum_{p=1}^P \omega_p \,
-  \delta_{\bW_{t}^{(p)}} (\bW_{t})}$.  Particle filtering is a method
-of inferring a distribution over weight trajectories
-% i.e., tuples~${(\bW_0,\ldots,\bW_{T})}$
-by iteratively propagating forward in time and reweighting according
-to how well the new samples explain the data.  For each
-particle~${\bW_{t}^{(p)}}$ at time~$t$, we propagate forward one time
-step using the learning rule to obtain a particle~${\bW_{t+1}^{(p)}}$.
-Then, using Equation~\ref{eqn:glm_lkhd}, we evaluate the log
-likelihood of the spikes that occurred in the window~${[t,t+1)}$ and
-  update the weights.
-%obtain unnormalized weights,~${\log(\hat{\omega}^{(p)}_t)}$, which are then exponentiated and normalized to update~${\omega_p}$.
-Since some of these particles may have very low weights, after each
-step we resample the particles. After the~$T$-th time step we are left
-with a set of weight trajectories
-~${\{(\bW_0^{(p)},\ldots,\bW_{T}^{(p)})\}_{p=1}^P}$, each associated
-with a particle weight~$\omega_p$.
-
-%Then we update the particle weight,~$\omega_p$, according to how
-%well~${\bW_{t+1}^{(p)}}$ explains the spiking in that time interval,
-%as measured by the likelihood given by
-%Equation~\ref{eqn:glm_lkhd}. Since some of these particles may have
-%very low likelihood, after each step we resample (with replacement)
-%the particles according to their particle weights, and reset their
-%weights to~${\omega_p=1/P}$. After the~$T$-th time step we are left
-%with a set of weight trajectories
-%~${\{(\bW_0^{(p)},\ldots,\bW_{T}^{(p)})\}_{p=1}^P}$, each associated
-%with a particle weight~$\omega_p$. Rather than resampling, we return
-%the particles and their weights, which together specify a
-%distribution over weight trajectories.
-
-Particle filtering only yields a distribution over weight
-trajectories, and implicitly assumes that the other parameters have
-been specified. Particle MCMC provides a broader inference algorithm
-for both weights and other parameters. The idea is to interleave
-\emph{conditional} particle filtering steps that sample the weight
-trajectory given the current model parameters and the previously
-sampled weights, with traditional Gibbs updates to sample the model
-parameters given the current weight trajectory. This combination
-leaves the stationary distribution of the Markov chain invariant and
-allows joint inference over weights and parameters.  Gibbs updates for
-the remaining model parameters, including those of the learning rule,
-are described in the supplementary material.
-
-\begin{figure}[t!]
-  \centering
-  \vspace{-0.5em}
-  \begin{subfigure}[T]{2.4in}
-    \includegraphics[width=\textwidth]{figures/ch4/fig3_static_trajectory}    
-    \label{fig:fig3_static_trajectory}
-  \end{subfigure}
-  \begin{subfigure}[T]{1.45in}
-    \includegraphics[width=\textwidth]{figures/ch4/fig3_static_stdp_rule}    
-    \label{fig:fig3_static_stdp_rule}
-  \end{subfigure}
-  \begin{subfigure}[T]{1.45in}
-    \includegraphics[width=\textwidth]{figures/ch4/fig3_static_pred_ll}    
-    \label{fig:fig3_static_pred_ll}
-  \end{subfigure} \\
-  \vspace{-1.5em}
-  \begin{subfigure}[T]{2.4in}
-    \flushleft
-    \includegraphics[width=\textwidth]{figures/ch4/fig3_add_nothr_trajectory}    
-    \label{fig:fig3_add_nothr_trajectory}
-  \end{subfigure}
-  \begin{subfigure}[T]{1.45in}
-    \includegraphics[width=\textwidth]{figures/ch4/fig3_add_nothr_stdp_rule}    
-    \label{fig:fig3_add_nothr_stdp_rule}
-  \end{subfigure}
-  \begin{subfigure}[T]{1.45in}
-    \hspace{.1in}
-    \includegraphics[width=\textwidth]{figures/ch4/fig3_add_nothr_pred_ll2}    
-    \label{fig:fig3_add_nothr_pred_ll}
-  \end{subfigure}\\
-  \vspace{-1.5em}
-  \begin{subfigure}[T]{2.4in}
-    \flushleft
-    \includegraphics[width=\textwidth]{figures/ch4/fig3_mult_trajectory}    
-    \label{fig:fig3_mult_trajectory}
-  \end{subfigure}
-  \begin{subfigure}[T]{1.45in}
-    \includegraphics[width=\textwidth]{figures/ch4/fig3_mult_stdp_rule}    
-    \label{fig:fig3_mult_stdp_rule}
-  \end{subfigure}
-  \begin{subfigure}[T]{1.45in}
-    \hspace{.1in}
-    \includegraphics[width=\textwidth]{figures/ch4/fig3_mult_pred_ll}    
-    \label{fig:fig3_mult_pred_ll}
-  \end{subfigure}\\
-  \vspace{-1.9em}
-  \begin{subfigure}[T]{\textwidth}
-  \centering
-  \includegraphics[height=1.25em]{figures/ch4/fig3_legend}    
-  \end{subfigure}
-%  \vspace{-1.25em}
-  \caption[Synaptic weight trajectories for synthetic data from a
-    time-varying GLM]{We fit time-varying weight trajectories to spike
-    trains simulated from a GLM with two neurons undergoing no
-    plasticity (top row), an additive, unbounded STDP rule (middle),
-    and a multiplicative, saturating STDP rule (bottom row). We fit
-    the first 50 seconds with four different models: MAP for an
-    L1-regularized GLM, and fully-Bayesian inference for a static,
-    additive STDP, and multiplicative STDP learning rules.  In all
-    cases, the correct models yield the highest predictive log
-    likelihood on the final 10 seconds of the dataset.}
-  \label{fig:glm_pairs_inference}
-  \vspace{-2em}
-\end{figure}
-
-
-\paragraph{Collapsed sampling of $\bA$ and $\bW(t)$}
-In addition to sampling of weight trajectories and model parameters,
-particle MCMC approximates the marginal likelihood of entries in the
-adjacency matrix,~$\bA$, integrating out the corresponding weight
-trajectory. We have, up to a constant,
-\begin{align*}
-\Pr(A_{n'\to n} \given &S, \theta_\ell, \theta_{\mathsf{GLM}}, \bA_{\neg n' \to n}, \bW_{\neg n' \to n}(t)) \\
-&= \int_{0}^{T} \int_{-\infty}^{\infty} p( A_{n'\to n}, W_{n' \to n}(t) \given S, \theta_\ell, \theta_{\mathsf{GLM}}, \bA_{\neg n' \to n}, \bW_{\neg n' \to n}(t))\, \mathrm{d}W_{n' \to n}(t)\, \mathrm{d}t\\
-&\approx \left[\prod_{t=1}^T \frac{1}{P} \sum_{p=1}^P  \hat{\omega}^{(p)}_t \right] \Pr(A_{n'\to n}),
-\end{align*}
-where~${\neg n'\to n}$ indicates all entries except for~${n' \to n}$,
-and the particle weights are obtained by running a particle filter for
-each assignment of~$A_{n' \to n}$.  This allows us to jointly
-sample~$A_{n \to n'}$ and~${W_{n \to n'}(t)}$ by first sampling~${A_{n
-    \to n'}}$ and then~${W_{n \to n'}(t)}$ given~${A_{n \to n'}}$. By
-marginalizing out the weight trajectory, our algorithm is able to
-explore the space of adjacency matrices more efficiently.
-
-We capitalize on a number of other opportunities for computational
-efficiency as well. For example, if the learning rule factors into
-independent updates for each~$W_{n' \to n}(t)$, then we can update
-each synapse's weight trajectory separately and reduce the particles
-to one-dimensional objects. In our implementation, we also make use of
-a pMCMC variant with ancestor sampling~\cite{Lindsten-2012} that
-significantly improves convergence. Any distribution may be used to
-propagate the particles forward; using the learning rule is simply the
-easiest to implement and understand.  We have omitted a number of
-details in this description; for a thorough overview of particle MCMC,
-the reader should consult \cite{Andrieu-2010, Lindsten-2012}.
-
-
-\section{Evaluation}
-We evaluated our technique with two types of synthetic data. First, we
-generated data from our model, with known ground-truth. Second, we
-used the well-known simulator NEURON to simulate driven,
-interconnected populations of neurons undergoing synaptic
-plasticity. For comparison, we show how the sparse, time-varying GLM
-compares to a standard GLM with a group LASSO prior on the impulse
-response coefficients for which we can perform efficient MAP
-estimation.
-
-\subsection{GLM-based simulations}
-As a proof of concept, we study a single synapse undergoing a variety
-of synaptic plasticity rules and generating spikes according to a
-GLM. The neurons also have inhibitory self-connections to mimic
-refractory effects. We tested three synaptic plasticity mechanisms: a
-static synapse (i.e., no plasticity), the unbounded, additive STDP
-rule given by Equation~\ref{eqn:AddSTDP}, and the bounded,
-multiplicative STDP rule given by Equation~\ref{eqn:MultSTDP}. For
-each learning rule, we simulated 60 seconds of spiking activity at
-1kHz temporal resolution, updating the synaptic weights every 1s. The
-baseline firing rates were normally distributed with mean~$20$Hz and
-standard deviation of~$5$Hz. Correlations in the spike timing led to
-changes in the synaptic weight trajectories that we could detect with
-our inference algorithm.
-
-% ROC Curve for synapse detection
-\begin{figure}[t!]
-  \centering
-  \vspace{-0.5em}
-  \begin{subfigure}[T]{2in}
-    \includegraphics[width=\textwidth]{figures/ch4/fig5_roc_network_1}    
-    \label{fig:fig5_roc_network_1}
-  \end{subfigure}\hfill
-  \begin{subfigure}[T]{3in}
-    \includegraphics[width=\textwidth]{figures/ch4/fig5_fp_analysis_mv}    
-    \label{fig:fig5_fp_analysis}
-  \end{subfigure}\\
-  \vspace{-1.9em}
-  \begin{subfigure}[T]{\textwidth}
-  \centering
-  \includegraphics[height=1.25em]{figures/ch4/fig5_legend}    
-  \end{subfigure}
-%  \vspace{-1em}
-%  \vspace{-.5em}
-  \caption[Dynamic link prediction on data generated from NEURON]{
-    Evaluation of synapse detection on a 60 second spike train
-    from a network of 10 neurons undergoing synaptic plasticity with a
-    saturating, additive STDP rule, simulated with NEURON. The sparse,
-    time-varying GLM with an additive rule outperforms the
-    fully-Bayesian model with static weights, MAP estimation with L1
-    regularization, and simple thresholding of the cross-correlation
-    matrix. }
-  \label{fig:pynn_roc}
-  \vspace{-1em}
-\end{figure}
-
-Figure~\ref{fig:glm_pairs_inference} shows the true and inferred
-weight trajectories, the inferred learning rules, and the predictive
-log likelihood on ten seconds of held out data for each of the three
-ground truth learning rules. When the underlying weights are static
-(top row), MAP estimation and static learning rules do an excellent
-job of detecting the true weight whereas the two time-varying models
-must compensate by either setting the learning rule as close to zero
-as possible, as the additive STDP does, or setting the threshold such
-that the weight trajectory is nearly constant, as the multiplicative
-model does. Note that the scales of the additive and multiplicative
-learning rules are not directly comparable since the weight updates in
-the multiplicative case are modulated by how close the weight is to
-the threshold. When the underlying weights vary (middle and bottom
-rows), the static models must compromise with an intermediate
-weight. Though the STDP models are both able to capture the
-qualitative trends, the correct model yields a better fit and better
-predictive power in both cases.
-
-In terms of computational cost, our approach is clearly more expensive
-than alternative approaches based on MAP estimation or MLE. We
-developed a parallel implementation of our algorithm to capitalize on
-conditional independencies across neurons, i.e. for the additive and
-multiplicative STDP rules we can sample the weights~${\bW_{*\to n}}$
-independently of the weights~${\bW_{*\to n'}}$. On the two neuron
-examples we achieve upward of 2 iterations per second (sampling all
-variables in the model), and we run our model for 1000
-iterations. Convergence of the Markov chain is assessed by analyzing
-the log posterior of the samples, and typically stabilizes after a few
-hundred iterations. As we scale to networks of ten neurons, our
-running time quickly increases to roughly 20 seconds per iteration,
-which is mostly dominated by slice sampling the learning rule
-parameters. In order to evaluate the conditional probability of a
-learning rule parameter, we need to sample the weight trajectories for
-each synapse. Though these running times are nontrivial, they are not
-prohibitive for networks that are realistically obtainable for optical
-study of synaptic plasticity.
-
-\subsection{Biophysical simulations}
-Using the biophysical simulator NEURON, we performed two
-experiments. First, we considered a network of 10 sparsely
-interconnected neurons (28 excitatory synapses) undergoing synaptic
-plasticity according to an additive STDP rule. Each neuron was driven
-independently by a hidden population of 13 excitatory neurons and 5
-inhibitory neurons connected to the visible neuron with probability
-0.8 and fixed synaptic weights averaging 3.0 mV. The visible synapses
-were initialized close to 6.0 mV and allowed to vary between 0.0 and
-10.5 mV. The synaptic delay was fixed at 1.0 ms for all synapses. This
-yielded a mean firing rate of 10 Hz among visible neurons. Synaptic
-weights were recorded every 1.0 ms.  These parameters were chosen to
-demonstrate interesting variations in synaptic strength, and as we
-transition to biological applications it will be necessary to evaluate
-the sensitivity of the model to these parameters and the appropriate
-regimes for the circuits under study.
-
-We began by investigating whether the model is able to accurately
-identify synapses from spikes, or whether it is confounded by spurious
-correlations.  Figure~\ref{fig:pynn_roc} shows that our approach
-identifies the 28 excitatory synapses in our network, as measured by
-ROC curve (Add. STDP AUC=${0.99}$), and
-%Furthermore, our sparse, time-varying GLM with STDP models outperform
-%static models and simple cross-correlation in a synapse detection
-%task, as measured by the ROC curve shown on the left.
-outperforms static models and cross-correlation.  In the sparse,
-time-varying GLM, the probability of an edge is measured by the mean
-of~$\bA$ under the posterior, whereas in the standard GLM with MAP
-estimation, the likelihood of an edge is measured by area under the
-impulse response.
-
-Looking into the synapses that are detected by the time-varying model
-and missed by the static model, we find an interesting pattern. The
-improved performance comes from synapses that decay in strength over
-the recording period. Three examples of these synaptic weight
-trajectories are shown in the right panel of
-Figure~\ref{fig:pynn_roc}. The time-varying model assigns over 90\%
-probability to each of the three synapses, whereas the static model
-infers less than a 40\% probability for each synapse.
-
-Finally, we investigated our model's ability to distinguish various
-learning rules by looking at a single synapse, analogous to the
-experiment performed on data from the
-GLM. Figure~\ref{fig:pynn_pairs_inference} shows the results of a
-weight trajectory for a synapse under additive STDP with a strict
-threshold on the excitatory postsynaptic current. The time-varying GLM
-with an additive model captures the same trajectory, as shown in the
-left panel. The GLM weights have been linearly rescaled to align with
-the true weights, which are measured in millivolts. Furthermore, the
-inferred additive STDP learning rule, in particular the time constants
-and relative amplitudes, perfectly match the true learning rule.
-
-These results demonstrate that a sparse, time-varying GLM is capable
-of discovering synaptic weight trajectories, but in terms of
-predictive likelihood, we still have insufficient evidence to
-distinguish additive and multiplicative STDP rules.
-%We believe this arises from comparing models on the basis of spike
-%times alone, using only spontaneous data.
-By the end of the training period, the weights have saturated at a
-level that almost surely induces postsynaptic spikes. At this point,
-we cannot distinguish two learning rules which have both reached
-saturation.  This motivates further studies that leverage this
-probabilistic model in an optimal experimental design framework,
-similar to recent work by \citet{Shababo-2013}, in order to
-conclusively test hypotheses about synaptic plasticity.
-
-\begin{figure}[t!]
-  \centering
-  \vspace{-0.5em}
-  % COMMENTING OUT THE STATIC AND MULTIPLICATIVE RESULTS
-  \begin{comment}
-  \begin{subfigure}[T]{2.4in}
-    \includegraphics[width=\textwidth]{figures/ch4/fig4_static_trajectory}    
-    \label{fig:fig4_static_trajectory}
-  \end{subfigure}
-  \begin{subfigure}[T]{1.45in}
-    \includegraphics[width=\textwidth]{figures/ch4/fig4_static_stdp_rule}    
-    \label{fig:fig4_static_stdp_rule}
-  \end{subfigure}
-  \begin{subfigure}[T]{1.45in}
-    \includegraphics[width=\textwidth]{figures/ch4/fig4_static_pred_ll}    
-    \label{fig:fig4_static_pred_ll}
-  \end{subfigure} \\
-  \vspace{-1.5em}
-  \end{comment}
-  % ONLY SHOW THE ADDITIVE RESULTS FOR NOW
-  \begin{subfigure}[T]{2.4in}
-    \flushleft
-    \includegraphics[width=\textwidth]{figures/ch4/fig4_add_thr_trajectory_mv}    
-    \label{fig:fig4_add_nothr_trajectory}
-  \end{subfigure}
-  \begin{subfigure}[T]{1.45in}
-    \includegraphics[width=\textwidth]{figures/ch4/fig4_add_thr_stdp_rule}    
-    \label{fig:fig4_add_nothr_stdp_rule}
-  \end{subfigure}
-  \begin{subfigure}[T]{1.45in}
-    \hspace{.1in}
-    \includegraphics[width=\textwidth]{figures/ch4/fig4_add_thr_pred_ll}    
-    \label{fig:fig4_add_nothr_pred_ll}
-  \end{subfigure}\\
-  \vspace{-1.5em}
-  % COMMENTING OUT THE STATIC AND MULTIPLICATIVE RESULTS
-  \begin{comment}
-  \begin{subfigure}[T]{2.4in}
-    \flushleft
-    \includegraphics[width=\textwidth]{figures/ch4/fig4_mult_stdp_trajectory}    
-    \label{fig:fig4_mult_stdp_trajectory}
-  \end{subfigure}
-  \begin{subfigure}[T]{1.45in}
-    \includegraphics[width=\textwidth]{figures/ch4/fig4_mult_stdp_rule}    
-    \label{fig:fig4_mult_stdp_rule}
-  \end{subfigure}
-  \begin{subfigure}[T]{1.45in}
-    \includegraphics[width=\textwidth]{figures/ch4/fig4_mult_stdp_pred_ll}    
-    \label{fig:fig4_mult_stdp_pred_ll}
-  \end{subfigure}\\
-%  \vspace{-1.75em}
-  \vspace{-.75em}
-  \end{comment}
-  % LEGEND
-  \begin{subfigure}[T]{\textwidth}
-  \centering
-  \includegraphics[height=2em]{figures/ch4/fig4_legend}    
-  \end{subfigure}
-  %
-%  \vspace{-1em}
-  \caption[Synaptic weight trajectories for data generated from NEURON]{
-    Analogously to Figure~\ref{fig:glm_pairs_inference}, a sparse,
-    time-varying GLM can capture the weight trajectories and learning
-    rules from spike trains simulated by NEURON. Here an excitatory
-    synapse undergoes additive STDP with a hard upper bound on the
-    excitatory postsynaptic current. The weight trajectory inferred by
-    our model with the same parametric form of the learning rule
-    matches almost exactly, whereas the static models must compromise
-    in order to capture early and late stages of the data, and the
-    multiplicative weight exhibits qualitatively different
-    trajectories. Nevertheless, in terms of predictive log likelihood,
-    we do not have enough information to correctly determine the
-    underlying learning rule. Potential solutions are discussed in the
-    main text.}
-  \label{fig:pynn_pairs_inference}
-\end{figure}
-
-
-\section{Discussion}
-Motivated by the advent of optical tools for interrogating networks of
-synaptically connected neurons, which make it possible to study
-synaptic plasticity in novel ways, we have extended the GLM to model a
-sparse, time-varying synaptic network, and introduced a fully-Bayesian
-inference algorithm built upon particle MCMC. Our initial results
-suggest that it is possible to infer weight trajectories for a variety
-of biologically plausible learning rules.
-
- A number of interesting questions remain as we look to apply these
- methods to biological recordings. We have assumed access to precise
- spike times, though extracting spike times from optical recordings
- poses inferential challenges of its own. Solutions like those of
- \citet{Vogelstein-2009} could be incorporated into our probabilistic
- model.  Computationally, particle MCMC could be replaced with
- stochastic EM to achieve improved performance \cite{Lindsten-2012},
- and optimal experimental design could aid in the exploration of
- stimuli to distinguish between learning rules.
-%With this foundation, we intend to apply our methods to biological
-%recordings and use optimal experimental design \cite{Shababo-2013} to
-%design stimuli that will yield maximal information about the
-%underlying learning rules.
-Beyond these direct extensions, this work opens up potential to infer
-latent state spaces with potentially nonlinear dynamics and
-non-Gaussian noise, and to infer learning rules at the synaptic or
-even the network level.
-
+\section{Conclusion}
+We presented a scalable stochastic variational inference algorithm for the problem of Bayesian network discovery with Hawkes process observations. Building on previous modeling work, we leveraged a weak sparsity model to obtain a fully conjugate model. We focused on scaling to long duration recordings (large~$T$). Scaling to large networks (large~$K$) is nontrivial due to dependencies among weights, but in future work we hope to explore approximate algorithms to tackle this important problem.

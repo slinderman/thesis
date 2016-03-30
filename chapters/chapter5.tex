@@ -1,1172 +1,1560 @@
- 
-\chapter{Nonparametric Hidden Markov Models for Neural Data}
+% \begin{savequote}[75mm]
+% Nulla facilisi. In vel sem. Morbi id urna in diam dignissim feugiat. Proin molestie tortor eu velit. Aliquam erat volutpat. Nullam ultrices, diam tempus vulputate egestas, eros pede varius leo.
+% \qauthor{Quoteauthor Lastname}
+% \end{savequote}
 
-A fundamental goal in neuroscience is to understand how populations of
-neurons represent and transmit information about the external world.
-The hippocampus is known to encode information relevant to spatial
-navigation and episodic memory.  Spatial representation of the
-environment is pivotal for navigation in rodents \citep{OKeefe78}.
-One type of spatial representation is a topological map, which
-contains only relative ordering or connectivity information between
-spatial locations and is invariant to orientation or deformation. A
-relevant question of interest is: how can neurons downstream of the
-hippocampus infer representations of space from hippocampal spike
-activity without {\em a priori} place field information (namely,
-without the measurement of spatial correlates)?  Several reports have
-been dedicated to the mathematical analysis of this problem
-\citep{Curto08,Dabaghian12}; however, a data-driven approach for
-analyzing ensemble hippocampal spike data remains missing.  This paper
-employs probabilistic modeling and inference methods to uncover the
-spatial representation (or topological map) based on the ensemble
-spike activity.
+\chapter{Finding Structure in Functional Networks}
 
 
-Bayesian statistical modeling is a consistent and principled framework
-for dealing with uncertainties about the observed data
-\citep{Scott02}.  The goal of Bayesian inference is to incorporate
-prior knowledge and constraints of the problem and to infer the
-posterior distribution of unobserved variables of interest
-\citep{Gelman13}. In recent years, cutting-edge Bayesian methods have
-become increasingly popular for data analyses in neuroscience,
-medicine and biology
-\citep{Mishchenko11a,Chen11,Chen13,Davidson09,Kloosterman14,Yau11}. Specifically,
-thanks to ever-growing computing power, Markov chain Monte Carlo
-(MCMC) methods have been widely used in Bayesian inference.
+%Hawkes process inference relied on an augmentation strategy 
+%made possible by the linear form and excitatory nature 
+% of the interactions. In neural settings, these assumptions 
+%of the Hawkes process are not as realistic. Instead, we turn to 
+%the nonlinear Hawkes process, which allows for both excitatory 
+%and inhibitory interactions by introducing a nonlinearity 
+%into the model. This corresponds to the popular generalized 
+%linear model that is widely used in computational neuroscience. 
+%We develop a novel approach that leverages the 
+%\polyagamma augmentation to enable efficient, fully-conjugate 
+%inference. Again, we combine the nonlinear Hawkes process with 
+%prior distributions on the network of interactions, and we focus 
+%on a discrete time approximation. This is part of ongoing work 
+%with Ryan and Jonathan Pillow at Princeton, and it has grown out 
+%of a Cosyne abstract \cite{linderman2015cosyne}. I also have an 
+%unpublished draft in which I extend the abstract and apply it 
+%to a variety of neural datasets, and show how the network models 
+%recover interesting latent features like neural types and locations.
+%I will submit a journal version of this paper as soon as possible.
+
+We develop a novel method for the unsupervised discovery of interpretable latent structure underlying neural recordings. 
+Rather than directly clustering or factorizing measured activity, we propose a generative model that links latent clusters and features of neurons to measured activity via an intermediate functional network. 
+Thus, latent structure is defined in terms of patterns of interaction rather than patterns of activity. 
+To discover the most appropriate structural form, we propose a fully-Bayesian inference algorithm that enables efficient inference and principled model comparison. 
+We demonstrate the efficacy of this approach on simultaneously recorded multi-neuronal spike trains and synthetic data.
 
 
-In our previous work \citep{Chen12a,Chen14}, we have developed a {\em
-  parametric Bayesian} approach to uncover the neural representation
-of spatial topology embedded in rodent hippocampal population codes
-during spatial navigation.  Here we extend the preceding work and
-consider a {\em nonparametric Bayesian} approach.  The nonparametric
-Bayesian method brings additional flexibility to the probabilistic
-model, which allows us to model the complex structure of neural data
-\citep{Teh10,Wood08,Shalchyan14}.  Specifically, we leverage the
-so-called a hierarchical Dirichlet process-HMM (HDP-HMM)
-\citep{Teh06}, which extends the finite-state hidden Markov model
-(HMM) with a nonparametric, HDP prior and derive corresponding
-Bayesian inference algorithms.  We consider both deterministic and
-stochastic approaches for fully Bayesian inference.  Based on
-deterministic approximation, we extend the work of
-\citep{Chen12a,Johnson14} and use a variational Bayes (VB) method for
-approximate Bayesian inference.  For MCMC, we adapt the Gibbs sampling
-approach of \citep{Teh06}, and integrate it with a Hamiltonian Monte
-Carlo (HMC) method for hyperparameter inference~\citep{Neal10}.  To
-the best of our knowledge, the application of the HDP-HMM to
-hippocampal ensemble neuronal spike trains and the HMC hyperparameter
-inference algorithm is novel.
+\section{Introduction}
+With the advent of novel technologies for large-scale recording of
+neural activity~\cite{grewe2010high, prevedel2014simultaneous,
+  churchland2012neural, holekamp2008fast, ahrens2013whole,
+  portugues2014whole, alivisatos2012brain, briggman2005optical,
+  ahrens2012brain} there comes a pressing need for methods of
+analyzing neural recordings and uncovering their underlying structure.
+The goal of these methods is not only to capture variability in
+activity and make accurate predictions, but to expose meaningful,
+low-dimensional structure that may lead to novel hypotheses and
+interpretations of the circuits under study. In other words, we
+need \emph{exploratory} methods~\cite{tukey1962future} that yield interpretable
+\emph{representations} of large scale data.  
+For example, populations of retinal ganglion cells may be represented as a 
+set of subpopulations, each performing a distinct
+computational role and interacting in characteristic ways with
+other subpopulations~\cite{sanes2015types}.
+Likewise, some populations may be characterized by continuous features,
+like retinotopic location or tuning direction.
+As we probe complex circuits far removed from stimuli and behavioral
+outputs, we need methods that automatically extract these simplified
+representations.
 
- 
-We test the statistical model and inference methods with both
-simulation data and experimental data. The latter consists of a
-recording of rat dorsal hippocampal ensemble spike activity during
-open field navigation. Using a decoding analysis and predictive
-likelihood, we verify and compare the performance of the proposed
-Bayesian inference algorithms. We also discuss the results of model
-selection related to the sample size and the choice of concentration
-parameter or hyperparameters. Our methods provide an extended tool to
-analyze rodent hippocampal population codes, which may further empower
-us to explore important neuroscience questions about neural
-representation, learning and memory.
- 
+While many modeling and data analysis methods aim to meet this
+need, few succeed in providing a concise, interpretable representation
+while also capturing the temporal variability of neural activity.
+Simple methods, like principal components analysis
+and k-means clustering, provide intuitive snapshots of neural activity
+in the form of neural features and classes,
+but they do 
+not account for important temporal dynamics of neural activity. 
+At the other end of the
+spectrum, there are many sophisticated models that explicitly model
+temporal dynamics, like generalized linear models~\cite{Truccolo-2005,
+  Paninski-2004, Pillow-2008}, state space models~\cite{Smith-2003,
+  paninski2010new, Buesing12, escola2011hidden,
+  linderman2016nonparametric}, and many others~\cite{Yu09,
+  churchland2012neural, cunningham2007inferring},
+but the outputs of these models are complex state trajectories and dense
+coupling filters. Typically far from intuitive, these outputs are
+often subjected to even \emph{further} modeling in hopes of gleaning insight.
 
-\section{Methods: modeling and inference}
-
-\subsection{Basic probabilistic model} 
-
-
-In our previous work \citep{Chen12a}, we used a finite $m$-state HMM
-to characterize the population spiking activity from a population of
-$C$ hippocampal place cells.  It was assumed that first, the animal's
-spatial location during locomotion, modeled as a latent state process,
-followed a first-order discrete-state Markov chain
-$\mathcal{S}=S_{1:T}\equiv \{S_t\}\in\{1,\dots, m\}$, and second, the
-spike counts of individual place cells at time $t$, conditional on the
-hidden state $S_t$, followed a Poisson probability with their
-respective tuning curve functions
-${\bLambda=\{\blambda_c\}=\{\{\lambda_{c,i}\}\}}$. Essentially, we
-employed a Markov-driven population Poisson firing model with the
-following probabilistic models
-\begin{align}
-p(\by_{1:T}, S_{1:T} \given \bpi, \bP, \bLambda) &= p(\mathcal{S}_1\given \bpi) \prod_{t=2}^T p(S_t \given S_{t-1}, \bP) \prod_{t=1}^T p(\by_t \given S_t, \bLambda),\\
-\nonumber p(S_1 \given \bpi) &= \distMultinomial(S_1 \given \bpi), \\
-\nonumber p(S_t \given S_{t-1}, \bP) &= \distMultinomial(S_t \given \bP_{S_{t-1},:}), \\
-\nonumber p(\by_t \given S_t, \bLambda) &= \prod_{c=1}^C \distPoisson(y_{c,t} \given \lambda_{c,S_t}).
-\end{align}
-where $\bP=\{P_{ij}\}$ denotes an $m$-by-$m$ state transition
-probability matrix, with $P_{ij}$ representing the transition
-probability from state $i$ to $j$ (since $\sum_{k=1}^m P_{ik}=1$, each
-row of matrix $\bP$ specifies a multinomial likelihood); $y_{c,t}$
-denotes the number of spike counts from the $c$-th cell within the
-$t$-th temporal bin (here we assume that the rate is defined in the
-unit bin size of 250 ms) and ${\by}_{1:T}=\{y_{c,t}\}_{C\times T}$
-denotes time series of $C$-dimensional population response vector; and
-$\distPoisson(y_{c,t}|\lambda_{c,i})$ defines a Poisson distribution
-with the rate parameter $\lambda_{c,i}$ when $S_t=i$. Finally, $\log
-p({\by}_{1:T}|\mathcal{S},\btheta)$ defines the observed data log
-likelihood given the hidden state sequence $\mathcal{S}$ and all
-parameters $\btheta=\{\bpi, \bP, \bLambda\}$ (where $\bpi=\{\pi_i\}$
-denotes a probability vector for the initial state $S_1$).
-
-The hidden variables $\mathcal{S}=\{S_{1:T}\}$ are treated as the
-missing data, ${\by}_{1:T}$ as the observed (incomplete) data, and
-their combination $\{S_{1:T},{\by}_{1:T}\}$ as the complete data.
-
-A Bayesian version of this model introduces prior distributions over
-the parameters. We use the following prior distributions,
-\begin{align}
-\alpha_0 &\sim \distGamma(a_{\alpha_0}, 1.0) \\
-\nonumber \bpi &\sim \distDirichlet(\alpha_0\bone),\\
-\nonumber \bP_{i,:} &\sim \distDirichlet(\alpha_0\bone), \\
-\nonumber \lambda_{c,i} &\sim \distGamma(a_c^0,b_c^0).
-\end{align}
-where $\distDirichlet$ denotes the Dirichlet prior distribution, and
-$\distGamma(a_c^0,b_c^0)$ denotes the gamma prior distribution with
-shape parameter $a_c^0$ and scale parameter $b_c^0$.
-
-\subsection{HDP-HMM}
-
-Model selection is an important issue for statistical modeling and
-data analysis.  We have previously proposed a {\em Bayesian deviance
-  information criterion} to select the model size $m$ of HMM
-\citep{Chen12a,Chen14}. Here we extend the finite-state HMM to an
-HDP-HMM, a nonparametric Bayesian extension of the HMM that allows for
-a potentially infinite number of hidden states \citep{Teh06,
-  Beal02}. Namely, the HDP-HMM treats the priors via a stochastic
-process. Instead of imposing a Dirichlet prior distribution on the
-rows of the finite state transition matrix $\bP$, we use a HDP that
-allows for a countably infinite number of states.
-
-Specifically, we sample a distribution over latent states,~$G_0$, from
-a Dirichlet process (DP) \citep{Ferguson73}
-prior,~${G_0\sim\texttt{DP}(\gamma,H)}$, where~$\gamma$ is the
-concentration parameter and~$H$ is the base measure.  Moreover, we
-place a prior distribution over the concentration parameter,~$\gamma
-\sim \distGamma(a_{\gamma}, 1.0)$.  Given the concentration, one may
-sample from the DP via the ``stick-breaking construction''
-\citep{Sethuraman94}. First, sample the stick-breaking
-weights,~$\bbeta$,
-\begin{eqnarray}                                   
-\tilde{\beta}_{i}\sim \texttt{Beta}(1,\gamma), \;\;\; \beta_{i}=\tilde{\beta}_{i}\prod_{j=1}^{i-1}\Big(1-\beta_{j}\Big)
-\label{stick1}
-\end{eqnarray}
-where~$\beta_1 = \tilde{\beta}_1$,~$\sum_{i=1}^\infty \beta_{i}=1$,
-and $\texttt{Beta}(a,b)$ defines a beta distribution with two positive
-shape parameters $a$ and $b$.
-
-The stick-breaking construction of (\ref{stick1}) is sometimes denoted
-as~${\bbeta \sim \texttt{GEM}(\gamma)}$, after Griffiths, Engen, and
-McCloskey \citep{Ewens90}.  The name ``stick-breaking'' comes from the
-interpretation of $\beta_i$ as the length of the piece of a
-unit-length stick assigned to the $i$-th value.  After the first $i-1$
-values having their portions assigned, the length of the remainder of
-the stick is broken according to a sample $\tilde{\pi}_i$ from a beta
-distribution, and $\tilde{\beta}_i$ indicates the portion of the
-remainder to be assigned to the $i$-th value. Therefore, the
-stick-breaking process $\texttt{GEM}(\gamma)$ also defines a DP---the
-smaller $\gamma$, the less (in a statistical sense) of the stick will
-be left for subsequent values.
-
-After sampling~$\bbeta$, we next sample the latent state variables, in
-this case~${\blambda_c}$, from the base measure~$H$. Our draw from
-the~${\mathrm{DP}(\gamma,H)}$ prior is then given by
-\begin{align}
-G_0=\sum_{j=1}^\infty \beta_j \delta_{\blambda_{c}^{(j)}}.
-\end{align}
-Thus, the stick breaking construction makes clear that draws from a
-Dirichlet process distribution are discrete with probability one.
-
-Given a countably infinite set of shared states, we may then sample
-the rows of the transition
-matrix,~${\bP_{i,:}\sim\mathrm{DP}(\alpha_0,\bbeta)}$. We place the
-same prior over~$\pi$.  The base measure in this case is~$\bbeta$, a
-countably infinite vector of stick-breaking weights, that serves as
-the mean of the DP prior over the rows of~$\bP$. The concentration
-parameter,~$\alpha_0$, governs how concentrated the rows are about the
-mean. Since the base measure~$\bbeta$ is discrete, each row of~$\bP$
-will be able to ``see'' the same set of states. By contrast, if we
-remove the HDP prior and treat each row of~$P$ as an independent draw
-from a DP with base measure~$H$, each row would see a disjoint set of
-states with probability one. In other words, the hierarchical prior is
-required to provide a discrete (but countably infinite) set of latent
-states for the HMM.
-
-\subsection{Overdispersed Poisson model}
-
-An interesting consequence of this Bayesian model is that it naturally
-leads to a distribution of spike counts that is overdispersed relative
-to simple Poisson model, a feature that has been observed in neural
-recordings \citep{Goris14}. Recent work has explored the negative
-binomial (NB) distribution as an alternative to Poisson model, since
-its two parameters allow for Fano factors greater than one.  The NB
-distribution can also be seen as a continuous mixture of Poisson
-distributions (i.e., a compound probability distribution) where the
-mixing distribution of the Poisson rate is a gamma distribution
-\citep{Gelman13}. In other words, the NB distribution is viewed as a
-gamma-Poisson (mixture distribution): a $\distPoisson(\lambda)$
-distribution whose rate $\lambda$ is itself a gamma random
-variable. In our case, the gamma prior over firing rates leads to a
-negative binomial marginal distribution over~$y_{c,t}$.
-
-Though the marginal spike count at a particular time~$t$ may be
-marginally distributed according to a negative binomial distribution,
-it is not necessarily true that a sequence of time bins,~$\by_{1:T}$,
-will be i.i.d. negative binomials. This arises from the correlations
-induced by the state transition matrix. Instead,~$\by_{1:T}$ will
-follow a finite mixture of Poisson distributions, with one component
-for each latent state. The mixture will be weighted by the marginal
-probability of the corresponding latent state. However, as the number
-of visited states grows, and the marginal probability of latent states
-becomes more uniform, the resulting marginal distribution over the
-sequence of spike counts inherits the over dispersed nature of the
-negative binomial distribution. This is particularly true of an
-HDP-HMM with a high concentration.
-
- \subsection{Markov chain Monte Carlo (MCMC) inference}
+We introduce a modeling framework that combines the desirable 
+properties of both of these approaches: it captures the autoregressive 
+dynamics of neural populations as well as interpretable, high-level 
+latent variables that govern those dynamics. The crucial link is 
+provided by a structured model for the network of functional 
+connections. Probabilistic network models~\cite{Hoff-2002}
+describe structure in the pattern of connections and weights in 
+terms of neuron-specific latent variables. For example, 
+neurons may have latent locations that govern the probability of 
+connection or latent types that specify the strength of interaction.
+Given the network, we specify an generative model for spike 
+trains in which action potentials induce impulse responses on 
+downstream neurons that modulate the probability of spiking. 
+These autoregressive dynamics are the basis for the popular 
+generalized linear model (GLM)~\cite{Truccolo-2005, Paninski-2004, Pillow-2008}
+of multineuronal spike trains. 
+As we will show, by incorporating these probabilistic network models 
+into the GLM, we can recover meaningful 
+and interpretable patterns on the basis of neural activity alone.
 
 
-Several MCMC-based inference methods have been developed for the
-HDP-HMM \citep{Beal02,Teh06,van08}. Some of these previous works use a
-collapsed Gibbs sampler in which the transition matrix~$P$ and the
-observation parameters~$\bLambda$ are integrated out
-\citep{Teh06,van08}. In this work, however, we use a ``weak limit''
-approximation in which the DP prior is approximated with a symmetric
-Dirichlet prior. Specifically, we let
-\begin{align}
-\label{eq:hdphmm_trans}
-\gamma &\sim \distGamma(a_\gamma, 1) \\
-\nonumber \alpha_0 &\sim \distGamma(a_{\alpha_0}, 1) \\
-\nonumber \bbeta \given \gamma &\sim \distDirichlet(\gamma/M, \ldots, \gamma/M), \\
-\nonumber \bpi \given \alpha_0, \bbeta &\sim \distDirichlet(\alpha_0 \beta_1, \ldots, \alpha_0 \beta_M), \\
-\nonumber \bP_{i,:} \given \alpha_0, \bbeta &\sim \distDirichlet(\alpha_0 \beta_1, \ldots, \alpha_0 \beta_M).
-\end{align}
-where $M$ denotes a truncation level for approximating the infinity
-(which is different from $m$ in the finite-state setting).  It can be
-shown that this prior will weakly converge to the DP prior as the
-dimensionality of the Dirichlet distribution approaches infinity
-\citep{Johnson14, Ishwaran02}. With this approximation we can
-capitalize on forward-backward sampling algorithms to jointly update
-the latent states~$\mathcal{S}$.
+\begin{figure}[t]
+  \centering
+  \begin{subfigure}[b]{1.3in}
+    \centering
+    \caption{}
+    \vspace{-.25in}
+    \includegraphics[width=\textwidth]{figures/ch3/new_clustered_embedded_neurons}
+    \label{fig:fig1_network}
+ \end{subfigure}
+   \begin{subfigure}[b]{1.3in}
+     \centering
+     \caption{}
+     \vspace{-.25in}
+     \includegraphics[width=\textwidth]{figures/ch3/new_activation}
+     \label{fig:fig1_activation}
+   \end{subfigure}
+   \begin{subfigure}[b]{1.3in}
+     \centering
+     \caption{}
+     \vspace{-.25in}
+     \includegraphics[width=\textwidth]{figures/ch3/new_observed_spikes}
+     \label{fig:fig1_spikes}
+   \end{subfigure}
+   \begin{subfigure}[b]{1.3in}
+     \centering
+     \caption{}
+     \vspace{-.25in}
+     \includegraphics[width=\textwidth]{figures/ch3/new_observed_fluorescence}
+     \label{fig:fig1_fluorescence}
+   \end{subfigure}
+   \vspace{-.2in}
+   \caption[Components of the network GLM]{
+     Components of the generative model. 
+     \textbf{(a)} Each neuron is endowed with latent variables, like 
+     locations in space and discrete types (illustrated with different colors).
+     These variables determine the probability of connections and the 
+     strength of those connections. In this example, nearby neurons of the same 
+     type are most likely to connect.
+     \textbf{(b)} The network parameterizes an autoregressive model 
+     with a time-varying activation, which specifies the instantaneous probability 
+     of an action potential.
+     \textbf{(c)} Spikes are randomly generated according to the 
+     activation. Each spike induces an impulse response on the activation 
+     of downstream neurons.
+     \textbf{(d)} In imaging studies, we only observe a noisy fluorescence 
+     trace that reflects the underlying spike train.}
+ \label{fig:fig1}
+ \end{figure}
 
-Previous work has typically been presented with Gaussian or
-multinomial likelihood models, with the acknowledgement that the same
-methods work with any exponential family likelihood when the base
-measure $H$ is a conjugate prior.  Here we present the Gibbs sampling
-algorithm of~\citep{Teh06} for the HDP-HMM applied to the special case
-of independent Poisson observations, and we derive Hamiltonian Monte
-Carlo (HMC) transitions to sample the cell-specific hyperparameters of
-the firing rate priors.
+ Figure~\ref{fig:fig1} illustrates the components of our generative
+ model.  In this example, each neuron belongs to one of four classes
+ (\textit{red}, \textit{blue}, \textit{green}, or
+ \textit{yellow}). Additionally, neurons have a latent location in
+ two-dimensional space. The connection probability is determined by
+ distance between the locations (nearby neurons are more likely to
+ connect), as well as the latent types (neurons of the same type are
+ more likely to connect).  This network parameterizes an
+ autoregressive model for neural activity.  The instantaneous
+ probability of firing an action potential is a function of the
+ underlying \textit{activation}.  The activation obeys autoregressive
+ dynamics: when a neuron fires an action potential, an impulse
+ response is added to the activation of downstream neurons. Excitatory
+ connections induce positive impulse responses; inhibitory connections
+ induce negative ones.  In many modern recordings, the spike trains
+ must be inferred from an observed calcium fluorescence trace. In
+ these cases, the model may be augmented with a generative model for
+ fluorescence that captures the slower calcium
+ dynamics~\cite{Vogelstein-2010, Mishchenko11a}.
 
-We begin by defining Gibbs updates for the neuronal firing
-rates~$\bLambda$. Since we are using gamma priors with independent
-Poisson observations, the model is fully conjugate and simple Gibbs
-updates suffice. Therefore, we have
-\begin{align}
-\lambda_{c,i} \given \by, \mathcal{S} &\sim \distGamma\left(\alpha_c^0 + \sum_{t=1}^T y_{c,t} \bbI[S_t=i], \;\beta_c^0 + \sum_{t=1}^T \bbI[S_t=i]\right).
-\end{align}
+ In our framework, probabilistic network models formalize the
+ intuitive belief that functional connections arise from underlying
+ latent variables.  For some well-studied populations, like retinal
+ ganglion cells (RGCs) and hippocampal place cells, we already have a
+ strong intuition about what these latent variables should be --- RGCs
+ come in a variety of distinct types and respond to light in their
+ receptive field, while hippocampal place cells reflect locations in
+ the environment. These exemplify the interpretable latent variables
+ we wish to infer for brain circuits that have eluded simple
+ representations.
 
-Under the weak limit approximation the priors on~$\bP_{i,:}$
-and~$\bpi$ reduce to Dirichlet distributions, which are also conjugate
-with the finite HMM. Hence we can derive conjugate Gibbs updates for
-these parameters as well. They take the form:
-\begin{align}
-\bpi \given \alpha_0, \bbeta &\sim \distDirichlet\left(\alpha_0\bbeta + 1_{S_1}\right),\\
-\nonumber \bP_{i,:} \given \alpha_0, \bbeta &\sim \distDirichlet\left(\alpha_0\bbeta + \bn_{i}\right),\\
-\nonumber n_{i,j}&=\sum_{t=1}^{T-1} \bbI[S_t=i,S_{t+1}=j],
-\end{align}
-where~$1_j$ is a unit vector with a one in the~$j$-th entry.
+ To perform this inference, we develop novel a Markov chain Monte
+ Carlo (MCMC) algorithm that can efficiently invert the generative
+ procedure above in order to find the posterior distribution over
+ latent variables given observed spike trains or calcium fluorescence
+ traces.  Since we do not know \textit{a priori} what types of latent
+ variables to expect, we show how a wide range of hypotheses can be
+ encoded as prior distributions over networks. Since weighted,
+ directed networks can be equivalently represented as sparse matrices,
+ prior distributions over the space networks correspond to
+ distributions over matrices. Specifically, a network can be
+ represented as the elementwise product of a real-valued weight
+ matrix~$\bW$, whose entries,~$\bw_{n \from m}$, specify the strength
+ of the directed connection from neuron~$m$ to neuron~$n$, and a
+ binary adjacency matrix~$\bA$, whose entries,~$a_{n \from m}$, denote
+ whether or not a connection is present. Thus,~$\bA$ specifies the
+ sparsity of the network, while~$\bW$ specifies the strength. This
+ decomposition is known as a spike-and-slab model in machine
+ learning~\cite{Mitchell1988}.
 
-Conditioned upon the firing rates, the initial state distribution, and
-the transition matrix, we can jointly update the latent states of the
-HDP-HMM using a {\em forward filtering, backward sampling}
-algorithm. Details of this well-known algorithm can be found in
-\citep{Johnson14b}; the intuition is that in the backward pass of the
-algorithm, we have a conditional distribution over~$S_t$
-given~$S_{t+1:T}$. We can iteratively sample from these distributions
-as we go backward in time to generate a full sample
-from~${p(\mathcal{S} \given \bP, \bpi, \bLambda)}$. Jointly sampling
-these latent states allows us to avoid issues with mixing when
-individually sampling states that are highly correlated with one
-another.
+% Network models
+\begin{figure}[t!]
+  \centering
+  \textit{~~~~~Adjacency Model} \\
+  % Gaussian row
+  \hspace{1em}
+  \begin{subfigure}[b]{1.25in}
+    \centering
+    \includegraphics[width=\textwidth]{figures/ch3/Dense-Gaussian.png}
+  \end{subfigure}
+  ~
+  \hspace{-.1in}
+  \begin{subfigure}[b]{1.10in}
+    \centering
+    \includegraphics[width=\textwidth]{figures/ch3/Bernoulli-Gaussian.png}
+  \end{subfigure}
+  ~
+  \hspace{-.1in}
+  \begin{subfigure}[b]{1.10in}
+    \centering
+    \includegraphics[width=\textwidth]{figures/ch3/SBM-Gaussian.png}
+  \end{subfigure}
+  ~
+  \hspace{-.1in}
+  \begin{subfigure}[b]{1.10in}
+    \centering
+    \includegraphics[width=\textwidth]{figures/ch3/Distance-Gaussian.png}
+  \end{subfigure}
+  \\
+  \vspace{-.1in}
+  % SBM row
+  \rotatebox{90}{\textit{~~~~~Weight Model}}
+  \begin{subfigure}[b]{1.25in}
+    \centering
+    \includegraphics[width=\textwidth]{figures/ch3/Dense-SBM.png}
+  \end{subfigure}
+  ~
+  \hspace{-.1in}
+  \begin{subfigure}[b]{1.10in}
+    \centering
+    \includegraphics[width=\textwidth]{figures/ch3/Bernoulli-SBM.png}
+  \end{subfigure}
+  ~
+  \hspace{-.1in}
+  \begin{subfigure}[b]{1.10in}
+    \centering
+    \includegraphics[width=\textwidth]{figures/ch3/SBM-SBM.png}
+  \end{subfigure}
+  ~
+  \hspace{-.1in}
+  \begin{subfigure}[b]{1.10in}
+    \centering
+    \includegraphics[width=\textwidth]{figures/ch3/Distance-SBM.png}
+  \end{subfigure}
+  \\
+  % Distance row
+  \vspace{-.1in}
+  \hspace{1em}
+  \begin{subfigure}[b]{1.25in}
+    \centering
+    \includegraphics[width=\textwidth]{figures/ch3/Dense-Distance.png}
+  \end{subfigure}
+  ~
+  \hspace{-.1in}
+  \begin{subfigure}[b]{1.10in}
+    \centering
+    \includegraphics[width=\textwidth]{figures/ch3/Bernoulli-Distance.png}
+  \end{subfigure}
+  ~
+  \hspace{-.1in}
+  \begin{subfigure}[b]{1.10in}
+    \centering
+    \includegraphics[width=\textwidth]{figures/ch3/SBM-Distance.png}
+  \end{subfigure}
+  ~
+  \hspace{-.1in}
+  \begin{subfigure}[b]{1.10in}
+    \centering
+    \includegraphics[width=\textwidth]{figures/ch3/Distance-Distance.png}
+  \end{subfigure}
+  \\
+  \vspace{-.1in}
+  \caption[Examples of network models]{Example network models.
+    Each row corresponds to a fixed weight matrix,~$\bW$, 
+    and each column corresponds to a fixed adjacency matrix,~$\bA$. The panels show 
+    the elementwise product of the two. In the left column, the adjacency matrix is 
+    dense, i.e.~$a_{n \from m} \equiv 1$ for all pairs. Thus the left column shows
+    just the matrix~$\bW$. Color denotes the weight (blue is negative, red is postiive).
+    The second column shows an independent Bernoulli adjacency 
+    model in which each connection is present with the same probability. In the SBM, 
+    each neuron has a latent cluster assignment that governs the probability of 
+    connections, and in the distance model, the neurons have a latent location such 
+    that nearby neurons are more likey to connect. In the SBM, the rows and columns 
+    are sorted by type, and in the distance model, they are sorted by location. 
+    In the top row, the weights are drawn from an independent Gaussian model. The 
+    SBM has type-dependent mean weights. The distance model has weights that 
+    decrease as a function of distance, whcih leads to the banded structure.
+    independent Gaussian model}
+  \label{fig:network_models}
+\end{figure}
 
-Finally, the Dirichlet parameters~$\bbeta$ and the concentration
-parameters~$\alpha_0$ and~$\gamma$ can be updated as
-in~\citep{Teh06}. A single iteration of the final algorithm consists
-of an update for each parameter of the model. The aforementioned
-updates are based upon previous work; one novel direction that we
-explore in this work is the sampling of the hyperparameters of the
-gamma firing rate priors.
+Figure~\ref{fig:network_models} shows how a variety of networks can be
+constructed by combining different priors on the weights (rows) with
+priors on the pattern of connectivity (columns). Each row corresponds
+to a fixed weight matrix drawn from either an independent Gaussian
+prior, a stochastic block model (SBM), or a latent distance
+model. Each column corresponds to a fixed adjacency matrix drawn from
+either a complete graph model, an independent Bernoulli model, an SBM,
+or a latent distance model. The matrices show the element-wise
+product, which encodes a weighted, directed network. Standard
+generalized linear models implicitly assume a complete network with
+independent Gaussian weights (top left panel of
+Figure~\ref{fig:network_models}).  Here, all pairs of neurons are
+connected to each other and all weights are independent, identically
+distributed Gaussian random variables. By using latent variable
+models, we can construct much richer network models in which the
+sparsity and strength of connections depend on types and locations of
+neurons.  Complete details of these models are given in
+Section~\ref{sec:methods}
 
-\subsubsection{Setting firing rate hyperparameters} 
-\label{sec:fr_hypers}
-We consider three approaches to setting the hyperparameters of the
-gamma priors for Poisson firing rates, namely,~${\{\alpha_c^0,
-  \beta_c^0\}}$ for the $c$-th cell.  Note that these parameters are
-distinct from the parameters of the DP prior.
+Once we have specified a class network models, we can perform inference and 
+evaluate them on the basis of their predictive power. A good model should 
+be able to generalize to new neurons by predicting the neurons' latent 
+variables and connections. If these predictions are accurate, the model 
+will assign high probability to the held-out neurons' spike trains. 
+In this way, we can assess the quality of the different network models
+and determine which latent variable model is most appropriate for the 
+neural population under study. This provides a flexible, data-driven 
+method of exploring a variety of hypotheses about interpretable structure 
+underlying complex, dynamical models of neural activity.
 
-
-\begin{itemize}
-
-\item In the first approach, we estimate these parameters using an
-  empirical Bayesian (EB) procedure, that is, by maximizing the
-  marginal likelihood of the spike counts.  For each cell, this may be
-  easily done using standard maximum likelihood estimation for the
-  negative binomial model.  In practice, we found that without
-  regularization this approach leads to extreme values of the
-  hyperparameters.
-
- 
-
-\item Our second approach samples these hyperparameters using
-  Hamiltonian Monte Carlo (HMC) \citep{Neal10}. We note that for fixed
-  values of the ``shape'' parameter~$\alpha_c^0$, the conditional
-  distribution of the ``scale'' parameter,~$\beta_c^0$ is conjugate
-  with a gamma prior distribution. However, setting the shape
-  parameter \textit{a priori} is challenging because it can have a
-  strong influence on the firing rate distribution. HMC allows us to
-  jointly sample both the shape and the scale parameters
-  simultaneously.
-
-To implement HMC we must have access to both the log probability of
-the parameters as well as its gradient. Since both parameters are
-restricted to be positive, we instead reparameterize the problem in
-terms of their logs. For cell~$c$, the conditional log probability
-equal to,
-\begin{align}
-\mathcal{L} &= \log p(\log \alpha_c^0, \log \beta_c^0 \given \bLambda_{c,:}) \\
-\nonumber &= \sum_{i=1}^m \log p(\lambda_{c,i} \given \alpha_c^0, \beta_c^0) + \text{const.} \\
-\nonumber &= \sum_{i=1}^m \alpha_c^0 \log \beta_c^0 - \log \Gamma(\alpha_c^0) + (\alpha_c^0 - 1) \log \lambda_{c,i} - \beta_c^0 \lambda_{c,i}.
-\end{align}
-Taking gradients with respect to both parameters yields,
-\begin{align}
-\frac{\partial \mathcal{L}}{\partial \log \alpha_c^0} &= \sum_{i=1}^m \left[ \log \beta_c^0 -\Psi(\alpha_c^0) + \log \lambda_{c,i} \right] \times \alpha_c^0, \\
-\nonumber \frac{\partial \mathcal{L}}{\partial \log \beta_c^0} &= \sum_{i=1}^m \left[ \frac{\alpha_c^0}{\beta_c^0}  - \lambda_{c,i} \right] \times \beta_c^0.
-\end{align}
-The HMC algorithm uses these gradients to inform a stochastic walk
-over the posterior distribution. With knowledge of the gradients, HMC
-can sometimes make large updates to parameters, especially in cases
-where the parameters are highly correlated under the posterior.
-
-
-\item In the final approach, we fix the shape
-  hyperparameter,~$\alpha_c^0$, and infer the scale,~$\beta_c^0$.  We
-  place a gamma prior on the scale,~$\beta_c^0 \sim \distGamma(\mu,
-  \nu)$. Given~$\alpha_c^0$, the conditional distribution of the scale
-  is
-\begin{align}
-\beta_c^0 \given \alpha_c^0, \{\lambda_{c,i}\}, \mathcal{S}  &\sim \distGamma\bigg(
-\mu + \sum_{i=1}^m \bbI[n_i > 0] \cdot \alpha_c^0, \,
-\nu + \sum_{i=1}^m \bbI[n_i > 0] \cdot \lambda_{c,i} \bigg) \\
-\nonumber n_i &= \sum_{t=1}^T \bbI[S_t=i].
-\end{align}
-In the following experiments, we set the shape parameter
-be~$\alpha_c^0=1$, and we set the scale prior parameters to~$\mu=1$
-and~$\nu=1$.  This is equivalent to an exponential prior on
-rates,~$\lambda_{c,i} \sim \distExponential(\beta_c^0)$, and an
-exponential prior on the scale~$\beta_c^0 \sim \distExponential(1)$.
-One could perform cross validation over the shape parameter, but the
-exponential prior is a rather weak assumption that enables
-fully-Bayesian inference.
-
-
-\end{itemize}
-
-
-\subsubsection{Predictive log likelihood}
-With the parameter and hyperparameter inference complete, we evaluate
-the performance of our algorithm in terms of its predictive log
-likelihood on held out test data. We approximate the predictive log
-likelihood with samples from the posterior distribution generated by
-our MCMC algorithm. That is,
-\begin{align}
-\log p(\by_{test} \given \by_{1:T}) &= \log \sum_{\mathcal{S}_{test}} \int_{\bTheta} p\left(\by_{test}, \mathcal{S}_{test} \given \btheta \right) \; p\left(\btheta \given \by_{train} \right) \mathrm{d}\btheta, \\
-\nonumber &\approx \log \frac{1}{N} \sum_{n=1}^N \sum_{\mathcal{S}_{test}} p\left(\by_{test},  \mathcal{S}_{test} \given \btheta_n\right),
-\end{align}
-where~${\btheta=(\bLambda, \bP, \bpi)}$ and~$\{\btheta_n \}_{n=1}^N
-\sim p(\btheta \given \by_{train})$. The summation over latent state
-sequences for the test data is performed with the message-passing
-algorithm for HMMs.
-
-\subsection{Variational Bayes (VB) inference}
-
-
-
-We build upon our previous work \citep{Chen12a,Chen14,Johnson14} to
-develop a variational inference algorithm for fitting the HDP-HMM to
-hippocampal spike trains. Our objective is to approximate the
-posterior distribution of the HDP-HMM with a distribution from a more
-tractable family. As usual, we choose a factorized approximation that
-allows for tractable optimization of the parameters of the variational
-model. Specifically, we let,
-\begin{align}
-p(\mathcal{S}, \bLambda, \bP, \bpi, \bbeta \given \by_{1:T}) &\approx q(\mathcal{S}) q(\bLambda) q(\bP) q(\bpi) q(\bbeta).
-\end{align}
-
-Since the independent Poisson observations are conjugate with the
-gamma firing rate prior distributions, choosing a set of independent
-gamma distributions for~$q(\bLambda)$ allows for simple variational
-updates.
-\begin{align}
-q(\bLambda) &= \prod_{i=1}^M \prod_{c=1}^C \distGamma\left(\tilde{\alpha}_{c,i},\, \tilde{\beta}_{c,i} \right), \\
-\nonumber \tilde{\alpha}_{c,i} &\leftarrow \alpha_c^{0} + \sum_{t=1}^T y_{c,t} \mathbb{E}_q\big[\bbI[S_t=i]\big], \\
-\nonumber \tilde{\beta}_{c,i} &\leftarrow\beta_c^{0} + \sum_{t=1}^T \mathbb{E}_q\big[\bbI[S_t=i]\big].
-\end{align}
-
-Following \citep{Johnson14}, we use a ``direct assignment'' truncation
-for the HDP \citep{Bryant12, Liang07}. In this scheme, a truncation
-level~$M$ is chosen {\it a priori} and~$q(\mathcal{S})$ is limited to
-support only states~${S_t\in\{1,\ldots,M\}}$. The advantage of this
-approximation is that conjugacy is retained with~$\bLambda$,~$\bP$,
-and~$\bpi$, and the variational approximation~$q(\mathcal{S})$ reduces
-to
-\begin{align}
-q(\mathcal{S}) &= \texttt{HMM}(\tilde{\bP}, \tilde{\bpi}, \tilde{\bLambda}), \\
-\nonumber \tilde{\bP} &= \exp\left\{\mathbb{E}_q[\ln \bP]\right\}, \\
-\nonumber \tilde{\bpi} &= \exp\left\{\mathbb{E}_q[\ln \bpi]\right\}, \\
-\nonumber \tilde{\bLambda} &= \exp\left\{\mathbb{E}_q[\ln p(\by \given \bLambda)]\right\}.
-\end{align}
-Expectations~${\mathbb{E}_q[S_t=i]}$ can then be computed using
-standard message-passing algorithms for HMMs.
-
-With the direct assignment truncation, the variational factors
-for~$\bP_{i,:}$ and~$\bpi$ take on Dirichlet priors. Unlike in the
-finite-state HMM, however, these Dirichlet priors are now over~${M+1}$
-dimensions since the final dimension accounts for all
-states~${i>M}$. Under the HDP prior we had~${P_{i,:}\sim
-  \texttt{DP}(\alpha_0 \cdot \bbeta)}$, and under the truncation the
-DP parameter becomes~$\alpha_0 \cdot \bbeta_{1:M+1}$. Again,
-leveraging the conjugacy of the model, we arrive at the following
-variational updates:
-\begin{align}
-q(\bP) &= \prod_{i=1}^M \mathrm{Dir}(\tilde{\balpha}_P^{(i)}), \\
-\nonumber (\tilde{\balpha}_P^{(i)})_j &\leftarrow \alpha_0 \beta_j + \mathbb{E}_q[\bbI[S_t=i]\cdot\bbI[S_{t+1}=j]].
-\end{align}
-We use an analogous update for~$\bpi$.
-
-The principal drawback of the direct assignment truncation is that the
-prior for~$\bbeta$ is no longer conjugate. This could be avoided with
-the fully conjugate approach of \citep{Hoffman13}, however, this
-results in extra bookkeeping and the duplication of states. Instead,
-following \citep{Johnson14, Bryant12, Liang07}, we use a point
-estimate for this parameter by setting~${q(\bbeta)=\delta_{\bbeta^*}}$
-and use gradient ascent with backtracking line search to update this
-parameter during inference.
-
-There are a number of hyperparameters to set for the variational
-approach as well. The hyperparameters~$\alpha_c^0$ and~$\beta_c^0$ of
-gamma prior on firing rates can be set with empirical Bayes, as
-above. We resort to cross validation to set the Dirichlet
-parameter~$\alpha_0$ and the GEM parameter~$\gamma$.
- 
-
-Finally, in order to compute predictive log likelihoods on held out
-test data, we draw multiple samples~$\{(\bLambda, \mathcal{S}, \bP,
-\bpi, \bbeta)_n\}_{n=1}^N$ from the variational posterior and
-approximate the predictive log likelihood as
-\begin{align}
-\ln p(\by_{test} \given \by_{1:T}) &\approx \ln \mathbb{E}_q\left[p(\by_{test} \given \mathcal{S}, \bLambda,  \bP, \bpi, \bbeta)\right] \\
-\nonumber &\approx \ln \frac{1}{N} \sum_{n=1}^N p(\by_{test} \given (\mathcal{S}, \bLambda, \bP, \bpi, \bbeta)_n).
-\end{align}
 
 \section{Results}
-The inference algorithms were implemented based upon the PyHSMM
-framework of~\citep{Johnson14b}. The codebase was written in Python
-with \texttt{C} offloads for the message passing algorithms.  We have
-extended the codebase to perform hyperparameter inference using the
-methods described above, and expanded it to tailor to neural spike
-train analysis. Our code is publicly available
-({\url{https://github.com/slinderman/pyhsmm_spiketrains}}).
+We demonstrate the efficacy of this approach by applying our framework 
+to two neural populations for which we have longstanding experimental 
+evidence in favor of a particular latent variable representation.
+First, we consider a population of simultaneously recorded retinal 
+ganglion cells (RGCs), which can be characterized by their type 
+(either \textit{on} or \textit{off} in this dataset) and
+by the location of their receptive field centers. 
+We then consider a population of hippocampal place cells, which encode 
+positions in a two dimensional environment. In both cases, our approach 
+recovers these latent representations given only the neural spike trains,
+without any knowledge of the stimulus or the true location. Finally, 
+we assess the advantages of our Bayesian approach and the scalability 
+of our algorithm with synthetic data.
 
+\subsection{Retinal Ganglion Cells}
+\label{sec:rgc}
 
-\begin{figure}
+\begin{figure}[t!]
   \centering
-  \begin{subfigure}[t]{5.in}
-    \includegraphics[width=\textwidth]{figures/ch5/Fig1}
+  \begin{subfigure}[b]{2.25in}
+    \centering
+    \caption{}
+    \vspace{-.2in}
+    \includegraphics[width=\textwidth]{figures/ch3/rgc_pred_ll_bar.pdf}
+    \label{fig:rgc_pll}
   \end{subfigure}
+  ~
+  \begin{subfigure}[b]{1.6in}
+    \centering
+    \caption{}
+    \vspace{-.2in}
+    \includegraphics[width=\textwidth]{figures/ch3/rgc_pairwise_distance_scatter.pdf}
+    \label{fig:rgc_dist}
+  \end{subfigure}
+  ~
+  \begin{subfigure}[b]{1.6in}
+    \centering
+    \caption{}
+    \vspace{-.2in}
+    \includegraphics[width=\textwidth]{figures/ch3/rgc_on_locations.pdf}
+    \label{fig:rgc_locs}
+  \end{subfigure}
+  \\
   \vspace{-.2in}
-  \caption[A synthetic dataset drawn from an HDP-HMM]{ An example of a
-    synthetic dataset drawn from an HDP-HMM.  (A) Simulated population
-    spike trains or spike counts. (B) Inferred latent state
-    sequence. (C) Inferred state transition matrix~$\bP$. (D) Inferred
-    neuronal firing rate vectors~$\blambda_i$ specific to each state.}
-\label{fig1}
+  \begin{subfigure}[b]{1.85in}
+    \centering
+    \caption{}
+    \vspace{-.2in}
+    \includegraphics[width=\textwidth]{figures/ch3/rgc_connectivity.pdf}
+    \label{fig:rgc_w}
+  \end{subfigure}
+  ~
+    \begin{subfigure}[b]{1.85in}
+    \centering
+    \caption{}
+    \vspace{-.2in}
+    \includegraphics[width=\textwidth]{figures/ch3/rgc_prob_conn.pdf}
+    \label{fig:rgc_rho}
+  \end{subfigure}
+  ~
+  \begin{subfigure}[b]{1.85in}
+    \centering
+    \caption{}
+    \vspace{-.2in}
+    \includegraphics[width=\textwidth]{figures/ch3/rgc_mean_conn.pdf}
+    \label{fig:rgc_mu}
+  \end{subfigure}
+  \vspace{-2em}
+  \caption[Retinal ganglion cell types and locations inferred
+    from spike trains alone]
+          {Retinal ganglion cell types and locations can be inferred
+    from spike trains alone.
+    \textbf{(a)} The combined distance model and block model yields the highest predictive log likelihood (units: nats/spike), compared to other combinations of adjacency models (groups of bars) and weight models (\textit{blue}: latent distance weight model, \textit{yellow}: stochastic block model for weights, \textit{green}: Gaussian weights).
+    \textbf{(b)} The inferred distances under the latent distance model are highly correlated with the true distances, as measured by stimulus sensitivity, whereas inferred embeddings under PCA are not.
+    \textbf{(c)} Moreover, the inferred locations (semitransparent markers) recover the true receptive field centers (solid markers with black outline). Shown here only for ON cells.
+    \textbf{(d)} Inferred network,~${\bA \odot \bW}$, under a latent distance model of connection probability and a stochastic block model for connection weight, averaged over 500 posterior samples.
+    \textbf{(e)} Expected probability of connection under the latent distance model.
+    \textbf{(f)} Expected connection strength under the stochastic block model. The inferred cell classes perfectly match the true ON and OFF types, and reflect within-class excitation and between-class inhibition.
+}
+  \label{fig:rgc}
 \end{figure}
 
- \subsection{Simulation data}
+We applied our model to simultaneously recorded multineuronal spike
+trains from a population of 27 primate retinal ganglion cells
+(RGCs). This dataset was previously analyzed with a standard
+generalized linear model in \cite{Pillow-2008}.  In this dataset, the
+population is presented with a Gaussian white noise video with pixel
+sizes tuned to approximately the width of a receptive field. We
+trained our models on one minute of spiking activity, binned at one
+millisecond time resolution. There were approximately 50,000 spikes in
+this recording.  We also held out one minute of data for model
+evaluation.
 
-\paragraph{Setup} 
- First, we simulate synthetic spike count data using an HDP-HMM with
- ${C=50}$ neurons,~${T=2000}$ time bins, and Dirichlet concentration
- parameters~$\alpha_0=12.0$ and~$\gamma=12.0$. These configuration
- yield state sequences that tend to visit 30-45 states. All of
- neuronal firing rate parameters are drawn from a gamma distribution:
- $\distGamma(\alpha_c^0=1, \beta_c^0=1)$ (with mean 1.0 and standard
- deviation 1.0).
- 
- An example of one such synthetic dataset is shown in
- Fig.~\ref{fig1}. The states have been ordered according to their
- occupancy (i.e., how many times they are visited during the
- simulation), such that the columns of the transition matrix exhibit a
- decrease in probability as the incoming state number,~${S}_{t+1}$,
- increases. This is a characteristic of the HDP-HMM, indicating the
- tendency of the model to reuse states with high occupancy.
+Retinal ganglion cells respond to light (or the absence thereof) shown
+upon their receptive field. The cells are roughly evenly distributed
+across the two-dimensional retinal plane. Thus, it is natural to
+characterize these cells by the location of their receptive field
+center.  Moreover, this population is comprised of two types of cells,
+\textit{on} and \textit{off} cells, characterized by their response to
+visual stimuli. \textit{On} cells increase their firing when light is
+shone upon their receptive field; \textit{off} cells decrease their
+firing rate in response to light in their receptive field.  Cell types
+are identified by similarity in their response properties as well as
+morphological and physiological properties~\cite{sanes2015types}. With
+knowledge of the stimulus, these cells can be clearly separated into
+their respective types by clustering the spike-triggered average
+simulus.  This characterization in terms of latent locations and cell
+types has been validated through decades of experiments, and has been
+made possible by the relative ease with which relevant stimuli can be
+identified and controlled. To what extent can these latent
+representations be discovered from the spike trains alone?
 
-We compare six combinations of model, inference algorithm, and
-hyperparameter selection approaches: (i) HMM with the correct number
-of states, fit by Gibbs sampling with fixed~$\alpha_c^0=1$; (ii) HMM
-with the correct number of states, fit by VB with hyperparameters set
-by empirical Bayes; (iii) HDP-HMM fit by Gibbs sampling with
-fixed~$\alpha_c^0=1$; (iv) HDP-HMM fit by Gibbs sampling and HMC for
-hyperparameter updates; (v) HDP-HMM fit by MCMC with hyperparameters
-set by empirical Bayes; and (vi) HDP-HMM fit by VB with
-hyperparameters set by empirical Bayes. For the MCMC methods, we set
-gamma priors over the concentration parameters~($\alpha_0$
-and~$\gamma$); for the VB methods, we set~$\alpha_0$ and~$\gamma$ to
-their true values. Alternatively, they can be selected by cross
-validation. We set both the weak limit approximation for MCMC and the
-direct assignment truncation level for VB to~${M=100}$.
+\sloppy
+We fit our model to the measured spike trains for each of the twelve
+probabilistic network priors shown above --- three weight models and
+four adjacency models. Predictive likelihood comparisons on the
+held-out data reveal that the adjacency matrix, i.e. the pattern of
+connectivity, is well-characterized by a two-dimensional latent
+distance model (Fig.~\ref{fig:rgc_locs}), as expected given the
+localized receptive fields of RGCs. Moreover, the pairwise distances
+between the latent locations are highly correlated with the true
+distances between receptive field centers (Fig.~\ref{fig:rgc_dist}),
+even though the stimulus was never used during training. By contrast,
+the inferred locations given by the top two principal components of
+the spike trains are highly uncorrelated, indicating that PCA does not
+recover a meaningful spatial embedding.  Finally, the inferred
+locations can be rotated and scaled such that they match the true
+locations almost perfectly (Fig.~\ref{fig:rgc_locs}). Rotation does
+not change the pairwise distances and scaling simply changes the
+units. This matching is highly unlikely for randomly distributed
+locations.  In Fig.~\ref{fig:rgc_locs}, the true locations are shown
+as solid markers with black outlines, and the inferred locations
+sampled from the posterior distribution are shown as semitransparent
+markers of the same color and shape.
 
-We collect 5000 samples from the MCMC algorithms and use the last 2000
-for computing predictive log likelihoods. For visualization, we use
-the final sample to extract the transition matrix and the firing
-rates. The number of samples and the amount of burn-in iterations were
-chosen by examining the log probability and parameter traces for
-convergence. It is found that the MCMC algorithm converges within
-hundreds of iterations. For further convergence diagnosis of a single
-Gibbs chain, one may use the autocorrelation tools suggested in
-\citep{RafteryLewis92,Cowles96}.
+For the weight matrix, a latent distance model (Dist) and a stochastic
+block model (SBM) both yield similar predictive likelihoods. Looking
+into the inferred types under the SBM, we find that the neurons are
+grouped according to their true \textit{on} and \textit{off} cells,
+again without any knowledge of the stimulus. These types determine 
+the expected interaction weight for each pair of neurons. 
 
-We run the VB algorithm for 200 steps to guarantee convergence of the
-variational lower bound. Again, this is assessed by examining the
-variational lower bound and is found to converge to a local maxima
-within tens of iterations.
+Figure~\ref{fig:rgc_w} shows the inferred functional network under the
+latent distance adjacency model and stochastic block model for
+weights.  The neurons are sorted first by their type (\textit{off}
+then \textit{on}) and then by their $x$-location. This yields the
+three bands in the matrix of connection
+probabilities~\ref{fig:rgc_rho}. Nearby cells have much higher
+probability of connection. The mean connection strength
+(Fig.~\ref{fig:rgc_mu}) shows the characteristic pattern of positive
+weights between cells of the same type and negative weights betewen
+cells of opposite types. The diagonal of this matrix shows the weights
+of self-connections, which are typically negative due to refractory
+effects. 
+
+Together, these inferred types and locations provide 
+compelling evidence for a highly structured pattern of functional 
+connectivity. Given the extensive work on characterizing retinal 
+ganglion cell responses, we have considerable evidence that the 
+representation we learn from spike trains alone is indeed the 
+optimal way to characterize this population of cells. This 
+lends us confidence that we may trust the representations learned from 
+spike trains recorded from deeper brain areas, where traditional 
+stimulus-response correlations are less valuable.
+
+\subsection{Hippocampal Place Cells}
+\label{sec:hipp}
+
+\begin{figure}[t!]
+  \centering
+  \vspace{-.2in}
+  \begin{subfigure}[b]{1.75in}
+    \centering
+    \caption{}
+    \vspace{-.2in}
+    \includegraphics[width=\textwidth]{figures/ch3/hipp_true_locations.pdf}
+    \label{fig:hipp_true_locs}
+  \end{subfigure}
+  ~
+  \begin{subfigure}[b]{1.75in}
+    \centering
+    \caption{}
+    \vspace{-.2in}
+    \includegraphics[width=\textwidth]{figures/ch3/hipp_inferred_locations.pdf}
+    \label{fig:hipp_inf_locs}
+  \end{subfigure}
+  ~
+  %\begin{subfigure}[b]{1.75in}
+  %  \centering
+  %  \caption{}
+  %  \vspace{-.2in}
+  %  \includegraphics[width=\textwidth]{figures/ch3/hipp_lds_locations.pdf}
+  %  \label{fig:hipp_lds_locs}
+  %\end{subfigure}
+  %\\
+  %\vspace{-.2in}
+  \begin{subfigure}[b]{1.75in}
+    \centering
+    \caption{}
+    \vspace{-.2in}
+    \includegraphics[width=\textwidth]{figures/ch3/hipp_pairwise_distance_scatter.pdf}
+    \label{fig:hipp_distances}
+  \end{subfigure}
+  %~
+  \\
+  \vspace{-.2in}
+  \begin{subfigure}[b]{2.25in}
+    \centering
+    \caption{}
+    \vspace{-.2in}
+    \includegraphics[width=\textwidth]{figures/ch3/hipp_pred_ll_bar.pdf}
+    \label{fig:hipp_pll}
+  \end{subfigure}
+  ~
+  \begin{subfigure}[b]{1.85in}
+    \centering
+    \caption{}
+    \vspace{-.2in}
+    \includegraphics[width=\textwidth]{figures/ch3/hipp_connectivity.pdf}
+    \label{fig:hipp_conn}
+  \end{subfigure}
+  \vspace{-2em}
+  \caption[Hippocampal place fields inferred from spike trains]{
+    Hippocampal place fields are inferred from population spike trains.
+    }
+  \label{fig:hipp}
+\end{figure}
+
+We also applied our framework to simultaneously recorded
+multi-neuronal spike trains from the hippocampus of freely moving rats
+in a circular arena.
+% Experiments were conducted under the supervision of the
+% Massachusetts Institute of Technology (MIT) Committee on Animal Care
+% and followed the NIH guidelines.  The micro-drive arrays containing
+% multiple tetrodes were implanted above the right dorsal hippocampus
+% of male Long-Evans rats.  The tetrodes were slowly lowered into the
+% brain reaching the cell layer of CA1 two to four weeks following the
+% date of surgery.  Recorded spikes were manually clustered and
+% sorted.
+This dataset consists of~$N=25$ neurons recorded for a duration of
+almost ten minutes and binned in 250ms time bins.  The rat is freely
+foraging in an open field environment roughly 120cm in diameter.
+% Since place cells are primarily active during location, the spike
+% train is segmented into individual running epochs by discarding bins
+% in which the velocity is less than 10cm/s.  This results in a
+% dataset that is approximately 2000 time bins in length.
+
+As in the retina, we have strong intuitions about the latent structure
+underlying hippocampal place cell activity, namely, we expect cells
+representing nearby locations to be correlated and cells with disjoint
+place fields to be anticorrelated. Can we extract the spatial layout
+of place fields from spike trains alone?
+
+We apply our framework, fitting all twelve network models and
+evaluating them on the basis of predictive likelihood. We use a
+negative binomial observation model to allow multiple spikes per time
+bin. We find that the distance dependent weight models yield the
+highest predictive likelihood (Fig.~\ref{fig:hipp_pll}). The
+stochastic block model yields the highest predictive likelihood, but
+upon futher investigation we find that almost all neurons are
+connected in this model. There is one outlier, neuron \#$1$, which is
+only sparsely connected. The SBM assigns 24 neurons are assigned to
+one cluster, and assigns neuron \#$1$ to its own group.  Thus, the
+stochastic block model is quite similar to an independent Bernoulli
+model, as is evident from the similar predictive likelihood of these
+two models.
+
+Looking into the inferred locations under the latent distance model
+for the weight matrix, we find that the inferred locations
+(Fig~\ref{fig:hipp_inf_locs}) are (up to rotation and scale) highly
+similar to the true place field centers (Fig~\ref{fig:hipp_true_locs})
+measured using the rat's true location. This is quantified by plotting
+the pairwise distances between inferred locations against the pairwise
+distances between place field centers. The latent distance model's
+pairwise distances are highly correlated with the ground truth,
+whereas distances between PCA embeddings are very uncorrelated
+(Fig.~\ref{fig:hipp_distances}). For further comparison, we fit a
+Poisson linear dynamical system (PLDS) \cite{macke2011empirical} with
+a two dimensional latent state space, and used the rows of the
+~$N \times 2$ emission matrix as the locations of the neurons. This
+sophisticated model, which captures temporal dynamics of the neural
+population, yields pairwise distances that are quite correlated with
+the true distances, but we find that the variance of this fit grows
+with the true distance.  This reflects the fact that the PLDS does not
+explicitly parameterize interaction as a function of distance, but
+rather induces correlation due to similarity in the emission matrix as
+well as shared dynamics.
+
+Finally, we investigated the expected network under the posterior and 
+found that upon sorting the neurons by their inferred locations, an
+intuitive banded structure emerges (Fig.~\ref{fig:hipp_conn}). 
+The positive diagonal indicates strong autocorrelation between a 
+neurons spiking in consecutive 250ms bins. Over these time scales, 
+self-refractory effects are not evident. The primary connections 
+are inhibitory in nature, such that active cells suppress the activity 
+of cells with distal place fields. 
+
+These inferred representations again confirm our intuitive beliefs 
+about the structure of hippocamapl place cell responses. The 
+inferred latent variables recover meaningful structure in the
+neural activity, without any access to the location. Instead, 
+these representations arise from the neural activity alone.
+
+\subsection{Synthetic Data}
+\label{sec:synthetic}
+
+To assess the robustness and scalability of our framework, we apply
+our methods to simulated data with known ground truth.  First, we show
+that our Bayesian approach can recover structure in larger populations
+of neurons than those studied above.  Moreover, we show that our
+approach outperforms alternative methods that separate the problems of
+finding the network and discovering the underlying structure. Then, we
+show that for sparse networks, our approach only scales quadratically
+with the number of neurons --- a significant improvement over na\"ive
+methods that incur an additional~$O(N^3)$ cost per potential connection.
 
 
-\paragraph{Assessment} 
+\subsubsection{Advantages of being Bayesian}
+\label{sec:advantages}
+\begin{figure}[t!]
+  \centering
+  \vspace{-.2in}
+  \begin{subfigure}[b]{1.8in}
+    \centering
+    \caption{}
+    \vspace{-.25in}
+    \includegraphics[width=\textwidth]{figures/ch3/synth_rgc_true_network.pdf}
+    \label{fig:synth_rgc_true_network}
+  \end{subfigure}
+  ~
+  \begin{subfigure}[b]{1.8in}
+    \centering
+    \caption{}
+    \vspace{-.25in}
+    \includegraphics[width=\textwidth]{figures/ch3/synth_rgc_pred_ll.pdf}
+    \label{fig:synth_rgc_predll}
+  \end{subfigure}
+  ~
+  \begin{subfigure}[b]{1.8in}
+    \centering
+    \caption{}
+    \vspace{-.25in}
+    \includegraphics[width=\textwidth]{figures/ch3/synth_rgc_pairwise_distance_scatter.pdf}
+    \label{fig:synth_rgc_pairwise_dists}
+  \end{subfigure}
+  \caption[Synthetic RGC results]{Synthetic results based on the
+    retinal ganglion cell population studied above.
+    \textbf{(a)} Locations of the 200 neurons (100 \textit{on} and 100 \textit{off} cells) along with a subset of the connections. For clarity, 15\% of the connections are randomly chosen. Though the network is not symmetric, arrowheads are dropped for clarity.
+    \textbf{(b)} Predictive likelihood on 10,000 held-out time bins as a function of the number of time bins in the training dataset. ``MCMC'' denotes our Bayesian approach with a latent distance adjacency model and a SBM weight model. ``MAP'' denotes the $L_1$-regularized standard GLM.
+    \textbf{(c)} Inferred locations found by our model (MCMC) and by fitting a latent distance model to the thresholded standard GLM network (MAP).
+  }
+  \label{fig:synth_rgc}
+\end{figure}
 
-We use two criteria for result assessment with simulation data.  The
-first criterion is based on the Hamming error between the true and
-inferred state sequences. To compute this, we first relabel the
-inferred states in order to maximize overlap with the true
-states. Let~$\mathcal{S}$ be the true state sequence
-and~$\mathcal{S}'$ be the inferred state sequence. We define the
-overlap matrix~$O \in \naturals^{M \times M}$ whose entries~$O_{i,j}$
-is the number of times the true state is~$i$ and the inferred state
-is~$j$:
-\begin{align}
-O_{i,j} &= \sum_{t=1}^T \bbI[S_t=i] \, \bbI[S_t'=j].
-\end{align}
-We use the Hungarian method~\citep{kuhn1955hungarian} to find a
-relabeling of the inferred states that maximizes overlap, and then we
-measure the Hamming error between the true state
-sequence~$\mathcal{S}$, and the relabeled sequence of inferred
-states,~$\widetilde{\mathcal{S}}'$:
-\begin{align}
-\label{eq:hamming}
-\text{err}(\mathcal{S}, \widetilde{\mathcal{S}}') &= \sum_{t=1}^T \bbI[S_t \neq \widetilde{S}_t'].
-\end{align}
 
-Table~\ref{tab:synth_hamming} summarizes the Hamming error for all six
-models on five synthetic datasets. We see that the HDP-HMM fit via
-Gibbs sampling with firing rate hyperparameters set via empirical
-Bayes outperforms the other models and inference algorithms on three
-of five datasets, but the HDP-HMM with hyperparameter HMC sampling are
-very comparable. By contrast, when the models are fit with VB
-inference, the inferred state sequences tend to use more than the true
-number of states, which results in very poor Hamming error. Similarly,
-the HMM fit via Gibbs sampling does not factor in the penalty on
-additional states and instead tends to use all states equally,
-resulting in high Hamming error.
+For these analyses, we simulate a population of 200 neurons with
+structure that mimics that of the retinal ganglion cell population
+analyzed in Section~\ref{sec:rgc}. Figure~\ref{fig:synth_rgc_true_network}
+illustrates the underlying network. As before, we have \textit{on}
+cells and \textit{off} cells, each centered at a location in the 2D
+retinal plane. Nearby cells are more likely to be functionally
+connected, and cells of the same type will have excitatory influence
+on one another while cells of different types will inhibit one
+another. Again, these functional connections reflect correlations and
+anticorrelations between cells that arise from common input. We
+simulate 60,000 time bins and tune the network parameters such that if
+each time bin were one millisecond, the firing rates would range from 10Hz to
+70Hz with a mean of about 30Hz.  Rather than simulating an
+external white noise stimulus, here we simulate spontaneous activity
+of the network.
+
+Since we know the generative model that gave rise to the data, we can
+quantify the improvement from using our fully Bayesian approach
+rather than a standard GLM, and compare these improvements to the
+upper bound provided by the true model. Figure~\ref{fig:synth_rgc_predll}
+shows the predictive log likelihood for 10,000 bins of held-out data as
+a function of the number of time bins of training data. For shorter
+training datasets, our Bayesian approach yields considerably higher
+predictive likelihood than the standard,~$L_1$-regularized GLM. As
+the length of the training data increases, both our method and
+the standard GLM improve, and ultimately approach the likelihood of
+thet true model that generated the data. With more data, the network
+inference is driven less by the prior and more by the observations.
+Thus, in the limit of infinite data,the GLM will converge to the same
+network, and hence the same predictive likelihood, as our Bayesian method.
+However, with hundreds of neurons and tens of thousands of time bins,
+these results suggest that the Bayesian approach can yield substantial
+benefits.
+
+Rather than simultaneously fitting the network and the underlying
+latent variables, one may instead fit the network with an
+$L_1$-regularized GLM and \textit{then} fit a probabilistic network
+model to the GLM connection weights. This is the approach taken
+by~\citet{stevenson2009bayesian}.  The advantage is that the network
+is only fit once, and since this is usually the most expensive aspect
+of inference, it can save considerable time. However, when the data is
+limited, both the network and the latent variables are uncertain.  Our
+Bayesian approach finds joint assignments with high posterior
+probability, whereas the standard GLM finds a single network that does
+not account for prior beliefs about structure underlying the network.
+In this example, subsequently fitting a latent distance model to the
+adjacency matrix of a thresholded GLM network finds an embedding that
+is considerably worse than the embedding found by our Bayesian
+approach. This is illustrated by the decreased correlation between
+true and inferred pairwise distances under the standard GLM compared
+to that of our joint, Bayesian approach, as shown in
+Figure~\ref{fig:synth_rgc_pairwise_dists}.
+
+\begin{figure}[t!]
+  \centering
+  \vspace{-.2in}
+  \begin{subfigure}[b]{1.8in}
+    \centering
+    \caption{}
+    \vspace{-.25in}
+    \includegraphics[width=\textwidth]{figures/ch3/synth_rgc_true_conn.pdf}
+    \label{fig:synth_rgc_true_conn}
+  \end{subfigure}
+  ~
+  \begin{subfigure}[b]{1.8in}
+    \centering
+    \caption{}
+    \vspace{-.25in}
+    \includegraphics[width=\textwidth]{figures/ch3/synth_rgc_mcmc_conn.pdf}
+    \label{fig:synth_rgc_mcmc_conn}
+  \end{subfigure}
+  ~
+  \begin{subfigure}[b]{1.8in}
+    \centering
+    \caption{}
+    \vspace{-.25in}
+    \includegraphics[width=\textwidth]{figures/ch3/synth_rgc_bfgs_conn.pdf}
+    \label{fig:synth_rgc_bfgs_conn}
+  \end{subfigure} \\
+  \begin{subfigure}[b]{1.8in}
+    \centering
+    \caption{}
+    \vspace{-.25in}
+    \includegraphics[width=\textwidth]{figures/ch3/synth_rgc_true_sparsity.pdf}
+    \label{fig:synth_rgc_true_sparsity}
+  \end{subfigure}
+  ~
+  \begin{subfigure}[b]{1.8in}
+    \centering
+    \caption{}
+    \vspace{-.25in}
+    \includegraphics[width=\textwidth]{figures/ch3/synth_rgc_mcmc_prob_conn.pdf}
+    \label{fig:synth_rgc_mcmc_prob_conn}
+  \end{subfigure}
+  ~
+  \begin{subfigure}[b]{1.8in}
+    \centering
+    \caption{}
+    \vspace{-.25in}
+    \includegraphics[width=\textwidth]{figures/ch3/synth_rgc_bfgs_prob_conn.pdf}
+    \label{fig:synth_rgc_bfgs_prob_conn}
+  \end{subfigure}
+  \caption[Inferred connection probabilities for synthetic RGC data]{
+    \textbf{(a)} Weighted adjacency matrix for the synthetic RGC network shown in Fig.~\ref{fig:synth_rgc_true_network}.
+    \textbf{(b)} Network inferred by our fully Bayesian approach.
+    \textbf{(c)} Thresholded network found by an~$L_1$-regularized GLM.
+    \textbf{(d)} Adjacency matrix corresponding to the true network in Fig.~\ref{fig:synth_rgc_true_conn}.
+    \textbf{(e)} Inferred connection probability found by our model with a latent distance prior. The diagonal bands reflect the increased probability for nearby neurons..
+    \textbf{(f)} Inferred connection probability found by fitting a latent distance model to the network in Fig.~\ref{fig:synth_rgc_bfgs_conn}. Noise in this network leads to poor location estimates and nearly uniform connection probabilities.
+  }
+  \label{fig:synth_rgc_prob_conn}
+\end{figure}
+
+Figure~\ref{fig:synth_rgc_prob_conn} further illustrates this
+point. Here, the true network is shown as a weighted adjacency matrix
+(Fig.~\ref{fig:synth_rgc_true_conn}), along with its binary adjacency
+matrix (Fig.~\ref{fig:synth_rgc_true_sparsity}). The inferred network
+and connection probabilities from our fully Bayesian method with a
+latent distance model prior are shown in
+Fig.~\ref{fig:synth_rgc_mcmc_conn} and
+Fig.~\ref{fig:synth_rgc_mcmc_prob_conn}, respectively. Our MCMC
+algorithm does a good job recovering the underlying locations, which
+give rise to the diagonally banded connection probabilities, which reflect 
+distance dependence.  By
+contrast, the MAP network found via an $L_1$-regularized standard GLM
+is considerably noisier (Fig.~\ref{fig:synth_rgc_bfgs_conn}), since it
+knows nothing of the underlying distance dependent connectivity. A
+latent distance model fit to a thresholded copy of this network fails
+to capture the distance dependence
+(Fig.~\ref{fig:synth_rgc_bfgs_prob_conn}), since the spurious
+connections force otherwise well-separated neurons to lie close in the
+embedding. By jointly fitting the network and the latent locations, we
+weed out these spurious connections.
+
+\subsubsection{Scalability Analysis}
+
+Finally, we address the scalability of our Bayesian inference algorithms.
+With large-scale recordings becoming the norm, efficiency is paramount.
+There are three major parameters that govern the complexity of inference:
+the number of time bins,~$T$; the number of neurons,~$N$; and the level
+of sparsity,~$\rho$. The natural unit of measure is the wall-clock time
+required to perform one iteration of our MCMC algorithm. The following
+experiments were run on a quad-core Intel i5 with 6GB of RAM. Since the
+core operations consist of parallelized sampling code and standard linear
+algebra, performance scales almost linearly in the number of cores. We
+break down the wall-clock time into time spent updating the auxiliary
+variables of the observation model and time spent updating the network.
+Resampling the latent variables is a negligible cost.
+
+The wall clock time scales linearly with~$T$, as shown in
+Figure~\ref{fig:runtime_vs_T}. As we will show in
+Section~\ref{sec:methods}, the observation model contains~${NT}$
+auxiliary variables, each of which must be resampled. Additionally,
+each neuron must compute its sufficient statistics, which involves a
+rectangular matrix multiplication costing~$O(TN^2)$ time.
+
+Since there are~$O(N^2)$ possible connections in a network of~$N$
+neurons, there is no way to circumvent at least a quadratic cost
+in~$N$ (unless some connections can be ruled out \textit{a priori}).
+Figure~\ref{fig:runtime_vs_N} shows that this quadratic penalty is
+indeed evident. The cost of updating the auxiliary variables is only
+linear in~$N$, but the cost of updating the network is quadratic. In
+Section~\ref{sec:discussion}, we discuss potential strategies for
+ruling out connections and limiting this cost.
+
+
+\begin{figure}[t!]
+  \centering
+  \vspace{-.2in}
+  \begin{subfigure}[b]{1.81in}
+    \centering
+    \caption{}
+    \vspace{-.25in}
+    \includegraphics[width=\textwidth]{figures/ch3/runtime_vs_T.pdf}
+    \label{fig:runtime_vs_T}
+  \end{subfigure}
+  ~
+  \begin{subfigure}[b]{2.17in}
+    \centering
+    \caption{}
+    \vspace{-.25in}
+    \includegraphics[width=\textwidth]{figures/ch3/runtime_vs_N.pdf}
+    \label{fig:runtime_vs_N}
+  \end{subfigure}
+  ~
+  \begin{subfigure}[b]{1.27in}
+    \centering
+    \caption{}
+    \vspace{-.25in}
+    \includegraphics[width=\textwidth]{figures/ch3/runtime_vs_rho.pdf}
+    \label{fig:runtime_vs_rho}
+  \end{subfigure}
+  \vspace{-2em}
+  \caption[Scalability of the proposed Bayesian inference algorithm]{
+    Scalability of our inference algorithm as a function of: 
+    \textbf{(a)} the number of time bins,~$T$;
+    \textbf{(b)} the number of neurons,~$N$; and
+    \textbf{(c)} the average sparsity of the network,~$\rho$.
+    The complexity grows linear with~$T$ and quadratically with~$N$
+    (for fixed~$\rho$). The cost is broken down into the cost of
+    resampling the \polyagamma auxiliary variables (``Obs.'') and
+    the cost of resampling the sparse network (``Net.''). Color
+    scheme shared across all panels.
+  }
+  \label{fig:scalability}
+\end{figure}
+
+
+The total cost could actually be worse than quadratic because the cost
+of updating each connection could depend on~$N$. Fortunately, the
+complexity of our collapsed Gibbs sampling algorithm (described in
+Section~\ref{sec:methods}) only depends on the number of incident
+connections received by each neuron,~$d$.  Specifically, we must
+invert a~$d \times d$ matrix, which incurs an~$O(d^3)$
+cost. Figure~\ref{fig:runtime_vs_rho} illustrates this for a Bernoulli
+network with~$N=200$ neurons. The expected number of incoming
+connections is related to the probability of connection
+by~$\bbE[d]=\rho N$. If we increased the number of neurons but kept
+the average in-degree constant, the total cost would scale only
+quadratically with~$N$.
+
+\section{Methods}
+\label{sec:methods}
+Our primary contribution is a novel framework for discovering latent
+network structure underlying neural activity.  This framework consists
+of a probabilistic model relating structure to observed signals, an
+efficient Bayesian inference algorithm capable of fitting this model,
+and a model selection algorithm that enables principled comparison of
+structural forms.
+
+\subsection{Probabilistic Model}
+A probabilistic model specifies a joint probability distribution over
+measured signals, the underlying network, and latent structural
+variables we wish to infer.  In our model, the measured signal from
+neuron~$n$ in the~$t$-th time bin is denoted~$s_{t,n}$, which may 
+denote either a discrete spike count or a real-valued signal, like 
+the calcium fluorescence. In either case, this signal is assumed 
+to be stochastically drawn from a distribution parameterized by 
+an underlying, real-valued \emph{activation},~$\psi_{t,n}$,
+and a static parameter,~$\nu_n$. The
+activation is typically related to the expected spike count via
+a logistic transformation,~$\sigma(\psi) = e^\psi \, (1+e^\psi)^{-1}$,
+which has the property~$\sigma(-\psi) = 1-\sigma(\psi)$.
 
 \begin{table}
-  \centering
-  \caption[Comparison of Hamming error on synthetic data]{Comparison
-    of Hamming error (see Eq.~\ref{eq:hamming}) computed from the same
-    nine simulated data sets as above. The VB inference methods tend
-    to overestimate the number of states and therefore have much
-    higher Hamming error.}
-  \begin{tabular}{l|ccccc}
-    Dataset & 1 & 2 & 3 & 4 & 5 \\
-    \hline
-    HMM (Gibbs) & 9 & 401 & 13 & 24 & 615 \\
-    HMM (VB) & 166 & 290 & 295 & 123 & 124 \\
-    HDP-HMM (Gibbs) & 2 & \bf{3} & 5 & \bf{1} & 6 \\
-    HDP-HMM (HMC) & 3 & 4 & 3 & 2 & \bf{4} \\
-    HDP-HMM (EB) & \bf{1} & \bf{3} & \bf{2} & 3 & 12 \\ 
-    HDP-HMM (VB) & 432 & 586 & 340 & 264 & 675 \\
-    \hline
-  \end{tabular}
-  \label{tab:synth_hamming}
+\begin{center}
+\begin{tabular}{c|c|c|c|c}
+  \textbf{Distribution} & $p(s \given \psi, \nu)$ & Standard Form & $\bbE[s]$ & $\Var(s)$ \\
+  \hline
+  Gaussian & $\frac{1}{\sqrt{2 \pi \nu}}\exp \left \{ -\frac{1}{2 \nu} (s - \psi)^2 \right \}$
+  & --- 
+  & $\psi$ & $\nu$ \\
+  Bernoulli & $\sigma(\psi)^s \, \sigma(-\psi)^{1-s}$
+  & $\frac{(e^\psi)^s}{1+e^\psi}$
+  & $\sigma(\psi)$ & $\sigma(\psi) \, \sigma(-\psi)$ \\
+  Binomial & ${\nu \choose s} \, \sigma(\psi)^s \, \sigma(-\psi)^{\nu-s}$
+  & ${\nu \choose s} \,\frac{(e^\psi)^s}{(1+e^\psi)^\nu}$
+  & $\nu \sigma(\psi)$ & $\nu \sigma(\psi) \, \sigma(-\psi)$ \\
+  Poisson (Exp) & $\frac{1}{s!} e^{-e^\psi} e^{\psi  s}$
+  & ---
+  & $e^\psi$ & $e^\psi$ \\
+  Neg. Binomial & ${\nu + s -1 \choose s} \, \sigma(\psi)^s \, \sigma(-\psi)^{\nu}$
+  & ${\nu +s - 1 \choose s} \,\frac{(e^\psi)^s}{(1+e^\psi)^{\nu+s}}$
+  & $\nu e^\psi$ & $\nu e^\psi / \sigma(-\psi)$ \\
+\end{tabular}
+\end{center}
+\caption{List of observation distributions.}
+\label{tab:obs_models}
 \end{table}
 
-The second criterion is the model's predictive log likelihood (unit:
-bits/spike) on a held out sequence of~${T_{test}=1000}$ time steps. We
-compare the predictive log likelihood to that of a set of independent
-Poisson processes. Their rates and the corresponding predictive log
-likelihood are given by,
+
+We consider the four observation models shown in Table~\ref{tab:obs_models}.
+The Gaussian model assumes~$s_{t,n}$ is real-valued, and may be
+appropriate for modeling calcium fluorescence, for example.
+The Bernoulli distribution is appropriate for binary spike counts,
+whereas the binomial and negative binomial have support
+for~$s\in[0,\nu]$ and~$s \in [0, \infty)$, respectively.
+Notably lacking from this list is the Poisson distribution,
+which does not seem to be amenable to the augmentation schemes
+we will derive below. Nevertheless, both the binomial and negative
+binomial distributions converge to the Poisson under certain
+limits, and they afford the added flexibility of modeling under- and
+over-dispersed spike counts. Specifically, while the Poisson has unit 
+dispersion (its mean is equal to its variance), the binomial distribution 
+is always under-dispersed, since its mean always exceeds its variance, 
+and the negative binomial is always over-dispersed, with variance greater 
+than its mean.
+
+The generalized linear model (GLM) \cite{Paninski-2004, Truccolo-2005, Pillow-2008} 
+models the activation at time~$t$ as a weighted function of 
+the spike counts at preceding times~${[0,t-1]}$. Specifically,
+let,
 \begin{align}
-\widehat{\lambda}_c&=\frac{1}{T_{train}}\sum_{t=1}^{T_{train}} y_{c,t}, \\
-\log p(\by_{test} \given \by_{train}) &= \sum_{c=1}^C \left[ -T_{test} \widehat{\lambda}_c + \sum_{t=1}^{T_{test}} y_{c,t} \log \widehat{\lambda}_c  \right].
+  \label{eq:glm_activation}
+  \psi_{t,n} &\triangleq w_n^{(0)}  +                 
+               \sum_{m=0}^N  \sum_{k=1}^K a_{n \from m} \, w_{n \from m}^{(k)}
+               \left( \sum_{\Delta t=1}^{\Delta t_{\mathsf{max}}} \phi_{k, \Delta t} \cdot s_{t-\Delta t, m} \right) \\
+             &= w_n^{(0)}  + \sum_{m=0}^N \sum_{k=1}^K a_{n \from m} \, w_{n \from m}^{(k)} \, \widehat{s}_{t,m}^{(k)} \\
+  \label{eq:linear_activation}
+             &= (\ba_{n} \odot \bw_n)^\trans \, \widehat{\bs}_t,
 \end{align}
-The improvement obtained by a model is measured in bits, and is
-normalized by the number of spikes in the test dataset in order to
-obtain comparable units for each of the test datasets.
+where~$w_n^{(0)}$ is the baseline activation of neuron~$n$,
+$\bphi_{k,1:\Delta t_{\mathsf{max}}}$ is a basis function 
+that weights the previous spike counts for 
+offsets~${\Delta t \in [1, \Delta t_{\mathsf{max}}]}$
+, the binary variable~${a_{n \from m} \in \{0,1\}}$ 
+indicates whether or not there exists 
+a directed connection from neuron~$m$ to neuron~$n$,
+and~$w_{n \from m}^{(k)}$ captures the influence that
+spikes on neuron~$m$ exert on neuron~$n$ at
+offsets weighted by the~$k$-th basis function.  
+Since the basis function and the signal 
+are assumed to be fixed,  can precompute the inner sum, which is simply the 
+convolution of the signal with the basis function, to get~$\widehat{s}_{t,m}^{(k)}$.
+Since this is a linear function, we can combine the
+connections, weights, and filtered spike trains into
+vectors to get the linear form  in Eq.~\ref{eq:linear_activation}.
+Here, we have,
+\begin{align}
+  \ba_n &=
+    \bigg[
+      1,  
+      &a_{n \from 1}, & & \ldots, & & a_{n \from 1}, 
+      & & \ldots, &
+      &a_{n \from N}, & & \ldots, & &a_{n \from N} 
+    &\bigg]^\trans, \\
+  \bw_n &=
+    \bigg[
+      w_n^{(0)}, 
+      &w_{n \from 1}^{(1)}, & & \ldots, & &w_{n \from 1}^{(K)}, 
+      & &\ldots, &
+      &w_{n \from N}^{(1)}, & & \ldots, & &w_{n \from N}^{(K)} 
+      &\bigg]^\trans, \\
+  \widehat{\bs}_t &=
+    \bigg[
+      1, 
+      &\widehat{s}_{t,1}^{(1)}, & & \ldots, & &\widehat{s}_{t,1}^{(K)}, 
+      & &\ldots, &
+      &\widehat{s}_{t,N}^{(1)}, & & \ldots, & &\widehat{s}_{t,N}^{(K)} 
+    &\bigg]^\trans,
+\end{align}
+and~$\odot$ dentoes the elementwise product. For convenience, we
+let~$\bA$ and~$\bW$ refer to the~$N \times NK+1$ matrices obtained
+by stacking the vectors~$\ba_n^\trans$ and~$\bw_n^\trans$, and we
+let~$\widehat{\bS}$ denote the~$T \times NK+1$ matrix with rows
+given by~$\widehat{\bs}_t^\trans$. The major difference between this formulation and that of the standard 
+GLM is that here we have explicitly modeled the sparsity of the 
+weights via the ``adjacency matrix'' $\bA$. Under the standard 
+formulation, all weights are present, that is,~${a_{n \from m} \equiv 1}$.
 
-Table~\ref{tab:synth_pll} summarizes the predictive log likelihood
-comparison.  For all five datasets, the HDP-HMM fit via Gibbs sampling
-with fixed~$\alpha_c^0$ performs best, though in general the increase
-over fitting the HDP-HMM when using HMC or EB for hyperparameter
-selection is small. By contrast, the improvement compared to fitting
-with VB inference or using a parametric HMM is quite significant.
+Consider a model with one basis function ($K=1$) defined
+by,~${\phi_{1,\Delta t} = e^{-\Delta t/\tau}}$.
+Then~$\widehat{s}_{t,m}^{(1)}$ is a weighted sum of spikes in the
+window~$[t-\Delta t_{\mathsf{max}},t-1]$, where the weights decay
+according to an exponential function with time constant~$\tau$.  
+If~${a_{n \from m}=1}$, indicating a
+connection from neuron~$m$ to neuron~$n$, and
+the weight,~$w_{n \from m}^{(1)}$, is positive, the influence will be
+excitatory. If it is negative, the effect will be inhibitory.
+Together, the weights~$\bW$ define a functional \emph{network} of
+interactions.
 
-Though computation cost is often a major factor with Bayesian
-inference, with the optimized PyHSMM package, the models can be fit to
-the synthetic data in under 10 minutes on an Apple MacBook Air. The
-runtime necessarily grows the number of neurons and the truncation
-limit on the number of latent states. As the model complexity grows,
-we must also run our MCMC algorithm for more iterations, which often
-motivates the use of variational inference algorithms instead. Given
-our optimized implementation and the performance improvements yielded
-by MCMC, we opted for a fully-Bayesian approach using MCMC with HMC
-for hyperparameter sampling in our subsequent experiments.
+The popularity of generalized linear models is due, in large part, to
+the intuitive appeal of networks as a description of neuronal
+dynamics.  While the weights of the GLM may not necessarily correspond
+to direct synaptic connections, they provide an interpretable
+representation of firing rate dynamics in terms of a functional
+network. However, this interpretability is hampered by the fact that
+there are~$O(N^2)$ weights to reason about, and as the number of
+neurons,~$N$, grows, it becomes impossible to make sense of the entire
+network.
+
+We extend our probabilistic model with hierarchical latent variable
+models that capture intuitive structure in the network, while
+retaining the interpretable network-based representation that makes
+the GLM so popular. We assume that each neuron is endowed with a set
+of latent features that govern the probability of functional
+interactions. Specifically, we consider two types of features:
+discrete classes,~$c_n \in \{1, \ldots, C\}$, and continuous
+locations,~$\bell_n \in \reals^D$. These can determine either the
+probability of connection,~$\rho_{n \from m}$, or the mean and
+variance of a multivariate Gaussian prior on the
+weights,~$\bmu_{n \from m}$ and~$\bSigma_{n \from m}$.
+Conditioned upon these latent variables, the connections and 
+their weights are all conditionally independent of one another.
+That is,
+\begin{align}
+  p(\ba_n, \bw_n \given c_n, \bell_n, \theta) = 
+  p(\ba_n \given c_n, \bell_n, \theta) \, p(\bw_n \given c_n, \bell_n, \theta),
+\end{align}
+where
+\begin{align}
+  p(\ba_n \given c_n, \bell_n, \theta) 
+  &= \prod_{m=1}^N \distBernoulli(a_{n \from m} \given \rho_{n \from m}), \\
+  p(\bw_n \given c_n, \bell_n, \theta) 
+  &= \distNormal(w_n^{(0)} \given \mu_0, \sigma^2_0 ) \prod_{m=1}^N 
+     \distNormal(\bw_{n \from m} \given \bmu_{n \from m}, \, \bSigma_{n \from m}), \\
+  &= \distNormal(\bw_n \given \bmu_n, \bSigma_n).
+\end{align}
+Here, we have combined the Gaussian factors into single multivariate Gaussian prior
+with parameters,
+\begin{align}
+  \bmu_n 
+    &= \begin{bmatrix}
+      \mu_0 \\
+      \bmu_{n \from 1} \\
+      \vdots \\
+      \bmu_{n \from N}
+    \end{bmatrix}, & \text{ and } & &
+  \bSigma_n 
+  &= \begin{bmatrix}
+    \sigma_0^2 &                     &        & \\
+               & \bSigma_{n \from 1} &        & \\
+               &                     & \ddots & \\
+               &                     &        & \bSigma_{n \from N} 
+    \end{bmatrix}.
+\end{align}
+As previously mentioned, the parameters~$\rho_{n \from m}$,~$\bmu_{n \from m}$, and~$\bSigma_{n \from m}$ 
+may depend on~$c_n$,~$\bell_n$, and the parameters of the model,~$\theta$.
+The form of these dependencies is a function of the underlying models, 
+which we describe next.
 
 \begin{table}
-  \centering
-  \caption[Comparison of predictive log likelihood on synthetic
-    data]{Comparison of predictive log likelihood (bits/spike)
-    computed from 9 simulated data sets, measured in bits per spike
-    improvement over a baseline of independent, homogeneous Poisson
-    processes (the best result in each data set is marked in bold
-    font). }
-  \begin{tabular}{l|ccccc}
-    Dataset & 1 & 2 & 3 & 4 & 5 \\
-    \hline
-    HMM (Gibbs) & 0.315 & 0.300 & 0.312 & 0.310 & 0.250 \\
-    HMM (VB)  & 0.298 & 0.290 & 0.313 & 0.306 & 0.252 \\ 
-    HDP-HMM (Gibbs) & \bf{0.323} & \bf{0.307} & \bf{0.321} & \bf{0.318} & \bf{0.259} \\
-    HDP-HMM (HMC) & \bf{0.323} & 0.306 & 0.320 & \bf{0.318} & \bf{0.259} \\
-    HDP-HMM (EB)  & 0.322 & 0.306 & \bf{0.321} & \bf{0.318} & \bf{0.259} \\
-    HDP-HMM (VB)  & 0.312 & 0.291 & 0.309 & 0.305 & 0.244 \\
-    \hline
-  \end{tabular}
-  \label{tab:synth_pll}
+\begin{center}
+\begin{tabular}{c|c|c}
+Name & Latent Variable & $p(a_{n \from m})$ \\
+\hline
+Dense Model & --- & $1$ \\
+Bernoulli Model & --- & $\rho$ \\
+Stochastic Block Model & $c_n$ & $\rho_{c_n \from c_m}$ \\
+Latent Distance Model & $\bell_n$ & $\sigma(-||\ell_n - \ell_m||_2^2 + \gamma_0)$
+\end{tabular}
+\end{center}
+\caption{Binary Adjacency Matrix Models}
+\label{tab:A_models}
 \end{table}
 
- 
-\begin{figure}
-  \centering
-  \begin{subfigure}[t]{5in}
-    \includegraphics[width=\textwidth]{figures/ch5/Fig2}
-  \end{subfigure}
-  \caption[Inference results for an HDP-HMM fit to synthetic
-    data]{MCMC state trajectories for an HDP-HMM fit to the synthetic
-    dataset shown in Fig.~\ref{fig1}. True values are shown by the
-    dotted black lines. The first five iterations of the Markov chain
-    are omitted since they differ greatly from the final states. The
-    chain quickly converges to nearly the correct number of states (A)
-    and achieves close to the true log likelihood (B). (C, D) The
-    chain trajectories of hyperparameters $\alpha_0$ and $\gamma$. (E,
-    F) Inferred state transition matrix and neuronal firing map drawn
-    from the last iteration.  }
-  \label{fig2}
-\end{figure}
-
-Figure~\ref{fig2} shows example traces from the MCMC combined with HMC
-algorithm for the HDP-HMM running on synthetic dataset 1. This is the
-same data from which Fig.~\ref{fig1} is generated. The first 5 Markov
-chain iterations have been omitted to highlight the variation in the
-latter samples (the first few iterations rapidly move away from the
-initial conditions). We see that the log likelihood of the data
-rapidly converges to nearly that of the true model (horizontal dotted
-line), and the number of states quickly converges to around~$m=35$.
-Note that the nuisance parameters $\alpha_0$ and $\gamma$ do not
-converge to the true values --- this is due to the fact that the
-solution is insensitive to these parameters or the presence of local
-optima.  However, even the concentration parameters are different from
-the true values, they are still consistent with the inferred state
-transition matrix.
-
-\begin{figure}  
-  \centering
-  \begin{subfigure}[t]{5in}
-    \includegraphics[width=\textwidth]{figures/ch5/Fig3}
-  \end{subfigure}
-  \caption[Inferred parameters of the HDP-HMM for synthetic data]{In a
-    synthetic data experiment, we generated a spike train for a
-    population of~$C_{\textsf{true}}=50$ cells
-    and~$T_{\textsf{true}}=2000$ time bins. Then we varied the number
-    of observed cells $C$, recording duration $T$, scale of the firing
-    rate $\lambda$, temporal bin size $\Delta t$, and measured the
-    number of inferred latent states. Horizontal dashed lines indicate
-    the ground truth.}
-  \label{fig3}
-\end{figure}
-
-
-\paragraph{Sensitivity of the number of latent states} 
-
-
-To test the sensitivity of the number of inferred states to changes in
-the data, we vary a number of parameters and plotted the number of
-inferred states in Fig.~\ref{fig3}. In all cases, we use synthetic
-dataset~1, shown in Fig.~\ref{fig1}, and HDP-HMMs fit via Gibbs
-sampling with fixed~$\alpha_c^0$. First, we vary the number of
-observed cells,~$C$, and find that the number of inferred states was
-relatively stable around the true number of states ($m=35$). By
-contrast, as we increase the observed recording length,~$T$, the
-number of inferred states increases as well. This is because the true
-underlying data actually does visit more states as we simulate it for
-longer time. In general, we expect the number of inferred states to
-grow with the complexity of the data. Next, we vary the scale of the
-firing rate by multiplying the true model's firing rate by a factor
-of~$0.1$,~$0.5$, $1.0$, $2.0$, or~$10.0$, and sampling a new spike
-count. When the rates are very low, most bins do not contain any
-spikes, and hence it is not possible to resolve as many states. By
-contrast, when the rate is increased, the number of inferred states is
-slightly lower than the true number, which is likely the result of a
-slight mismatch with the prior on the firing rate
-scale~(parameters~$\mu$ and~$\nu$ in
-Section~\ref{sec:fr_hypers}). Finally, we considerate the effect of
-time bin size by scaling up the bin sizes by factors of~$2$
-through~$10$. For example, when scaling by a factor of 2, we add the
-spike counts in each pair of adjacent bins. This has a similar effect
-to decreasing the recording length by a factor of 2, and hence we see
-the number of inferred states decrease with bin size.
-
- \subsection{Rat hippocampal neuronal ensemble data} 
-
-Next, we apply the proposed methods to experimental data of the rat
-hippocampus.  Experiments were conducted under the supervision of the
-Massachusetts Institute of Technology (MIT) Committee on Animal Care
-and followed the NIH guidelines.  The micro-drive arrays containing
-multiple tetrodes were implanted above the right dorsal hippocampus of
-male Long-Evans rats. The tetrodes were slowly lowered into the brain
-reaching the cell layer of CA1 two to four weeks following the date of
-surgery. Recorded spikes were manually clustered and sorted to obtain
-single units using a custom software (XClust, M.A.W.).
-
-
-For demonstration purpose, an ensemble spike train recording
-of~${C=47}$ cells was collected from a single rat for a duration of
-9.8 minutes.  Once stable hippocampal units were obtained, the rat was
-allowed to freely forage in an approximately circular open field
-environment (radius: $\sim$60 cm).  We bin the ensemble spike activity
-with a bin size of 250 ms and obtain the population vector $\by_t$ in
-time.  To identify the period of rodent locomotion during spatial
-navigation, we use a velocity threshold ($>$10 cm/s) to select the RUN
-epochs and merge them together.  One animal's RUN trajectory and
-spatial occupancy are shown in Fig.~\ref{fig4} (left and right panels,
-respectively). The empirical probability of a location,~${p(\ell)}$,
-is determined by dividing the arena into 220 bins of equal area (11
-angular bins and 20 radial bins) and counting the fraction of time
-points in which the rat is in the corresponding bin.
-
-\begin{figure}
-\centering
-\begin{subfigure}[t]{\textwidth}
-\centering
-\includegraphics[width=4in]{figures/ch5/Fig4}
-\end{subfigure}
-\caption[Trajectory of the freely foraging rat during hippocampal
-  recording]{One rat's behavioral trajectory (left) and spatial
-  occupancy (right) in the open field environment. }
-\label{fig4}
-\end{figure}
-
-In experimental data analysis, we focus on nonparametric Bayesian
-inference for HDP-HMM.  For all methods, we increase the truncation
-level to a large value of $M=100$.  To discover the model order of the
-variational solutions, we use the number of states visited by the most
-likely state sequence under the variational posterior. The MCMC
-algorithms yield samples of state sequences from which the model order
-can be directly counted.
+Table~\ref{tab:A_models} defines the four adjacency models considered 
+herein. The dense model corresponds to the standard GLM in which all
+connections are present. The Bernoulli model is a spike-and-slab model 
+in which each connection is an independent and identically distributed 
+Bernoulli random variable with probability~$\rho$. This is also known 
+as an Erd\"os-R\'enyi model. In the stochastic block model (SBM) 
+\cite{Nowicki-2001}, the probability of connection depends on the class 
+of the up and downstream neurons. The class assignments are drawn from
+a categorical prior,~${c_n \sim \distCategorical(\bpi)}$, and the class
+weights are given a conjugate, symmetric 
+Dirichlet prior,~${\bpi \sim \distDirichlet(\alpha \bone_C)}$. The 
+connection probabilities are given a conjugate beta 
+prior,~${\beta_{c \from c'} \sim \distBeta(\alpha, \beta)}$. 
+The latent distance model \cite{Hoff-2008} encodes the belief that 
+connection probability should decrease with distance between latent 
+locations. The locations are given spherical Gaussian 
+priors,~$\bell_n \sim \distNormal(0, \eta \bI)$, and the scale is
+drawn from an inverse gamma prior,~$\eta \sim \distInvGamma(1,1)$. The 
+offset is given a standard normal prior,~$\gamma_0 \sim \distNormal(0, 1)$.
 
 
 \begin{table}
-  \centering
-  \caption[Comparison of models on real hippocampal data]{A comparison
-    of HMMs, HDP-HMMs, and inference algorithms on the rat hippocampal
-    data. Performance is measured in predictive log likelihood and
-    mean decoding error on two minutes of held out test data (the best
-    result is marked in bold font).}
-  \begin{tabular}{l|cc}
-    & Pred. log likelihood (bits/spike) & Decoding error (cm) \\
-    \hline 
-    HMM ($m=25$)         & 0.712 & $10.85 \pm 6.43$ \\
-    HMM ($m=45$)         & 0.706 & $10.71 \pm 6.67$\\
-    HMM ($m=65$)         & 0.717 & $11.01 \pm 6.93$\\
-    HDP-HMM (Gibbs)    & \bf{0.722} & $\mathbf{9.56 \pm 5.31}$ \\
-    HDP-HMM (HMC)      & 0.646 & $9.96 \pm 6.05$\\
-    HDP-HMM (EB)       & 0.579 & $10.81 \pm 6.78$\\
-    HDP-HMM (VB)       & 0.602 & $10.93 \pm 6.24$\\
+\begin{center}
+\begin{tabular}{c|c|c|c}
+Name & Latent Variable & $\bmu_{n \from m}$ & $\bSigma_{n \from m}$\\
+\hline
+Gaussian Model & --- & $\bmu$ & $\bSigma$ \\
+Stochastic Block Model & $c_n$ & $\bmu_{c_n \from c_m}$ & $\bSigma_{c_n \from c_m}$ \\
+Latent Distance Model (${K=1}$) & $\bell_n$ & $-||\bell_n - \bell_m||_2^2 + \mu_0$ & $\sigma^2$
+\end{tabular}
+\end{center}
+\caption{Gaussian Weight Models}
+\label{tab:W_models}
+\end{table}
+
+Table~\ref{tab:W_models} defines the three weight models we
+consider.  Each model defines the mean and variance of a multivariate
+normal distribution,~$\bw_{n \from m} \sim \distNormal(\bmu_{n \from
+  m}, \bSigma_{n \from m})$.  In the Gaussian model, all weights are
+independent and identically distributed.  The stochastic block model,
+has parameters for each pair of classes, each drawn from a normal
+inverse-Wishart prior,~$(\bmu_{c \from c'}, \bSigma_{c \from c'}) \sim
+\distNormalInvWishart(\mu_0, \kappa_0, \Sigma_0, \nu_0)$. Finally, we
+consider a latent distance model, but only for the case where the
+weights are scalar, i.e.~$K=1$. In this case, the distance between
+points is inversely proportional to the mean weight.  For higher order
+weights, additional assumptions would be required in order to relate
+distance to vector weights. In this model, we assume standard normal
+priors on the parameters~$\bell_n$ and~$\mu_0$.  The variance is given
+an inverse gamma prior,~$\sigma^2 \sim \distInvGamma(\alpha, \beta)$.
+
+Of course, many other models could be added to this list, and in the
+discussion we will consider various extensions. An attractive feature
+of this approach is that we may indeed draw on an extensive literature
+of network models. For the purposes of this paper, we restrict our
+attention to these models, based on latent classes and locations,
+which are particularly interpretable and easily visualized.
+
+We can now write down the joint probability of our probabilistic model.
+Let~$\theta$ denote the parameters of the network model, like the connection
+probabilities under the Bernoulli model or the class-specific mean and variance
+under a stochastic block model for the weights. 
+The joint probability is,
+\begin{multline}
+p(\bs, \{\nu_n, \ba_n, \bw_n, c_n, \bell_n\}_{n=1}^N, \theta) 
+=  \\
+p(\theta) \,
+\prod_{n=1}^N \bigg[ \overbrace{p(c_n, \bell_n \given \theta)}^\text{latent variables} \, 
+\overbrace{p(\ba_n, \bw_n \given \{c_m, \bell_m\}_{m=1}^N, \theta)}^\text{network} \, \\
+\times \underbrace{ p(\nu_n) \prod_{t=1}^T  p \left(s_{t,n} \given \widehat{\bs}_{t}, \ba_n, \bw_n, \nu_n \right) }_\text{observation} \bigg].
+\end{multline}
+The joint probability
+factorizes into the product of three pieces: the latent variables, the network, and the observed spikes and their corresponding observation parameters. Next, we will describe
+how to perform efficient Bayesian inference of the latent variables
+and the network, given the observed spike train and this probabilistic model.
+
+\subsection{Bayesian Inference}
+Inference is the process of evaluating the posterior distribution over latent variables given the observed signal, which is related to the joint distribution by Bayes' rule:
+\begin{align}
+p(\{\nu_n, \ba_n, \bw_n, c_n, \bell_n\}_{n=1}^N, \theta \given \bs)  
+  &= \frac{p(\bs, \{\nu_n, \ba_n, \bw_n, c_n, \bell_n\}_{n=1}^N, \theta) }{p(\bs)}.
+\end{align}
+The denominator on the right hand side is known as the \emph{marginal likelihood} of the spike train. 
+%It will play a crucial role in model selection. 
+
+It is computationally intractable to compute this posterior exactly and it has no simple closed form solution, so we must instead resort to approximate methods. 
+We use Markov chain Monte Carlo (MCMC) methods to collect samples from this posterior distribution.
+With these samples, we can compute unbiased expectations with respect to the posterior distribution.
+For example, we can compute the expected probability that two neurons belong to the same class, the expected weight of a functional connection between two neurons, or the expected predictive likelihood of heldout test data.
+
+
+\subsubsection{Collapsed network updates}
+The most challenging aspect of inference is sampling the
+posterior distribution over connections,~$\bA$. In the
+dense model, where~$a_{n \from m} \equiv 1$, the posterior
+distribution over weights is often log concave, which
+makes it easy to find the MAP estimate and characterize
+the local uncertainty around the most likely weights.
+When the connectivity matrix is sparse, there are instead
+many modes corresponding to different patterns of
+connectivity. While this makes inference more challenging,
+sparse connectivity is an important feature that
+contributes to the interpretability of the model.
+
+Fortunately, we can make posterior inference of the
+network considerably more efficient by integrating over
+possible weights and sampling the binary adjacency
+matrix from its marginal distribution. 
+First, consider the Gaussian observation model.
+Since~$\psi_{t,n}$ is linear in~$\bw_n$, the likelihood
+is conjugate with the Gaussian prior, and hence the
+posterior is Gaussian as well. We can
+compute the posterior distribution in closed form:
+\begin{align}
+  p(\bw_n \given \widehat{\bS}, \ba_n, \bmu_n, \bSigma_n)
+  &\propto
+  \distNormal(\bw_n \given \bmu_n, \bSigma_n) \,
+  \prod_{t=1}^T \distNormal(s_{t,n} \given (\ba_n \odot \bw_n)^\trans \, \widehat{\bs}_t, \, \nu_n) \\
+  &= \distNormal(\bw_n \given \bmu_n, \bSigma_n) \,
+  \distNormal(\bs_n \given (\ba_n \odot \bw_n)^\trans \, \widehat{\bS}, \, \nu_n \bI) \\
+  \label{eq:w_conditional}
+  &\propto \distNormal(\bw_n \given \widetilde{\bmu}_n, \widetilde{\bSigma}_n),
+\end{align}
+where
+\begin{align}
+  \widetilde{\bSigma}_n &= \left[ \bSigma_n^{-1} +
+  \left(\widehat{\bS}^\trans (\nu_n^{-1} \bI) \widehat{\bS} \right) \odot (\ba_n \ba_n^\trans) \right]^{-1}, \\
+  \widetilde{\bmu}_n &= \widetilde{\bSigma}_n \left[ \bSigma_n^{-1} \bmu_n +
+  \left(\widehat{\bS}^\trans (\nu_n^{-1} \bI)\bs_n \right) \odot \ba_n \right].
+\end{align}
+
+Given this closed-form Gaussian conditional, we can also compute
+the conditional distribution over just~$\ba_n$, integrating out
+the corresponding weights,~$\bw_n$:
+\begin{align}
+  p(\ba_n \given \widehat{\bS}, \brho_n, \bmu_n, \bSigma_n)
+  &= \int p(\ba_n, \bw_n \given \widehat{\bS}, \brho_n, \bmu_n, \bSigma_n) \, \mathrm{d} \bw_n \\
+  &\propto p(\ba_n \given \brho_n) \, \int p(\bw_n \given \widehat{\bS}, \ba_n, \bmu_n, \bSigma_n) \, \mathrm{d} \bw_n \\
+  \label{eq:a_conditional}
+  &= p(\ba_n \given \brho_n) \, \frac{\big| \bSigma_n \big|^{-\frac{1}{2}} \exp \Big \{-\frac{1}{2} \bmu_n^\trans \bSigma_n^{-1} \bmu_n \Big \} }
+  {\big| \widetilde{\bSigma}_n \big|^{-\frac{1}{2}} \exp \Big \{-\frac{1}{2} \widetilde{\bmu}_n^\trans \widetilde{\bSigma}_n^{-1} \widetilde{\bmu}_n \Big \}}.
+\end{align}
+Thus, we can efficiently sample from the conditional
+distribution of~$\ba_n$ and~$\bw_n$ by first iterating
+over each neuron~${m \in \{1, \ldots, N\}}$ and sampling
+a new value of~$a_{n \from m}$, fixing the values of~$a_{n \from m'}$
+for~$m' \neq m$ and integrating out the value of~$\bw_n$.
+To do so, we simply evaluate the marginal probability in Eq.~\ref{eq:a_conditional}
+for both values of~$a_{n \from m}$ and resample accordingly.
+%This is a valid Gibbs step.
+Moreover, note that if~$a_{n \from m}$, the log determinant and the quadratic
+form in the numerator of Eq.~\ref{eq:a_conditional} will cancel with the
+corresponding term in the denominator. Thus, if~$\bA$ is $d$-sparse (i.e. 
+each neuron  has at most~$d$ incoming edges) evaluating
+the marginal probability of~$\ba_n$ has complexity an~$O(d^3)$.
+Once~$\ba_n$ has been completely
+resampled, we can sample a new value of~$\bw_n$ from its multivariate
+Gaussian conditional distribution, given by~Eq.~\ref{eq:w_conditional}.
+
+\subsubsection{\polyagamma augmentation for discrete observations}
+When the observations are not Gaussian, the conditional distribution
+of~$\bw_n$ cannot be computed in closed form and the collapsed
+updates are intractable. To circumvent this problem, we leverage
+recently developed augmentation schemes for Gaussian models with
+discrete observations \cite{polson2013bayesian, Pillow2012}. The
+idea is to augment the observations,~$s_{t,n}$, with auxiliary
+variables,~$\omega_{t,n}$, such that conditioned upon the
+auxiliary variables, the discrete likelihood appears Gaussian.
+
+First, notice that the discrete likelihoods in Table~\ref{tab:obs_models}
+can all be put into  a ``standard'' form in which the probability
+mass function can be written,
+\begin{align}
+  p(s \given \psi, \nu) &= c(s, \nu) \, \frac{(e^\psi)^{a(s, \nu)}}{(1+e^\psi)^{b(s, \nu)}},
+\end{align}
+for some functions,~$a$,~$b$, and~$c$ that do not depend on~$\psi$.
+The integral identity at the heart of the P\'{o}lya-gamma augmentation scheme  is
+\begin{align}
+\label{eq:pg_identity}
+\frac{(e^{\psi})^a}{(1+e^{\psi})^b} = 2^{-b} e^{\kappa \psi} \int_{0}^{\infty} e^{-\omega \psi^2 /2} \, p_{\mathrm{PG}}(\omega \given b, 0) \, \mathrm{d}\omega,
+\end{align}
+where~${\kappa=a-b/2}$ and~$p(\omega\given b, 0)$ is the density of the P\'{o}lya-gamma
+distribution~${\distPolyaGamma(b, 0)}$, which does not depend on $\psi$.
+
+Using Eq.~\ref{eq:pg_identity} along with priors~$p(\psi)$ and~$p(\nu)$, we can write the joint density of $(\psi, s, \nu)$ as
+\begin{align}
+  \label{eq:pg_joint}
+  p(s, \nu, \psi)
+  &= p(\nu) \, p(\psi) \, c(s, \nu) \frac{(e^\psi)^{a(s, \nu)}}{(1+e^\psi)^{b(s, \nu)}} \\
+  &= \int_0^\infty
+  p(\nu) \, p(\psi) \, c(s, \nu) \, 2^{-b(s, \nu)} e^{\kappa(s, \nu) \psi} e^{-\omega \psi^2/2} \, p_{\mathrm{PG}}(\omega \given b(s, \nu), 0) \; \mathrm{d}\omega.
+\end{align}
+The integrand of Eq.~\ref{eq:pg_joint} defines a joint density on $(s, \nu, \psi, \omega)$ which admits $p(s, \nu, \psi)$ as a marginal density.
+Conditioned on these auxiliary variables $\omega$, we have that the likelihood as a function of~$\psi$ is,
+\begin{align}
+  p(s \given \psi, \nu, \omega)
+  &\propto e^{\kappa(s, \nu) \psi} e^{- \omega \psi^2/2} 
+\propto \distNormal \left(\frac{\kappa(s, \nu)}{\omega} \, \bigg| \, \psi, \, \frac{1}{\omega} \right).
+\end{align}
+
+Thus, we effectively have a Gaussian likelihood for~$\psi$, after conditioning 
+on~$s$ and~$\omega$. Now we can apply this augmentation scheme to the full
+model, introducing auxiliary variables,~$\omega_{t,n}$ for each spike count,~$s_{t,n}$.
+Given these variables, the conditional distribution of~$\bw_n$ can be computed in closed form,
+as before. Let,
+\begin{align}
+  \bkappa_n
+  &= \begin{bmatrix} \kappa(s_{1,n}, \nu_n), &\ldots, &\kappa(s_{T,n}, \nu_n)
+  \end{bmatrix}^\trans,
+\end{align}
+and
+\begin{align}
+  \bOmega_n &= \diag \left(
+  \begin{bmatrix}
+    \omega_{1,n}, & \ldots, & \omega_{T,n}
+  \end{bmatrix}
+  \right).
+\end{align}
+Then we have~$
+  p(\bw_n \given \bs_n,  \widehat{\bS}, \ba_n, \bmu_n, \bSigma_n, \bomega_n, \nu_n)
+  \propto \distNormal(\bw_n \given \widetilde{\bmu}_n, \widetilde{\bSigma}_n)$,
+where
+\begin{align}
+  \widetilde{\bSigma}_n &= \left[ \bSigma_n^{-1} +
+  \left(\widehat{\bS}^\trans \bOmega_n \widehat{\bS} \right) \odot (\ba_n \ba_n^\trans) \right]^{-1}, \\
+  \widetilde{\bmu}_n &= \widetilde{\bSigma}_n \left[ \bSigma_n^{-1} \bmu_n +
+  \left(\widehat{\bS}^\trans \bkappa_n \right) \odot \ba_n \right].
+\end{align}
+
+Having introduced auxiliary variables, we must now also derive
+Markov transitions to update them as well. Fortunately, the
+\polyagamma distribution is designed such that the conditional
+distribution of the auxiliary variables is just a ``tilted'' \polyagamma
+distribution,
+\begin{align}
+  p(\omega_{t,n} \given s_{t,n}, \nu_n, \psi_{t,n})
+  &= p_{\mathrm{PG}}(\omega_{t,n} \given b(s_{t,n}, \nu_n), \, \psi_{t,n}).
+\end{align}
+These auxiliary variables are conditionally independent and hence can
+be updated in parallel. Moreover, efficient algorithms are available
+to generate \polyagamma random variates~\cite{windle2014sampling}, and
+we have ported these to Python\footnote{\url{https://github.com/slinderman/pypolyagamma}}.
+
+\subsubsection{Updating latent variables and parameters}
+Given the network and the spike train, the conditional distributions 
+for the latent variables,~$\{c_n, \bell_n\}$, and the parameters,~$\theta$ and~$\{\nu_n\}$,
+are easy by design. 
+
+\begin{itemize}
+  \item \textit{Latent class updates}:
+    If a stochastic block model is used for either the adjacency matrix
+    or the weights, then it is necessary to sample the class assignments
+    from their conditional distribution. We iterate over each neuron and
+    update its assignment given the rest by sampling from the conditional
+    distribution. For example, if~$c_n$ governs a stochastic block model
+    for the adjacency matrix, the conditional distribution of the label
+    for neuron~$n$ is given by,
+    \begin{align}
+      p(c_n = c \given \bc_{\neg n}, \bA, \theta)
+      &\propto \pi_{c} \,
+      \prod_{m=1}^N p(a_{n \from m} \given \rho_{c \from c_m}) \,
+                    p(a_{m \from n} \given \rho_{c_m \from c}),
+    \end{align}
+    where~$\theta = \{\bpi, \{\rho_{c \from c'}\} \}$. For stochastic block
+    models of the weight matrix,~$\bW$, the conditional distribution
+    depends on~$\bw_{n \from m}$ and~$\bw_{m \from n}$ instead.
+
+    Given the class assignments and the network, the
+    parameters~$\rho_{c \from c'}$,~$\bmu_{c \from c'}$,~$\bSigma_{c \from c'}$, and~$\bpi$ are easily updating
+    according to their conditional distributions, since the model is
+    conjugate.
     
-    \hline
-  \end{tabular}
-  \label{tab:hipp_err}
-\end{table}
+  \item \textit{Latent location updates}:
+    We resample the locations using hybrid Monte Carlo (HMC) \cite{Neal10}.
+    Since the latent variables are continuous and unconstrained,
+    this method is quite effective.
 
-We perform a quantitative comparison between HMMs, HDP-HMMs, inference
-algorithms, and hyperparameter setting algorithms, where performance
-is measured in terms of both decoding error and predictive log
-likelihood. For both metrics, we train the models on the first
-$7.8$~minutes of data and test on the final two minutes of data for
-prediction. The results are summarized in Table~\ref{tab:hipp_err}. We
-find that the HDP-HMM fit by Gibbs sampling with fixed firing rate
-scale~($\alpha_c^0=1$) again outperforms the competing models in both
-measures.
+    In addition to the locations, the latent distance model is parameterized
+    by a location scale,~$\eta$. Given the locations and an inverse gamma
+    prior, the inverse gamma conditional distribution can be computed in
+    closed form.
+    
+    The remaining parameters include the log-odds,~$\gamma_0$, if the
+    distance model applies to the adjacency matrix. This can be
+    sampled alongside the locations with HMC.  For a latent distance
+    model of weights, the baseline mean and
+    variance,~$(\mu_0,\sigma^2)$, are conjugate with a normal
+    inverse-gamma prior.
+    
+  \item \textit{Observation parameter updates}:
+    The observation parameter updates depend on the particular distribution.
+    For Gaussian observations,~$\nu_n$ is the observation variance, and
+    it is conjugate with an inverse gamma prior.
+    Bernoulli observations have no parameters.
+    In the binomial model,~$\nu_n$ corresponds to the maximum number of
+    possible spikes --- this is best set a priori.
+    For negative binomial spike counts, the shape parameter~$\nu_n$ can
+    be resampled as in~\cite{Zhou2012}.
 
-\begin{figure}
-  \centering
-  \begin{subfigure}[t]{5in}
-    \includegraphics[width=\textwidth]{figures/ch5/Fig5}
-  \end{subfigure}
-  \caption[Place fields inferred by an HDP-HMM applied to rat
-    hippocampal data]{Estimation result from HDP-HMM (Gibbs) for the
-    rat hippocampal ensemble spike data. (A) Estimated state space
-    map, where the mean value of the spatial position for each latent
-    state is shown by a black dot. The size of the dot is proportional
-    to the occupancy of the state.  (B) Probability distributions over
-    location corresponding to the top three latent states, measured by
-    state occupancy. The small black dots indicate the location of the
-    animal while in that state, and are used to compute the empirical
-    distribution over location indicated by colored shading. (C) The
-    true and reconstructed trajectories in Cartesian coordinate. The
-    true trajectory is shown in black and the reconstructed trajectory
-    is shown in blue. For each time bin, we use the mean location of
-    the latent states to determine an estimate of the animal's
-    location. }
-  \label{fig5}
-\end{figure}
+    
+\end{itemize}
 
+\subsection{Model Selection}
+We have constructed a probabilistic model that supports a variety
+of network models, including the four adjacency models and the three
+weight models described above. How can we compare these models in
+a principled manner? We argue that the typical approach of measuring
+predictive log likelihood on held-out time bins is insufficient, since
+it relies only on having accurately estimated the network,~$\bA$ and~$\bW$.
+It doesn't matter how likely that network is under the latent variable
+model, predictive likelihood on held-out time bins only measures the
+quality of the network at making predictions. Instead, we advocate
+for an alternative measure based on predicting the activity of held-out
+neurons. To perform well on this task, we must first learn an accurate
+model for the structure underlying the network so that we can
+sample latent variables for the new neuron, which in turn allow us to
+sample a weighted set of functional connections for that neuron and
+finally compute the predictive log likelihood.
 
-\begin{figure}
-  \centering
-  \begin{subfigure}[t]{5.0in}
-    \includegraphics[width=\textwidth]{figures/ch5/Fig6}
-  \end{subfigure}
-  \caption[Inferred parameters of the HDP-HMM for hippocampal
-    data]{Estimation result from HDP-HMM (Gibbs) for the rat
-    hippocampal ensemble spike data. (A) The total number of states
-    (solid blue) slowly increases as states are allocated for a small
-    number of time bins. The number of states converges after 2500
-    iterations. (B) The log likelihood of the training data grows
-    consistently as highly specific states are added. (C, D) The
-    concentration parameters,~$\alpha_0$ and~$\gamma$ also converge
-    after 2500 iterations. (E, F) The inferred state transition matrix
-    and firing rate samples drawn from the last iteration.  }
-  \label{fig6}
-\end{figure}
-
-For the purpose of result assessment, we plot the state-space or
-state-location map (Fig.~\ref{fig5}A), which shows the mean value of
-the spatial position that each state represented. The size of the
-black dot is proportional to the occupancy of the state.  To compute
-an ``empirical'' distribution over locations for a given state, we
-first compute the posterior distribution over latent states with our
-inference algorithms. This gives us a set of
-probabilities~$\Pr(S_t=i)$ for all time bins~$t$ and states~$i$. Then
-we compute the average location for each state~$i$ by weighting the
-animal's location,~$(x_t,y_t)$ by the probability that the animal was
-in state~$i$ at time~$t$. Summing over time yields a weighted set of
-locations, which we then bin into equal-area arcs and normalize to get
-an empirical distribution over locations for each state~$i$.
-
-The empirical location distribution for the top three states as
-measured by occupancy are shown in Fig.~\ref{fig5}B). In
-Fig.~\ref{fig5}C, we show the estimated animal's spatial trajectories
-in black, along with the reconstructed location in from the HDP-HMM
-with Gibbs sampling in blue. To reconstruct the position, we use the
-mean of each latent state's location distribution weighted by the
-marginal probability of that state under the HDP-HMM. That is,
+The objective we measure is the probability of a new spike
+train~$\bs_{n^*}=[s_{1,n^*}, \ldots, s_{T,n^*}]$, given the
+observed spike train. To compute this, we must integrate
+over the latent variables and parameters underlying the
+observed spike train, as well as those underlying the
+new spike train. 
+Let~$\bZ = \{\{\bw_n, \ba_n, \nu_n, c_n, \bell_n\}_{n=1}^N, \theta\}$, and
+let~$\bz_{n^*} = \{\nu_{n^*}, \bw_{n^*}, \ba_{n^*}, c_{n^*}, \bell_{n^*}\}$.
+This objective can be written,
 \begin{align}
-\hat{x}_t = \sum_{i=1}^m \bar{x}_i \Pr(\mathcal{S}_t=i), \qquad
-\hat{y}_t = \sum_{i=1}^m  \bar{y}_i \Pr(\mathcal{S}_t=i),
+  p(\bs_{n^*} \given \bS) &\approx
+  \int p(\bs_{n^*} \given \bz_{n^*}, \bS) \, p(\bz_{n^*} \given \bZ) \, p(\bZ \given \bS) \,
+  \mathrm{d} \bz_{n^*} \, \mathrm{d} \bZ \\
+  &\approx
+  \frac{1}{Q} \sum_{q=1}^Q p(\bs_{n^*} \given \bz_{n^*}^{(q)}, \bS),
+  %\int p(\bs_{n^*} \given \bS, \bz_{n^*}) \,
+  %p(\bz_{n^*} \given \{c_n, \bell_n\}, \theta) \, \mathrm{d}\bz_{n^*}
 \end{align}
-where~$\bar{x}_i$ and~$\bar{y}_i$ denote the average location of the
-rat while in inferred state~$i$ (corresponding to the black dots in
-Fig.~\ref{fig5}A). Note that the animal's position is not used in
-model inference, only during result assessment. In the illustrated
-example (HDP-HMM with MCMC+HMC), the mean reconstruction error in
-Euclidean distance is 9.07 cm.
+where
+\begin{align}
+  \bz_{n^*}^{(q)} &\sim p(\bz_{n^*} \given \bZ^{(q)}),
+  &\text{ and }& & 
+  \bZ^{(q)} &\sim p(\bZ \given \bS).
+\end{align}
+The samples~$\{\bZ^{(q)}\}_{q=1}^Q$ are the posterior samples generated
+by the MCMC algorithm presented above. For each sample, we
+sample a new set of latent variables and connections for neuron~$n^*$,
+given the parameters included in~$\bZ^{(q)}$. These, combined with
+the spike train, enable us to compute the likelihood of~$\bs_{n^*}$.
+
+This approach constitutes a minor approximation:
+the new spike train and the original spike train are not
+conditionally independent. It is possible that there are
+significant connections from~$n^*$ to neurons in the training
+population, and if we had known those connections, we would
+have inferred different latent variables and parameters for
+the training population. We assume that these effects are small,
+i.e. we would find similar class assignments even without observing~$n^*$.
+This is reasonable if we are only considering a single neuron~$n^*$
+and the training population is relatively large.
+In fact, this assumption is fundamental to the generalized
+linear model. Without it, the inferred weights and predictions
+would be highly sensitive to the addition of a single neuron.
+In practice this is rarely the case.
 
 
+\section{Discussion}
+\label{sec:discussion}
+We have shown that the functional networks underlying
+spike trains may provide unique insight into the low-dimensional
+structure of neural populations. Looking forward, there are 
+two main concerns that we would like to address.
+First, ideally we would like algorithms that scale better 
+than quadratically with the number of neurons. Second, we 
+would like to automate the process of relating the latent 
+structure to simultaneously measured environmental cues, stimuli, 
+and behavioral correlates. 
 
-As the parameter sample traces in Fig.~\ref{fig6} show, the Markov
-chain converges in around 2500 iterations. After this point, the total
-number of states stabilizes to around~$65$.  The concentration
-parameters~$\alpha_0$ and~$\gamma$ converge within a similar number of
-iterations.  Finally, we show the transition matrix~$\bP$ and firing
-rate matrix~$\bLambda$ obtained from the final Markov chain sample.
+\subsection{Further scalability improvements}
+For large populations, the bulk of the running time is spent 
+sampling the network variables,~$\bA$ and~$\bW$. As the number of
+neurons grows, this complexity scales as~$O(N^2)$. To
+what extent can we minimize this complexity? As we have shown,
+na\"ively applying clustering algorithms and PCA directly
+to spike trains does not necessarily yield meaningful features. These
+results can be somewhat improved by smoothing the spike
+trains (e.g. by taking a moving average), but they are still
+fundamentally limited when the low-dimensional structure
+lies in the pattern of functional connectivity.
 
+Moreover, our results in Section~\ref{sec:advantages} show that 
+separating the problem of inferring the network and discovering 
+its latent structure may yield to inferior results. This is 
+particularly common for large neural populations, where there is 
+substantial posterior uncertainty. 
+In practice, we initialize our method with a standard GLM and
+find that a small number of iterations of our MCMC algorithm
+can yield large improvements in the predictive likelihood of our
+model. These improvements come from pruning connections that are
+weakly supported by the data, but which are very unlikely under the
+prior. This improvement in predictive likelihood is consistent with
+existing literature on Bayesian spike-and-slab modeling \cite{Mohamed-2012}.
 
-% Effect of hyperparameters
-\begin{figure}
-  \centering
-  \begin{subfigure}[t]{5in}
-    \includegraphics[width=\textwidth]{figures/ch5/Fig7}
-  \end{subfigure}
-  \caption[Effect of concentration hyperparameters]{Measuring the
-    effect of concentration hyperparameters on the number of inferred
-    latent states. We find that the concentration hyperparameters of
-    the gamma priors on the concentration parameters,~$\alpha_0$
-    and~$\gamma$, have a minimal effect.}
-  \label{fig7}
-\end{figure}
-
-
-
-We again evaluated the sensitivity of these model fits to the choice
-of hyperparameters. For the HDP-HMM fit via Gibbs sampling with
-fixed~$\alpha_c^0$, the primary hyperparameters of interest are the
-concentration hyperparameters,~$a_{\alpha_0}$ and~$a_{\gamma}$ in
-Eq.~\ref{eq:hdphmm_trans}, where we have assumed $ \alpha_0 \sim
-\distGamma(a_{\alpha_0}, 1)$ and $ \gamma \sim \distGamma(a_\gamma, 1)
-$.  Figure~\ref{fig7} shows the inferred number of states as we vary
-these two hyperparameters over orders of magnitude. We found that the
-number of inferred states is stable around~$65$, indicating the
-performance robustness to the choice of these hyperparameters.
-
-% True and inferred place fields
-\begin{figure}
-  \centering
-  \begin{subfigure}[t]{5in}
-    \includegraphics[width=\textwidth]{figures/ch5/Fig8}
-  \end{subfigure}
-  \caption[True and inferred place field comparison]{Comparison of
-    inferred and true place fields for four randomly selected
-    hippocampal neurons. The inferred place field (top row) for
-    cell~$c$ is a combination of location distributions for each
-    state~$i$ weighted by the inferred firing rates~$\lambda_{c,i}$,
-    whereas the true place field (bottom row) for cell~$c$ is a
-    histogram of locations in which cell~$c$ fires. The black dots
-    show the rat's locations used for each histogram. The inferred
-    place fields closely match the true place fields. With adequate
-    spike data recording, we expect a higher latent state
-    dimensionality to yield higher spatial resolution in the inferred
-    place fields.}
-  \label{fig8}
-\end{figure}
-
-Looking into the inferred states, we can reconstruct the ``place
-fields'' or ``state fields'' of hippocampal neurons. To do so, we
-combine the state-location maps (Fig.~\ref{fig5}B) with the firing
-rate of the individual neuron in those states (Fig.~\ref{fig6}F) and
-weight by the marginal probability of the latent state. Together,
-these give rise to the inferred neuron's place field. Note that,
-again, the position data was only used in reconstruction but not in
-the inference procedure. Four pairs of inferred and true place fields
-are shown in Fig.~\ref{fig8}. On the top row is the inferred place
-field; on the bottom is the true place field computed using the
-locations of the rat when cell~$c$ fired shown by black dots.
-
-% Mutual Info
-\begin{figure}
-  \centering
-  \begin{subfigure}[t]{2.4in}
-    \includegraphics[width=\textwidth]{figures/ch5/Fig9}
-  \end{subfigure}
-  \caption[Mutual information of inferred states and rat's
-    position]{Mutual information of the inferred states and the rat's
-    position. Latent state are ordered by their occupancy, i.e. the
-    number of times the rat was in that state.  }
-  \label{fig9}
-\end{figure}
-
-In addition, we can evaluate the model in terms of the information
-latent states convey about the rat's position in the circular
-environment. To do so, we divide the environment into 121 bins of
-equal area and treat the rat's position as a discrete random
-variable. Likewise, we treat the latent state as a discrete random
-variable, and we compute the discrete mutual information between these
-two variables.  We investigate the information content of each
-individual state by constructing a binary random variable indicating
-whether or not the model is in state~$i$ and measuring its mutual
-information with the rat's position. The result is shown in
-Fig.~\ref{fig9}, where the latent states are ordered in decreasing
-order of occupancy. As expected, states that are more frequently
-occupied carry more information about the rat's position.
+\sloppy
+An alternative approach is to consider models that explicitly limit 
+the dimensionality of the network. For example, if we know the 
+physical location of neurons (or their approximate location from 
+electrode number), we may rule out long-range connections. 
+Alternatively, we may constrain the weighted adjacency matrix to be 
+low rank, that is ${\bW \odot \bA \equiv \bU \bV^\trans}$, where~$\bU$
+and~$\bV$ are rank~${K < N}$. The effect is similar to that of 
+a linear dynamical system model~\cite{paninski2010new, macke2011empirical}. 
+Unfortunately, it is less clear how to incorporate interpretable 
+structure into this type of model, although see~\citet{buesing2014clustered}
+for some initial steps in this direction.
 
 
+Finally, we have developed a Markov chain Monte Carlo inference algorithm,
+and while we have shown reasonable performance on recordings of 
+hundreds of neurons over tens of thousands of time bins, as we scale 
+to larger recordings alternative algorithms may be preferable. 
+When the complexity is dominated by the number of time bins, 
+stochastic variational inference (SVI)~\cite{Hoffman13} provides 
+an attractive alternative. Since the time bins are conditionally 
+independent given the network, we can get unbiased estimates of 
+sufficient statistics from \textit{mini-batches} of time bins
+and use them to inform stochastic mean field updates. 
+While we have not derived this mean field algorithm here, it is 
+relatively straightforward to derive these algorithms for 
+\polyagamma augmented models~\cite{Pillow2012, Zhou2012}. 
+Still, the limiting factor will often be the number of neurons, 
+in which case SVI is not immediately applicable. Developing 
+approximate inference algorithms that only consider subsets of neurons is 
+an active area of research~\cite{soudry2015efficient}. 
 
-
-\section{Extensions and discussion}
-
-\subsection{Hidden semi-Markovian models}
-A striking feature of the inferred state transition matrix in
-Fig.~\ref{fig6}E is that the first 40 states exhibit strong
-self-transitions. This is a common feature of time series and has been
-addressed by a number of augmented Markovian models. In particular,
-hidden semi-Markovian models (HSMMs) explicitly model the duration of
-time spent in each state separately from the rest of the state
-transition matrix \citep{Johnson13}. Building this into the model
-allows the Dirichlet or HDP prior over state transition vectors to
-explain the rest of the transitions, which are often more
-similar. Alternatively, ``sticky'' HMMs and HDP-HMMs accomplish a
-similar effect \citep{Fox08}.
-
-\subsection{Statistical and computational considerations}
-We have seen a great advantage in nonparametric Bayesian formalism
-(i.e., HDP-HMM vs. HMM) regarding automatic model selection. This is
-especially important for sparse sample size or short recording in some
-neuroscience applications, where cross validation on data is
-infeasible.
-
-For any statistical estimation, we need to consider the ``bias
-vs. variance'' problem.  In VB inference, there is a potential
-estimate bias due to bound optimization (since we optimize the lower
-bound of the marginal likelihood). In addition, because of the
-mean-field approximation, the parameter's variance tends to be
-underestimated. In MCMC inference, the estimate is asymptotically
-unbiased, however, if the Markov chain mixes slowly, the estimate's
-variance can be inaccurate.
-
-Computationally, the fully-Bayesian HDP-HMM inference is the most
-demanding. In practice, one can choose various inference tools with
-gradually increased computational resources (VB, empirical Bayes,
-Gibbs sampling or HMC) depending on the data sample size and
-complexity. In addition, the convergence of these algorithm may vary
-according to the choice of hyperparameters.
-
-
-\subsection{Latent state dimensionality and continuous latent state}
-
-In experimental data analysis, the number of identified states from
-HDP-HMM depends on the data as well as the priors of
-hyperparameters. Given the same size of environment, different numbers
-of cells or different recording duration may yield different
-estimation results (Fig.~\ref{fig3}), since the nonparametric prior
-allocates states in accordance with the complexity of the data. We
-found that the weak priors over the concentration parameters have a
-minimal effect on the number of inferred states
-(Fig.~\ref{fig7}). Fixing the scale hyperparameter of the firing rate
-prior distribution and performing Gibbs sampling over the scale of the
-prior is a simple and robust method.
-
-
- 
-In our problem, we formulate the latent state is discrete (finite or
-infinite) and infer the state-transition matrix, from which we can
-derive the ``topology graph'' of the unknown environment
-\citep{Chen12a,Chen14}. In parallel to the discrete-state HMM or
-HDP-HMM, we can also formulate a continuous state-space model, where
-the state is Gaussian and the observation is Poisson
-\citep{Brown98,Smith03,Yu09,Buesing12}. Various inference algorithms
-(Gaussian or variational approximation) have been developed for such
-models in the literature. Different from discrete state, the
-continuous-state has a smoother representation (due to infinite
-spatial resolution). However, similar to the HMM, we will need to deal
-with the model selection (dimensionality of latent state) problem,
-which is often tackled by cross validation \citep{Yu09}. In addition,
-continuous latent state is subject to sign/scale ambiguity. For the
-purpose of representing space and spatial topology, the discrete-state
-representation is more appropriate. Provided that the animal's
-behavior (spatial location) is available, the continuous
-representation of space will be more accurate. In general,
-nonparametric Bayesian inference can be applied to continuous or
-discrete states, as well as continuous or discrete observations
-\citep{Teh06,van08,Fox08,Fox10,Chen15Book}.
-
-
-
-\subsection{Robustness of the population firing model}
-
-A key assumption in our probabilistic model is the Poisson
-likelihood. Although this assumption may not be true in experimental
-data, our results have showed excellent performance.  To further
-assess the robustness of HDP-HMM-Poisson model in experimental data
-analysis, at every temporal bin we further add additional homogeneous
-non-Poissonian noise to the observed population spike counts by
-drawing from a NB distribution (with varying levels of mean 0.25-1.0
-and variance 0.5-2.0), and repeat the decoding error analysis. We have
-found that, as a general trend, the median decoding error gradually
-grows as increasing noise mean or variance; yet the decoding
-performance remains quite satisfactory (results not shown).
-
-
-
-\subsection{Use of soft-labeled spikes}
-
-
-Thus far, we have assumed that all recorded ensemble spikes are sorted
-and clustered into single units. Nevertheless, it is known that spike
-sorting is complex, time-consuming and error-prone
-\citep{Wood08,Shalchyan14}.  On the one hand, sorting error is
-inevitable when there are overlapping features (such as spike energy,
-amplitudes or principal components).  On the other hand, traditional
-spike-sorting procedures often throw away considerable non-clusterable
-``noisy'' spikes, which might contain informative tuning
-information. How to use these noisy spikes and maximize the
-information efficiency remains an open question.  In other words, can
-we conduct the ensemble spike analysis using unsorted spikes?
-
-
-Motivated from a sorting-free ensemble decoding analysis
-\citep{Chen12b,Kloosterman14}, we may use a soft-clustering method
-based on a Gaussian mixtures model (parameterized by an augmented
-vector $\bxi=\{\ell_c,\bmu_c,\bSigma_c\}_{c=1}^K$ that characterizes
-the weights, mean, and covariance parameters of the Gaussian
-mixtures). By clustering the spike waveform feature space, we assign
-each spike with a ``soft'' class label (about the unit identity)
-according to the posterior probability within the $K$-mixtures. In the
-feature space, the points close to (far away from) the $c$-th cluster
-center are associated with a probability assignment value close to
-(smaller than) 1 in the $c$-th class. Because of the soft membership
-of individual spikes, the spike count $y_{c,t}$ ($c = 1,\dots, K$)
-within a time interval can be a non-integer value. Consequently, we
-replace the variable $C$ with $K$ to indicate that the number of
-neurons is unknown, and rewrite the log likelihood as follows
-\begin{eqnarray}                                   
-\log p({\by}_{1:T}|\mathcal{S},\btheta,\bxi)= \sum_{t=1}^T \sum_{c=1}^K \log p(y_{c,t}|S_t,\btheta,\bxi)
-\end{eqnarray}
-
-In this case, the inference procedure consists of two steps. At the
-first stage, the $d$-dimensional spike waveform features are clustered
-using a ``constrained'' Gaussian mixture model \citep{Zou12}, which
-can be either finite or infinite. In the case of infinite Gaussian
-mixtures, we can also resort to the nonparametric Bayesian approach
-\citep{Rasmussen99,Gorur10,Wood08}. Upon completing the inference,
-each spike will be given a posterior probability of being assigned to
-each cluster.  At the second stage, we sum the soft-labeled spikes to
-obtain the probabilistic spike count $y_{c,t}$ for all $K$-clusters,
-and the remaining nonparametric Bayesian (MCMC or VB) inference
-procedure remains unchanged. A detailed investigation of this idea
-will be pursued in future work.
-
-
-
-
-\section{Conclusion}
-
-In this paper, we have explored the use of HDP-HMMs with Poisson
-likelihoods to analyze rat hippocampal ensemble spike data during
-spatial navigation. Compared to the parametric finite-state HMM, the
-HDP-HMM allows more flexibility to model the experimental data
-(without relying on time-consuming cross-validation in model
-selection). We evaluate two nonparametric Bayesian inference
-algorithms for HDP-HMM, one based on VB and the other based on
-MCMC. Furthermore, we consider two approaches for hyperparameter
-selection, an issue that is particularly important for the real-life
-application.  It is found that the MCMC algorithm with HMC updates for
-the hyperparameters is robust and achieves the best performance in all
-simulated and experimental data. Our investigation shows a promising
-direction in applying nonparametric Bayesian methods for ensemble
-neuronal spike data analysis.
-
-The unsupervised Bayesian inference approach allows us (or hippocampus
-downstream structures) to read out spatial information from
-hippocampal ensemble spike activity without {\em a priori} receptive
-field measurement.  One important future research direction is to
-apply this method to investigate sleep-associated hippocampal ensemble
-spike activity during either slow wave sleep (SWS) or rapid eye
-movement (REM) sleep \citep{Louie01,Lee02}. Traditionally, one would
-rely on the place receptive field information estimated from pre-sleep
-behavior to infer the content of population spike activity in sleep,
-but this approach is accompanied with many well-known statistical
-challenges, such as non-stationarity, firing rate remapping, and
-timescale warping. Our approach proposed here can provide an effective
-and complementary paradigm to investigate the representation of
-hippocampal population codes without direct measurement of spatial
-correlate \citep{Chen15}. The same principle can also be applied to
-neocortical data \citep{Ji07,Peyrache09,Gulati14}.
-
-
+\subsection{Relating circuit structure to stimuli and behavior}
+\TODO{Can we automate the task of relating the inferred latent structure to
+simultaneously recorded, but potentially high-dimensional, measurements of 
+the environment or the animal's behavior?}

@@ -93,11 +93,18 @@
 \renewcommand{\setthesection}{\arabic{chapter}.A\arabic{section}}
 
 % References.
+\usepackage{xifthen}
 \renewcommand\bibname{References}
 %\RequirePackage[super,comma,numbers]{natbib}
 \RequirePackage{natbib}
 \setcitestyle{authoryear,round,citesep={;},aysep={,},yysep={;}}
-\renewcommand{\cite}[1]{\citep{#1}}
+%\renewcommand{\cite}[1]{\citep{#1}}
+\renewcommand{\cite}[2][]{
+%  \citep[#2][#1]{#3}
+  \ifthenelse{\isempty{#1}}
+             {\citep{#2}}
+             {\citep[#1][]{#2}}
+}
 %\renewcommand{\bibnumfmt}[1]{[#1]}
 
 % Chapter stuff
@@ -201,7 +208,7 @@
 	\vspace*{\fill}
 	\vspace{100pt}
 	\begin{center}
-	\Huge \textcolor{SchoolColor}{\@maintitle} \normalsize \\
+	\Huge \textcolor{SchoolColor}{Bayesian Methods for Discovering \\ Structure in Neural Spike Trains} \normalsize \\
 	\vspace{100pt}
 	\textsc{a dissertation presented \\ by\\
 	\theauthor\\ to\\ The \@department\\
@@ -235,7 +242,8 @@
 	\renewcommand{\headrulewidth}{0.0pt}
 	\vspace*{35pt}
 	\begin{center}
-	\Large \textcolor{SchoolColor}{\@title} \normalsize \\
+	  %\Large \textcolor{SchoolColor}{\@title} \normalsize \\
+          \Large \textcolor{SchoolColor}{Bayesian Methods for Discovering Structure in \\ Neural Spike Trains} \normalsize \\
 	\vspace*{20pt}
 	\scshape Abstract \\ \rm
 	\end{center}
