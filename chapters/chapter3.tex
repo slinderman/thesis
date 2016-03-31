@@ -5,83 +5,84 @@
 
 \chapter{Hawkes Processes with Latent Network Structure}
 \label{chap:hawkes}
-\TODO{Rewrite the intro to focus on neurons, then cite other example
-  areas} Networks play a central role in modern neuroscience.  The
-goal of connectomics \cite{sporns2005human} is to build a wiring
-diagram of the brain.  From this massive network of synaptic
-connections, we hope to find recurring patterns that will illuminate
-the biological design principles and, hopefully, provide insight into
-neural computation. Building this wiring diagram, or ``connectome'',
-is a painfully tedious process that involves slicing sections of brain
-tissue nanometers thin, scanning them with an electron microscope,
-segmenting the resulting images to identify cell bodies and synapses,
-and then reconstructing the three dimensional volume of tissue
-\cite{white1986structure, lichtman2008technicolour,
-  helmstaedter2013connectomic, oh2014mesoscale} .  Needless to say,
-this process is both computationally demanding and prone to errors.
 
-Networks need not be so concrete, however.  Systems neuroscientists
-often describe intricate circuits with simplified networks whose nodes
-correspond to populations of cells, and whose edges denote the an
-abundance connections from one population to another
-\cite[e.g.]{felleman1991distributed, scannell1999connectional}.  Since
-neurons in a particular brain region often have highly stereotyped
-patterns of connectivity, it is convenient to describe neural circuits
-in terms of block diagrams.  These abstract networks do not capture
-the nuances of synaptic connections, but they do provide concise
-representations of neural computation.
+Networks are fundamental models for complex systems, enabling us to
+reason about systems by studying the relationships between their
+parts. We have already discussed, in Section~\ref{sec:intro_networks},
+the myriad ways in which networks are employed throughout
+neuroscience.  Whether they represent synapses in the human
+connectome, systems-level interactions in brain circuits, pairwise
+correlations in fMRI recordings, or coupling in theoretical models,
+networks abstract away the messy details of systems.  A network consists of nodes, which
+may represent neurons, populations, voxels, etc., and edges, 
+which connect pairs of nodes and represent interactions, like the effect
+of one neuron's spikes on the subsequent activity of its downstream
+neighbors.  By reducing a system to a network of nodes and edges,
+we create a simplified object for analysis.
 
-Even in functional magnetic resonance imaging (fMRI) studies, where the
-recorded voxels correspond to hundreds of thousands of neurons, networks
-are used to describe \emph{functional connectivity} between brain regions
-\cite{friston1994functional}. While these networks are far removed from
-the underlying synaptic connectivity, they exhibit telling differences
-in healthy and diseased patients \cite{bassett2008hierarchical}
-and show complex structure that is far from random \cite{bassett2006small}.
+%Representing these systems as networks facilitates a number of
+%analyses. 
+A great deal can be learned by considering simple network properties
+like the average number of connections per node, or more sophisticated
+statistics like ``betweenness'' and the number of connected triangles
+\cite{bullmore2009complex}.  Some network analyses involve
+probabilistic modeling.  For example, we may look for clusters or
+features of nodes that have similar patterns of connectivity.  Other
+analyses are more supervised in nature; in a ``link
+prediction'' task we want to predict whether or not a pair of nodes is
+connected, given partial observations of the network. In some cases,
+ we wish to classify networks recorded from healthy and diseased patients. 
+ Traditionally, network analysis has focused on \emph{explicit network} problems in
+which the network itself is considered to be the observed data.  That
+is, the nodes are and edges are considered known. A rich literature has arisen in recent
+years for applying statistical machine learning models to this type of
+problem, e.g., \citet{Liben-2007,Hoff-2008,Goldenberg-2010}.
 
-In fact, network models need not be grounded in data at all.  Many
-theoretical models of neural computation use networks to describe
-idealized interactions between neurons. These interactions are only
-loosely based on the known properties of neurons and
-synapses. Nevertheless, these theoretical network models provide
-invaluable insight into the properties of complex systems
-\cite{hopfield1982neural, amit1992modeling, van1996chaos, DayanAbbott,
-  sussillo2009generating}.
+In practice, however, we are often confronted with \emph{implicit
+  networks} that cannot be observed directly, but about which we wish
+to perform analysis.  In an implicit network, the nodes or edges of
+the network may not be directly observed, but the graph structure may
+be inferred from noisy emissions.  These noisy observations are
+assumed to have been generated according to an underlying model that
+respects the latent network structure.
+
+For example, in connectomics problems the network must be inferred
+from noisy electron microscopy images; in systems neuroscience the
+network must be inferred from weak anatomical evidence and noisy
+measurements of population activity; and in fMRI experiments, the
+network is derived from noisy BOLD responses.  In both cases, if we
+knew the underlying network (i.e.  if we knew how the nodes were
+connected), we could assign a likelihood to the observed electron
+microscopy images or to the measured activity. By combining this
+likelihood with a prior distribution that reflects our intuitions
+about the network structure, we can construct a probabilistic model to
+tackle these implicit network problems.
 
 
+In this chapter, we consider the case where our observations come in
+the form of neural spike trains, and our intuition is that a spike on
+one neuron will induce activity in downstream neurons.  e formalize
+this with a probabilistic model based on mutually-interacting point
+processes.  Specifically, we combine the Hawkes process
+\cite{Hawkes-1971} with hierarchical prior distributions on the network.  This
+combination allows us to reason about latent networks in terms of the
+way that they regulate interaction in the Hawkes process.  Inference
+in the resulting model can be done with Markov chain Monte Carlo, and
+an elegant data augmentation scheme results in efficient parallelism.
 
-The goal of Chapters~\ref{chap:hawkes},~\ref{chap:discrete_hawkes},
-and~\ref{chap:glm} is to 
-
-One of the major goals of computational neuroscience has been to
-develop statistical tools that can recover the connectome from neural
-spike trains alone.
-
-,
-enabling us to reason about systems by studying the relationships
-between their parts.  Most often in network analysis, the edges are
-given.  However, in many systems it is difficult or impossible to
-measure the network directly.  Examples of latent networks include
-economic interactions linking financial instruments and patterns of
-reciprocity in gang violence.  In these cases, we are limited to noisy
-observations of events associated with each node.  To enable analysis
-of these implicit networks, we develop a probabilistic model that
-combines mutually-exciting point processes with random graph models.
-We show how the Poisson superposition principle enables an elegant
-auxiliary variable formulation and a fully-Bayesian, parallel
-inference algorithm.  We evaluate this new model empirically on
-several datasets.
-
-\section{Introduction}
-Many types of modern data are characterized via relationships on a network.  Social network analysis is the most commonly considered example, where the properties of individuals (vertices) can be inferred from ``friendship'' type connections (edges).  Such analyses are also critical to understanding regulatory biological pathways, trade relationships between nations, and propagation of disease.  The tasks associated with such data may be unsupervised (e.g., identifying low-dimensional representations of edges or vertices) or supervised (e.g., predicting unobserved links in the graph).  Traditionally, network analysis has focused on \emph{explicit network} problems in which the graph itself is considered to be the observed data.  That is, the vertices are considered known and the data are the entries in the associated adjacency matrix. A rich literature has arisen in recent years for applying statistical machine learning models to this type of problem, e.g., \citet{Liben-2007,Hoff-2008,Goldenberg-2010}.
-
-In this paper we are concerned with \emph{implicit networks} that cannot be observed directly, but about which we wish to perform analysis.  In an implicit network, the vertices or edges of the graph may not be directly observed, but the graph structure may be inferred from noisy emissions.  These noisy observations are assumed to have been generated according to underlying dynamics that respect the latent network structure.
-
-For example, trades on financial stock markets are executed thousands of times per second. Trades of one stock are likely to cause subsequent activity on stocks in related industries. How can we infer such interactions and disentangle them from market-wide fluctuations? Discovering latent structure underlying financial markets not only reveals interpretable patterns of interaction, but also provides insight into the stability of the market. In Section~\ref{sec:stability} we will analyze the stability of mutually-excitatory systems, and in Section~\ref{sec:financial} we will explore how stock similarity may be inferred from trading activity.
-
-As another example, both the edges and vertices may be latent.  In Section~\ref{sec:chicago}, we examine patterns of violence in Chicago, which can often be attributed to social structures in the form of gangs.  We would expect that attacks from one gang onto another might induce cascades of violence, but the vertices (gang identity of both perpetrator and victim) are unobserved.  As with the financial data, it should be possible to exploit dynamics to infer these social structures.  In this case spatial information is available as well, which can help inform latent vertex identities.
-
-In both of these examples, the noisy emissions have the form of events in time, or ``spikes,'' and our intuition is that a spike at a vertex will induce activity at adjacent vertices.  In this paper, we formalize this idea into a probabilistic model based on mutually-interacting point processes.  Specifically, we combine the Hawkes process \cite{Hawkes-1971} with recently developed exchangeable random graph priors.  This combination allows us to reason about latent networks in terms of the way that they regulate interaction in the Hawkes process.  Inference in the resulting model can be done with Markov chain Monte Carlo, and an elegant data augmentation scheme results in efficient parallelism. 
+Figure~\ref{fig:network_hawkes} illustrates the components of the
+probabilistic model. At the highest level, we have a network of
+neurons.  The pattern of connectivity in the network may be governed
+by latent variables like cell types and locations. In this case there
+are four types of cells (different colors in
+Fig.~\ref{fig:fig1_network}), and each cell has a location in the
+two-dimensional plane. Nearby cells of the same type are more likely
+to connect. The network governs the dynamics of the firing rate
+(Fig.~\ref{fig:fig1_activation}), which in turn gives rise to the
+observed spikes (Fig.~\ref{fig:fig1_spikes}. In this case, spikes on
+one neuron induce impulse responses that feed back into the firing
+rate of downstream neurons. These firing rate--spike train dynamics are 
+modeled with Hawkes processes. 
 
 \begin{figure}[t]
   \centering
@@ -109,7 +110,7 @@ In both of these examples, the noisy emissions have the form of events in time, 
     \label{fig:fig1_spikes}
   \end{subfigure}
   \vspace{-.2in}
-  \caption[Components of the network GLM]{
+  \caption[Components of the network Hawkes model]{
      Components of the generative model. 
      \textbf{(a)} Each neuron is endowed with latent variables, like 
      locations in space and discrete types (illustrated with different colors).
@@ -122,18 +123,32 @@ In both of these examples, the noisy emissions have the form of events in time, 
      \textbf{(c)} Spikes are randomly generated according to the 
      activation. Each spike induces an impulse response on the activation 
      of downstream neurons.}
-  \label{fig:fig1}
+  \label{fig:network_hawkes}
 \end{figure}
 
+The rest of the chapter is organized as follows. In Section~\ref{sec:graph_models}
+we introduce a compositional probabilistic model for random networks, and in 
+Section~\ref{sec:hawkes_processes} we introduce Hawkes processes. 
+Section~\ref{sec:network_hawkes_model} stitches these two components together into a 
+joint model for implicit networks. We derive a Gibbs sampling algorithm with
+an elegant auxiliary variable formulation in Section~\ref{sec:hawkes_inference}.
+Before diving into applications, we first consider the theoretical consequences of a 
+particular network model on the stability of the system, and provide some 
+intuition on how the network properties affect the asymptotic behavior of the 
+system. 
+Finally, the remaining sections consider applications, first to synthetic data,
+ and then to biological recordings. \todo{apply this to hippocampal data}.
+While the primary emphasis is on modeling neural data, we also explore some applications
+in areas of finance and criminology. 
 
 \section{Probabilistic Network Models}
 \label{sec:graph_models}
 Networks of~$N$ nodes can be represented by~${N\times N}$
-matrices. Unweighted networks are binary adjacency matrices~$\bA$
+matrices. Unweighted networks correspond to binary adjacency matrices~$\bA$
 where~${a_{m,n}=a_{m \to n}=1}$ indicates a directed edge from
 node~$m$ to node~$n$. We use the arrow notation ($\to$) to remind the
 reader of the directionality of the connection. When these edges have
-weights associated with them, we can use a second matrix,~${\bW \in
+weights associated with them, we can encode them in a second matrix,~${\bW \in
   \reals^{N \times N}}$.  The complete network is then defined by the
 elementwise product,~${\bA \odot \bW}$. The binary adjacency matrix
 captures the sparsity pattern, and the real-valued wieght matrix
@@ -147,7 +162,7 @@ Arbitrarily complex models can be constructed by incorporating latent
 variables into the prior distributions over~$\bA$ and~$\bW$.
 Unsurprisingly, the same types of motifs that recur throughout
 probabilistic modeling --- discrete mixture models and low-dimensional
-factor models, for example --- also form the building blocks of
+factor models --- also form the building blocks of
 standard network models.  We briefly outline a few simple models that
 are used in this and following chapters.
 
@@ -383,6 +398,7 @@ network.
 
 
 \section{Hawkes Processes}
+\label{sec:hawkes_processes}
 Hawkes processes \cite{Hawkes-1971} are a special type of point process
 that allow spikes to influence the future firing rate. This is achieved
 via a linear superposition of Poisson processes. Before jumping into the
@@ -551,7 +567,8 @@ event~4 spawns events~{5a-c}. In this simple example, processes excite
 one another, but do not excite themselves. Next we will introduce more
 sophisticated models for such interaction networks.
 
-\section{The Network Hawkes Model}\label{sec:basic_model}
+\section{The Network Hawkes Model}
+\label{sec:network_hawkes_model}
 In order to combine Hawkes processes and random network models, we
 decompose the Hawkes impulse response $h_{n \to n'}(\Delta t)$ as
 follows:
@@ -620,6 +637,7 @@ can use a simple clustering model or a nonparametric model like that
 of \citet{Blundell-2012}.
 
 \section{Bayesian Inference with Gibbs Sampling}
+\label{sec:hawkes_inference}
 We present a Gibbs sampling procedure for inferring the model
 parameters,~$\bA$,~$\bW$,~$\btheta$,$\{\lambda_{0,n}(t)\}$, and, if
 necessary,~${\{c_m\}}$. In order to simplify our Gibbs updates, we
