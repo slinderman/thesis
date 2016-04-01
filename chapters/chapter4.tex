@@ -1,41 +1,31 @@
-\chapter{Scalable Inference for Discrete-Time Hawkes Processes}
+\chapter{Variational Inference for Discrete-Time Autoregressive Models}
+
+\TODO{
+Contributions of this chapter:
+
+-- a (stochastic) variational inference algorithm that operates on 
+subsets of data
+
+-- a discrete time model for which inference 
+scales with the number of neurons rather than the number of spikes.
+
+-- the latter forms a bridge to models in latter chapters, where 
+computing the likelihood involves an intractable integral over the 
+conditional intensity function. 
+
+}
+
+One potential concern  of the network Hawkes model introduced 
+in the last chapter is that the complexity of inference scales with the 
+number of events, which in some cases 
  
-Networks capture our intuition about relationships in the world.  They
-describe the friendships between Facebook users, interactions in
-financial markets, and synapses connecting neurons in the brain.
-These networks are richly structured with cliques of friends, sectors
-of stocks, and a smorgasbord of cell types that govern how neurons
-connect.  Some networks, like social network friendships, can be
-directly observed, but in many cases we get but a glimpse of the
-network through the actions of its constituents and an understanding
-of how the network mediates that activity.  In this work, we focus on
-the problem of latent network discovery in the case where the
-observable activity takes the form of a mutually-excitatory point
-process, also known as a Hawkes process.  We build on previous work
-that has taken a Bayesian approach to this problem, specifying prior
-distributions over the latent network structure and a likelihood of
-observed activity given this network.  We extend this work with a
+We extend this work with a
 computationally efficient discrete-time formulation and a stochastic
 variational inference (SVI) algorithm that allows us to scale our
 approach to long sequences of observations.  We demonstrate our
 algorithm on the calcium imaging data used in the Chalearn neural
 connectomics challenge.
 
-\section{Introduction}
-
-Networks are abstractions of the relationships and connections between
-real-world objects, such as people, stocks, or neurons.  These
-connections reflect relationships like ``Wilson and Brady are
-friends,'' or ``When neuron A fires it excites neuron B.''  Sometimes
-the networks themselves are observed data, as in the case of social
-network friendships, but often our view of the network is indirect.
-We are left to infer the latent connections between objects based on
-our observations of their behavior.  In our neural example, recording
-techniques can often provide a measure of the neurons' activity but
-cannot resolve the individual synaptic connections between neurons.
-Given our knowledge of how synapses work, however, we might infer that
-if one neuron consistently fires shortly after another then there is
-likely an excitatory connection between them.
 
 This is one example of the \emph{latent network discovery} problem.
 We improve upon previous work by providing a discrete-time analogue of
@@ -51,73 +41,42 @@ subsets) of observations per iteration, and has been shown to yield
 dramatic improvements in a variety of large-scale machine learning
 problems.
 
-% Hawkes figure
-\begin{figure}[t]
-  \begin{center}
-    % Figure 1a
-    \begin{subfigure}[b]{2.34in}
-      \caption{Hawkes process dynamics}
-      \centering
-      \includegraphics[width=\textwidth]{figures/ch2b/figure1a.pdf} 
-      \label{fig:hawkes_a}
-    \end{subfigure}
-    % Figure 1b
-    \begin{subfigure}[b]{0.81in}
-      \caption{Weighted Network}
-      \centering
-      \includegraphics[width=\textwidth]{figures/ch2b/figure1b.pdf} 
-      \label{fig:hawkes_b}
-    \end{subfigure}
-    % Figure 1c
-    \begin{subfigure}[b]{2.10in}
-      \caption{Impulse responses}
-      \centering
-      \includegraphics[width=\textwidth]{figures/ch2b/figure1c.pdf} 
-      \label{fig:hawkes_c}
-    \end{subfigure}
-  \end{center}
-  % Main caption
-  \caption[Components of the discrete time Hawkes process model]{
-    Components of the Network Hawkes process model.
-    \textbf{(a)} Events induce weighted impulse responses on downstream processes, spawning more events according to the Hawkes process dynamics.
-    \textbf{(b)} Underlying these dynamics is a weighted, directed network. Here, the network is a stochastic block model with two clusters of processes (red and blue). Processes primarily connect to others of the same type, though there is a small probability of connection from red to blue.
-    \textbf{(c)} We model the impulse responses as a convex combination of normalized basis functions.}
-\label{fig:discrete_hawkes}
-\end{figure}
-% End figure  1
+% % Hawkes figure
+% \begin{figure}[t]
+%   \begin{center}
+%     % Figure 1a
+%     \begin{subfigure}[b]{2.34in}
+%       \caption{Hawkes process dynamics}
+%       \centering
+%       \includegraphics[width=\textwidth]{figures/ch2b/figure1a.pdf} 
+%       \label{fig:hawkes_a}
+%     \end{subfigure}
+%     % Figure 1b
+%     \begin{subfigure}[b]{0.81in}
+%       \caption{Weighted Network}
+%       \centering
+%       \includegraphics[width=\textwidth]{figures/ch2b/figure1b.pdf} 
+%       \label{fig:hawkes_b}
+%     \end{subfigure}
+%     % Figure 1c
+%     \begin{subfigure}[b]{2.10in}
+%       \caption{Impulse responses}
+%       \centering
+%       \includegraphics[width=\textwidth]{figures/ch2b/figure1c.pdf} 
+%       \label{fig:hawkes_c}
+%     \end{subfigure}
+%   \end{center}
+%   % Main caption
+%   \caption[Components of the discrete time Hawkes process model]{
+%     Components of the Network Hawkes process model.
+%     \textbf{(a)} Events induce weighted impulse responses on downstream processes, spawning more events according to the Hawkes process dynamics.
+%     \textbf{(b)} Underlying these dynamics is a weighted, directed network. Here, the network is a stochastic block model with two clusters of processes (red and blue). Processes primarily connect to others of the same type, though there is a small probability of connection from red to blue.
+%     \textbf{(c)} We model the impulse responses as a convex combination of normalized basis functions.}
+% \label{fig:discrete_hawkes}
+% \end{figure}
+% % End figure  1
 
 \section{The Discrete Time Network Hawkes Model}
-Hawkes processes \cite{Hawkes-1971} are multivariate point processes
-that relate excitatory interaction networks to sets of discrete
-events.  As with the more familiar Poisson process, the number of
-observed events in a particular time window follows a Poisson
-distribution, but in a Hawkes process disjoint time intervals are no
-longer independent.  This is because the Hawkes process allows events
-to influence the future intensity, or rate.  For example, suppose we
-have a Hawkes process with two constituent processes.  An event on the
-first process could add an \emph{impulse response} to the future rate
-of the second process.  More generally, a multivariate Hawkes process
-consists of~$N$ individual point processes with
-rates~${\{\lambda_n(t)\}_{n=1}^N}$ that depend upon the events that
-have occurred up to time~$t$.
-
-Hawkes processes have additive, excitatory interactions.  Each event
-adds a nonnegative impulse response to the future rate of connected
-processes.  In continuous time, the rate of the~$n$-th process is
-\begin{align}
-\label{eq:cont_hawkes_rate}
- \lambda_{n}(t) &= \lambda_n^{(0)} + \sum_{m=1}^{M} h_{c_{m} \to n}(t-s_{m}),
-\end{align}
-where~${\{s_m, c_m\}_{m=1}^{M}}$ is a set of marked spikes where~$s_m
-\in [0,T]$ denotes the time of the spike and~${c_m \in \{1, \ldots
-  ,N\}}$ is the neuron on which it occurred. The rate is a linear
-function of the background rate,~$\lambda_n^{(0)}$, and the impulse
-response functions,~${h_{n' \to n}(\Delta t)}$, that govern the
-amplitude of influence that events on neuron~$n'$ have on the rate of
-neuron~$n$ at time lag~${\Delta t}$. As before, causality and locality
-of influence are enforced by limiting the support of the impulse responses
-to~$(0, \Delta t_{\mathsf{max}}]$.
-
 
 The fundamental limitation of the previously developed continuous time
 models is that the number of values that the auxiliary
@@ -186,23 +145,6 @@ the~$b$-th basis function evaluated at the~$t$-th time bin.
 Since both the spike trains and the basis functions are given,
 these can be precomputed.
 
-%Intuitively, the weight~$W_{k\to k'}$ specifies how many child events
-%on process~$k'$ will be caused by a single event on process~$k$.
-%Then, $G_{k \to k'}[d]$ specifies the probability that the child event
-%will occur at lag~$d \Delta t$.  In fact, this procedure is the basis
-%of a recursive algorithm for generating samples from the discrete time
-%Hawkes process.
-
-Figure~\ref{fig:discrete_hawkes} illustrates the basic components of the model.
-We have a stochastic block model with two types of processes (red and
-blue) that preferentially interact with processes of the same type.
-Events induce weighted impulse responses on downstream processes
-according to an underlying latent network (Fig.~\ref{fig:hawkes_b}).
-The impulse responses,~${\hbar_{n \to n'}[d]}$, are modeled as a convex
-combination of basis functions (Fig~\ref{fig:hawkes_c}).  The impulse
-response is weighted according to the strength of the
-connection,~$w_{n \to n'}$ before being added to the rate of
-downstream processes. \todo{update the figure}
 
 \section{Inference with Gibbs Sampling}
 

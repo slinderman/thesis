@@ -126,20 +126,22 @@ modeled with Hawkes processes.
   \label{fig:network_hawkes}
 \end{figure}
 
-The rest of the chapter is organized as follows. In Section~\ref{sec:graph_models}
-we introduce a compositional probabilistic model for random networks, and in 
-Section~\ref{sec:hawkes_processes} we introduce Hawkes processes. 
-Section~\ref{sec:network_hawkes_model} stitches these two components together into a 
-joint model for implicit networks. We derive a Gibbs sampling algorithm with
-an elegant auxiliary variable formulation in Section~\ref{sec:hawkes_inference}.
-Before diving into applications, we first consider the theoretical consequences of a 
-particular network model on the stability of the system, and provide some 
-intuition on how the network properties affect the asymptotic behavior of the 
-system. 
-Finally, the remaining sections consider applications, first to synthetic data,
- and then to biological recordings. \todo{apply this to hippocampal data}.
-While the primary emphasis is on modeling neural data, we also explore some applications
-in areas of finance and criminology. 
+The rest of the chapter is organized as follows. In
+Section~\ref{sec:graph_models} we introduce a compositional
+probabilistic model for random networks, and in
+Section~\ref{sec:hawkes_processes} we introduce Hawkes processes.
+Section~\ref{sec:network_hawkes_model} stitches these two components
+together into a joint model for implicit networks.  Before diving into
+inference applications, we first consider the theoretical consequences
+of a particular network model on the stability of the system, and
+provide some intuition on how the network properties affect the
+asymptotic behavior of the system.  Then, in
+Section~\ref{sec:hawkes_inference}, we derive a Gibbs sampling
+algorithm with an elegant auxiliary variable formulation.  Finally,
+the remaining sections consider applications, first to synthetic data,
+and then to biological recordings. \todo{apply this to hippocampal
+  data}.  While the primary emphasis is on modeling neural data, we
+also explore some applications in areas of finance and criminology.
 
 \section{Probabilistic Network Models}
 \label{sec:graph_models}
@@ -170,13 +172,13 @@ are used in this and following chapters.
 \begin{table}
 \begin{center}
 \begin{tabular}{c|c|c|c}
-Name & $\boldeta$ & $\quad\theta_n\quad$ & $\rho_{m \to n}$ \\
+Name & $\bvartheta$ & $\mathrm{dom}(\bz_n)$ & $\rho_{n \to n'}$ \\
 \hline
 Empty Model & --- &  --- & $0$ \\
 Dense Model & --- & --- & $1$ \\
 Bernoulli Model & $\rho$ & --- & $\rho$ \\
-Stochastic Block Model & $\{\{\rho_{c \to c'}\}\}$ & $c_n$ & $\rho_{c_m \to c_n}$ \\
-Latent Distance Model & $\gamma_0$ & $\bell_n$ & $\sigma(-||\ell_n - \ell_m||_2^2 + \gamma_0)$
+Stochastic Block Model & $\{\{\rho_{k \to k'}\}\}$ & $\{1, \ldots, K\}$ & $\rho_{z_n \to z_{n'}}$ \\
+Latent Distance Model & $\gamma_0$ & $\reals^K$ & $\sigma(-||\bz_n - \bz_{n'}||_2^2 + \gamma_0)$
 \end{tabular}
 \end{center}
 \caption{Binary Adjacency Matrix Models}
@@ -187,13 +189,13 @@ Table~\ref{tab:A_models} summarizes a few models for binary adjacency
 matrices. In all cases, the distribution over~$\bA$ factorizes into a
 product over edges,
 \begin{align*}
-  p(\bA \given \btheta, \boldeta)
-  &= \prod_{m=1}^N \prod_{n=1}^N \distBernoulli(a_{m \to n} \given \theta_m, \theta_n, \boldeta) \\
-  &= \prod_{m=1}^N \prod_{n=1}^N \distBernoulli(a_{m \to n} \given \rho_{m \to n}).
+  p(\bA \given \bz, \bvartheta)
+  &= \prod_{n=1}^N \prod_{n'=1}^N p(a_{n \to n'} \given \bz_n, \bz_{n'}, \bvartheta) \\
+  &= \prod_{n=1}^N \prod_{n'=1}^N \distBernoulli(a_{n \to n'} \given \rho_{n \to n'}).
 \end{align*}
-The difference is in how the local latent variables,~$\theta_m$
-and~$\theta_n$, and the global parameters,~$\boldeta$, combine to
-determine the probability,~$\rho_{m \to n}$. We describe these models
+The difference is in how the local latent variables,~$\bz_{n'}$
+and~$\bz_n$, and the global network parameters,~$\bvartheta$, combine to
+determine the probability,~$\rho_{n \to n'}$. We describe these models
 below:
 \begin{itemize}
 \item \textit{Empty Model: } The empty model is essentially a null
@@ -215,21 +217,21 @@ below:
   
 \item \textit{Stochastic Block Model (SBM): } In the stochastic block
   model (SBM) \cite{Nowicki-2001}, each neuron has an associated
-  class,~$c_n$.  The probability of connection depends on the class of
+  class,~$z_n$.  The probability of connection depends on the class of
   the two neurons.  This is the network equivalent of a mixture model.
   In a Bayesian framework, we assume the class assignments are drawn
-  from a categorical prior,~${c_n \sim \distCategorical(\bpi)}$, and
+  from a categorical prior,~${z_n \sim \distCategorical(\bpi)}$, and
   the class weights are given a conjugate, symmetric Dirichlet
-  prior,~${\bpi \sim \distDirichlet(\alpha \bone_C)}$. The connection
-  probabilities are given a conjugate beta prior,~${\beta_{c \from c'}
+  prior,~${\bpi \sim \distDirichlet(\alpha \bone_K)}$. The connection
+  probabilities are given a conjugate beta prior,~${\beta_{k \to k'}
     \sim \distBeta(\alpha, \beta)}$.
   
 \item \textit{Latent Distance Model: } The latent distance model
   \cite{Hoff-2008} encodes the belief that connection probability
   should decrease with distance between latent locations. The
-  locations are given spherical Gaussian priors,~$\bell_n \sim
-  \distNormal(0, \eta \bI)$, and the scale is drawn from an inverse
-  gamma prior,~$\eta \sim \distInvGamma(1,1)$. The offset is given a
+  locations are given spherical Gaussian priors,~$\bz_n \sim
+  \distNormal(0, \tau \bI)$, and the scale is drawn from an inverse
+  gamma prior,~$\tau \sim \distInvGamma(1,1)$. The offset is given a
   standard normal prior,~$\gamma_0 \sim \distNormal(0, 1)$.
 
 \end{itemize}
@@ -238,11 +240,11 @@ below:
 \begin{table}
 \begin{center}
 \begin{tabular}{c|c|c|c}
-Name & $\boldeta$ & $\quad \theta_n \quad$ & $\mu_{m \to n}$ \\
+Name & $\bvartheta$ & $\mathrm{dom}(\bz)$ & $\mu_{n \to n'}$ \\
 \hline
 Independent Model & $\mu$ & --- & $\mu$ \\
-Stochastic Block Model & $\{\{ \mu_{c \to c'} \}\}$ & $c_n$ & $\mu_{c_m \to c_n}$ \\
-Latent Distance Model & $\mu_0$ & $\bell_n$ & $-||\bell_n - \bell_m||_2^2 + \mu_0$ 
+Stochastic Block Model & $\{\{ \mu_{k \to k'} \}\}$ & $\{1, \ldots, K\}$ & $\mu_{z_n \to z_{n'}}$ \\
+Latent Distance Model & $\mu_0$ & $\reals^K$ & $-||\bz_n - \bz_{n'}||_2^2 + \mu_0$ 
 \end{tabular}
 \end{center}
 \caption{Weight Models}
@@ -251,11 +253,11 @@ Latent Distance Model & $\mu_0$ & $\bell_n$ & $-||\bell_n - \bell_m||_2^2 + \mu_
 
 The same ideas can be applied to models for the weight matrix,~$\bW$,
 but rather than modeling the connection probability, we now model the
-mean weight,~$\mu_{m \to n}$. The resulting distribution is of the form,
+mean weight,~$\mu_{n \to n'}$. The resulting distribution is of the form,
 \begin{align*}
-  p(\bW \given \btheta, \boldeta)
-  &= \prod_{m=1}^N \prod_{n=1}^N p(w_{m \to n} \given \theta_m, \theta_n, \boldeta) \\
-  &= \prod_{m=1}^N \prod_{n=1}^N p(w_{m \to n} \given \mu_{m \to n}, \boldeta).
+  p(\bW \given \bz, \bvartheta)
+  &= \prod_{m=1}^N \prod_{n=1}^N p(w_{m \to n} \given z_n, z_{n'}, \bvartheta) \\
+  &= \prod_{m=1}^N \prod_{n=1}^N p(w_{m \to n} \given \mu_{m \to n}, \bvartheta).
 \end{align*}
 
 We do not specify the exact functional form of the distribution since
@@ -268,7 +270,7 @@ While we have only shown models for the mean weight,
 the same latent variables may
 also parameterize the variance of the weight distribution. For example
 in a Gaussian SBM, each directed pair of classes may have an
-associated variance,~$\sigma^2_{c \to c'}$.
+associated variance,~$\sigma^2_{k \to k'}$.
 
 
 Probabilistic network models like these are unified under an elegant
@@ -278,16 +280,9 @@ representation characterizes the class of \textit{exchangeable} random
 graphs, that is, graph models for which the joint probability is
 invariant under permutations of the node labels. Just as de Finetti's
 theorem equates exchangeable sequences to independent draws from a
-random probability measure
-% $\Theta$, the Aldous-Hoover theorem relates random exchangeable graphs to the following generative model:
-%\begin{align*}
-%  u_1,u_2,\ldots&\sim_{i.i.d}\text{Uniform}[0,1],\\
-%  A_{k,k'}&\sim \text{Bernoulli}(\Theta(u_k,u_{k'})),
-%\end{align*}
-%for some random function $\Theta:[0,1]^2\rightarrow [0,1]$.
-, Aldous-Hoover renders the entries of~$\bA$ and~$\bW$ conditionally
-independent given latent variables~$\btheta$ and global
-parameters~$\boldeta$. \citet{Lloyd-2012} and~\citet{orbanz2015bayesian}
+random probability measure, Aldous-Hoover renders the entries of~$\bA$ and~$\bW$ conditionally
+independent given latent variables~$\bz$ and global
+parameters~$\bvartheta$. \citet{Lloyd-2012} and~\citet{orbanz2015bayesian}
 review this theoretical framework and its applications in
 probabilistic machine learning.
 
@@ -445,22 +440,15 @@ the likelihood of a set of events is given by,
 
 \paragraph{Poisson Superposition Principle}
 We will make use of a special property of Poisson processes called the
-\emph{Poisson superposition principle}, which states that if
-\begin{align*}
-  \{s_{m}\}_{m=1}^{M} &\sim \PP(\lambda(t)), & 
-  \{s'_{m}\}_{m=1}^{M'} &\sim \PP(\lambda'(t))
-\end{align*}
-are independent Poisson process realizations, then
-\begin{align*}
-\{s_{m}\}_{m=1}^{M} \cup \{s'_{m}\}_{m=1}^{M'} \sim \PP(\lambda(t)+\lambda'(t)).
-\end{align*}
-By induction, this extends to the sum of~$K$ independent Poisson
-processes as well.
-
-Equivalently, suppose we are given sets of spikes drawn independently
+\emph{Poisson superposition principle}, which states that if we have 
+sets of spikes from independent Poisson processes, then the union of spikes 
+is distributed according to a Poisson process as well.
+Moreover, the rate of this process equals the sum of 
+rates from the individual processes. 
+Formally, suppose we are given sets of spikes drawn independently
 from ~$K$ Poisson processes with rates~${\lambda_1(t), \ldots,
   \lambda_K(t)}$.  Call the union of the spikes~${\{s_m,
-  \omega_m\}}$, where~${s_m \in [0,T]}$ is the time of the spike
+  \omega_m\}}$, where~${s_m \in \mcV}$ is the location of the spike
 and~${\omega_m \in \{1, \ldots, K\}}$ says which process it came
 from. Let~${\lambda_{\mathsf{tot}}(t) = \sum_{k=1}^K \lambda_k(t)}$.
 The likelihood of the full set of spikes is,
@@ -468,21 +456,22 @@ The likelihood of the full set of spikes is,
   p(\{s_m, \omega_m\}_{m=1}^M \given \{\lambda_k(t)\}_{k=1}^K)
   &= \prod_{k=1}^K \PP(\{s_m: \omega_m=k\} \given \lambda_k(t)) \\
   &= \prod_{k=1}^K \left[
-    \exp\left\{-\int_0^T \lambda_k(t) \, \mathrm{d}t\right\}
+    \exp\left\{-\int_{\mcV} \lambda_k(t) \, \mathrm{d}t\right\}
     \prod_{m=1}^M \lambda_k(s_m)^{\bbI[\omega_m = k]} \right] \\
-  &= \exp\left\{-\int_0^T \lambda_{\mathsf{tot}}(t) \, \mathrm{d}t\right\}
+  &= \exp\left\{-\int_{\mcV} \lambda_{\mathsf{tot}}(t) \, \mathrm{d}t\right\}
   \prod_{m=1}^M \prod_{k=1}^K \lambda_k(s_m)^{\bbI[\omega_m = k]}.
 \end{align*}
 
 The Poisson superposition principle says that the marginal distribution
 summing over all possible process assignments,~$\{\omega_m\}$, is a Poisson
-process with rate~$\lambda_{\mathsf{tot}}(t)$. That is,
+process with rate~$\lambda_{\mathsf{tot}}(t)$. To show this, we sum over
+the process assignments to get,
 \begin{align*}
   p(\{s_m\}_{m=1}^M \given \{\lambda_k(t)\}_{k=1}^K)
   &= \sum_{\omega_1=1}^K \cdots \sum_{\omega_M=1}^K p(\{s_m, \omega_m\}_{m=1}^M \given \{\lambda_k(t)\}_{k=1}^K) \\
-  &= \exp\left\{-\int_0^T \lambda_{\mathsf{tot}}(t) \, \mathrm{d}t\right\}
+  &= \exp\left\{-\int_{\mcV} \lambda_{\mathsf{tot}}(t) \, \mathrm{d}t\right\}
   \prod_{m=1}^M \sum_{\omega_m=1}^K \prod_{k=1}^K \lambda_k(s_m)^{\bbI[\omega_m = k]} \\
-  &= \exp\left\{-\int_0^T \lambda_{\mathsf{tot}}(t) \, \mathrm{d}t\right\}
+  &= \exp\left\{-\int_{\mcV} \lambda_{\mathsf{tot}}(t) \, \mathrm{d}t\right\}
   \prod_{m=1}^M \lambda_{\mathsf{tot}}(s_m) \\
   &= \PP(\{s_m\} \given \lambda_{\mathsf{tot}}(t)).
 \end{align*}
@@ -500,26 +489,50 @@ given by the relative rate at the time of the spike. This is known as
 \subsection{Including Spike History with Hawkes Processes}
 Though Poisson processes have many nice properties, they cannot
 capture interactions between events. For this we turn to a more
-general model known as Hawkes processes \cite{Hawkes-1971}. A Hawkes
-process consists of~$N$ point processes and gives rise to sets of
-\emph{marked} events $\{s_m,c_m\}_{m=1}^M$,
-where~${c_m\in\{1,\ldots,N\}}$ specifies the process on which
-the~$m$-th event occurred.  Each of the~$N$ processes is a
-\emph{conditionally Poisson process} with a rate~${\lambda_n(t\given
-  \mcH_t)}$ that depends on the preceding
-events,~$\mcH_t=\{s_m:s_m<t\}$.
-This allows for event-driven dynamics that are not possible in Poisson
-processes.  Moreover, the Hawkes process reduces to a set of
-independent Poisson processes when the firing rate is independent of
-the history.
-
-Hawkes processes have additive interactions. Each process has a
-``background rate'' $\lambda_{0,n}(t)$, and each event~$s_m$ on
-process ${c_m=n}$ adds a nonnegative impulse response~$h_{n \to
-  n'}(t-s_m)$ to the intensity of other processes~$n'$. Causality and
-locality of influence are enforced by requiring~$h_{n \to n'}(\Delta
-t)$ to be zero for~${\Delta t \notin[0,\Delta t_{\mathsf{max}}]}$.
+general model known as Hawkes processes \cite{Hawkes-1971}. 
+First, consider the spike train of a single neuron,~$\{s_m\}_{m=1}^M \subset [0,T]$.
+In a Hawkes process, the firing rate at time,~$\lambda(t \given \mcH_t)$, is a function of 
+the spike history,~${\mcH_t = \{s_m: s_m < t\}}$.  The neuron has a 
+baseline firing rate,~$\lambda_{0}$. On top of this baseline, 
+each spike 
+adds a nonnegative impulse response,~$h(\Delta t)$, to the 
+subsequent firing rate.  This allows for spike-driven dynamics that are not possible in Poisson
+processes.  Causality and
+locality of influence are enforced by limiting the support of~$h(\Delta
+t)$ to~${\Delta t \in [0,\Delta t_{\mathsf{max}}]}$.
 The rate is thus given by,
+\begin{align*}
+  \lambda(t \given \mcH_t)
+  &= \lambda_{0} + \sum_{m=1}^M h(t - s_m).
+\end{align*}
+When the impulse response is equal to zero, the Hawkes process
+reduces to a standard Poisson process with rate~$\lambda_0$.
+
+By the superposition theorem for Poisson processes, these additive
+components can be considered independent processes, each giving rise
+to their own events.  This suggests a convenient latent variable
+representation in which each event is attributed to either the
+background rate or the impulse response of a preceding event.  We
+augment our data with a latent random
+variable~${\omega_m \in\{0,\ldots, m-1\}}$ to indicate the \emph{origin} of
+the~$n$-th event ($0$ if the event is due to the background rate and
+${1\ldots m-1}$ if it was spawned by a preceding event). 
+
+This is easily extended to a population of~$N$ neurons by considering a Hawkes
+process that gives rise to sets of
+\emph{marked} events $\{s_m,c_m\}_{m=1}^M$,
+where~${c_m\in\{1,\ldots,N\}}$ specifies the neuron on which
+the~$m$-th event occurred.  As in the single neuron case, 
+the rate of the~$n$-th neuron,~${\lambda_n(t\given
+  \mcH_t)}$,  depends on the spike history, but here the spike history 
+contains the spikes of all neurons through time~$t$. 
+The multineuronal generalization also allows for different background rates 
+for each neuron,~$\lambda_{0,n}$, and  different impulse 
+responses for each pair of neurons. For example, the impulse 
+response from neuron~$n$ to neuron~$n'$, which we now call~$h_{n \to n'}$, 
+may be much stronger than the reverse connection. As before, we
+do require that the impulse responses be causal and have bounded support.
+Putting it all together, the rate of the~$n$-th neuron is,
 \begin{align}
   \label{eq:hawkes_rate}
   \lambda_n(t \given \mcH_t)
@@ -537,25 +550,33 @@ The rate is thus given by,
 \label{fig:hawkes}
 \end{figure}
 
-By the superposition theorem for Poisson processes, these additive
-components can be considered independent processes, each giving rise
-to their own events.  This suggests a convenient latent variable
-representation in which each event is attributed to either the
-background rate or the impulse response of a preceding event.  We
-augment our data with a latent random
-variable~${\omega_m \in\{0,\ldots, m-1\}}$ to indicate the \emph{origin} of
-the~$n$-th event ($0$ if the event is due to the background rate and
-${1\ldots m-1}$ if it was spawned by a preceding event). The augmented
-Hawkes likelihood is then the product of likelihoods of each Poisson
-process:
+After augmenting the data with auxiliary variables denoting the origin
+of each spike, the multineuronal Hawkes process likelihood reduces to 
+a product of Poisson process likelihoods for each background rate and 
+each impulse response:
+\begin{multline*}
+  p(\{(s_m,c_m,\omega_m)\}_{m=1}^M \given 
+  \{\lambda_{0,n}(t)\}, \{\{h_{n \to n'}(\Delta t)\}\}) = \\
+  \prod_{n=1}^N \PP \big(\{s_{m}: c_{m}=n \wedge \omega_{m}=0\} \given \lambda_{0,n}(t) \big) \; \times\\
+  \prod_{m=1}^M \prod_{n'=1}^N \PP \big(\{s_{m'}: c_{m'}=n' \wedge \omega_{m'}=m\} \given h_{c_m \to n'}(t-s_m) \big).
+\end{multline*}
+Combining this with 
+Eq.~\ref{eq:poisson_lkhd}, we can
+write the augmented likelihood as,
 \begin{multline}
   \label{eq:hawkes_likelihood}
-p(\{(s_m,c_m,\omega_m)\}_{m=1}^M \given \{\lambda_{0,n}(t)\}, \{\{h_{n \to n'}(\Delta t)\}\}) = \\
-\prod_{n=1}^N p \big(\{s_{m}: c_{m}=n \wedge \omega_{m}=0\} \given \lambda_{0,n}(t) \big) \; \times\\
-\prod_{m=1}^M \prod_{n'=1}^N p \big(\{s_{m'}: c_{m'}=n' \wedge \omega_{m'}=m\} \given h_{c_m \to n'}(t-s_m) \big),
+  p(\{s_m, c_m, \omega_m\}_{m=1}^M \given \{\lambda_{0,n}\}, \{\{h_{n \to n'}(\Delta t)\}\}) = \\
+  \prod^N_{n=1} \bigg[
+  \exp\left\{ -\int_0^T \lambda_{0,n}(t)\mathrm{d}t \right\} \,
+  \prod^M_{m=1}
+   \lambda_{0,n}(s_m)^{\bbI[c_m=n] \bbI[\omega_m = 0]} \bigg]\\
+  \quad\times \prod_{m=1}^M \prod_{n'=1}^N \bigg[
+  \exp\left\{-\int^T_{s_m} h_{c_m \to n'}(t - s_m) \mathrm{d}t \right\} \\
+  \prod_{m'=1}^M h_{c_m^{~} \to c_{m'}}(s_{m'}-s_m)^{\bbI[c_{m'}=n'] \bbI[\omega_{m'}=m]}\bigg].
 \end{multline}
-where the densities in the product are Poisson process likelihoods
-given by Equation~\ref{eq:poisson_lkhd}.
+The second line corresponds to the likelihood of the background
+processes; the third and fourth correspond to the likelihood of the
+induced processes triggered by each spike.
 
 Figure~\ref{fig:hawkes} illustrates a causal cascades of events for a
 simple network of three processes (I-III).  The first event is caused
@@ -600,69 +621,185 @@ events'' and allows us to compare the relative strength of
 interactions. The form suggests an intuitive generative model: for
 each impulse response draw~${k \sim \text{Poisson}(w_{n \to n'})}$
 number of induced events and draw the~$k$ child event times
-i.i.d.\ from~$\hbar$. As we will see, this enables computationally
+i.i.d.\ from~$\hbar$.  
+As we will see, this enables computationally
 tractable conjugate priors.
 
-Intuitively, the background rates,~$\lambda_{0,n}(t)$, explain events
-that cannot be attributed to preceding events. In the simplest case
-the background rate is constant. However, there are often fluctuations
-in overall intensity that are shared among the processes, and not
-reflective of process-to-process interaction, as we will see in the
-daily variations in trading volume on the S\&P100 and the seasonal
-trends in homicide. To capture these shared background fluctuations,
-we use a sparse log Gaussian Cox process \cite{Moller-1998} to model
-the background rate:
+We can now write down the joint probability of the probabilistic model.
+Let~$\theta$ denote the parameters of the network model, like the connection
+probabilities under the Bernoulli model or the class-specific mean and variance
+under a stochastic block model for the weights. 
+The joint probability is,
+\begin{multline}
+\label{eq:hawkes_complete_model}
+p(\{s_m, c_m, \omega_m\}, \bA, \bW, \{\{\theta_{n \to n'}\}\}, \{\lambda_{0,n}\}, \{\bz_n\}, \bvartheta \given \boldeta) 
+=  \\
+p(\bvartheta \given \boldeta)
+\times \overbrace{p(\{\bz_n\} \given \bvartheta, \boldeta)}^\text{latent variables}
+\times \overbrace{p(\bA, \bW \given \{\bz_{n}\}, \bvartheta, \boldeta)}^\text{network} 
+\times \overbrace{p(\{\lambda_{0,n}\} \given \boldeta)}^\text{background}
+\times \overbrace{p(\{\theta_{n\to n'}\} \given \boldeta)}^\text{impulses} \\
+\times \overbrace{  p \left(\{s_m, c_m, \omega_m\} \given \bA, \bW, \{\theta_{n \to n'}\}, \{\lambda_{0,n}\} \right) }^\text{augmented likelihood}.
+\end{multline}
+Before deriving inference algorithms for this model, however, we pause 
+to consider some of its theoretical properties.
+
+
+% Intuitively, the background rates,~$\lambda_{0,n}(t)$, explain events
+% that cannot be attributed to preceding events. In the simplest case
+% the background rate is constant. However, there are often fluctuations
+% in overall intensity that are shared among the processes, and not
+% reflective of process-to-process interaction, as we will see in the
+% daily variations in trading volume on the S\&P100 and the seasonal
+% trends in homicide. To capture these shared background fluctuations,
+% we use a sparse log Gaussian Cox process \cite{Moller-1998} to model
+% the background rate:
+% \begin{align*}
+%   \lambda_{0,n}(t)
+%   & = \mu_{n} + \alpha_{n}\exp\{\by(t)\}, \\
+%   \by(t) &\sim \mathcal{GP}(\boldsymbol{0},K(t,t')).
+% \end{align*}
+
+% The kernel~${K(t,t')}$ describes the covariance structure of the
+% background rate that is shared by all processes. For example, a
+% periodic kernel may capture seasonal or daily fluctuations. The
+% offset~${\mu_n}$ accounts for varying background intensities among
+% processes, and the scaling factor~$\alpha_n$ governs how sensitive
+% process~$n$ is to these background fluctuations (when~${\alpha_n=0}$
+% we recover the constant background rate).
+
+% Finally, in some cases the process identities,~${c_m}$, must also be
+% inferred. With gang incidents in Chicago we may have only a
+% location,~${\bx_m\in\reals^2}$. In this case, we may place a spatial
+% Gaussian mixture model over the~$c_m$'s, as in
+% \citet{Cho-2013}. Alternatively, we may be given the label of the
+% community in which the incident occurred, but we suspect that
+% interactions occur between clusters of communities. In this case we
+% can use a simple clustering model or a nonparametric model like that
+% of \citet{Blundell-2012}.
+
+\subsection{Stability of Network Hawkes Processes}
+\label{sec:stability}
+
+
+Due to their recurrent, mutually-exciting nature, Hawkes processes
+an unconstrained system can easily be unstable and lead to an infinite 
+number of spikes. A stable system must satisfy \footnote{In
+  this context,~${\lambda_{\mathsf{max}}}$ refers to an eigenvalue
+  rather than a rate.}
 \begin{align*}
-  \lambda_{0,n}(t)
-  & = \mu_{n} + \alpha_{n}\exp\{\by(t)\}, \\
-  \by(t) &\sim \mathcal{GP}(\boldsymbol{0},K(t,t')).
+  \lambda_{\mathsf{max}}=\max\; |\,\mathrm{eig}(\bA\odot\bW)\,| < 1
 \end{align*}
+(c.f. \citet{Daley-1988}).
+For the generative model, we would like
+to set our hyperparameters such that the prior distribution places
+little mass on unstable networks. In order to do so, we use tools from
+random matrix theory.
 
-The kernel~${K(t,t')}$ describes the covariance structure of the
-background rate that is shared by all processes. For example, a
-periodic kernel may capture seasonal or daily fluctuations. The
-offset~${\mu_n}$ accounts for varying background intensities among
-processes, and the scaling factor~$\alpha_n$ governs how sensitive
-process~$n$ is to these background fluctuations (when~${\alpha_n=0}$
-we recover the constant background rate).
+The circular law describes the asymptotic eigenvalue distribution for
+$N \times N$~random matrices with entries that are i.i.d. with zero
+mean and variance~$\sigma^2$. As~$N$ grows, the eigenvalues are
+uniformly distributed over a disk in the complex plane centered at the
+origin and with radius~$\sigma\sqrt{N}$. In our case, however, the
+mean of the entries,~${\mu=\mathbb{E}[a_{n \to n'} \cdot w_{n \to
+      n'}]}$, is not zero. \citet{Silverstein-1994} has analyzed such
+``noncentral'' random matrices and shown that the largest eigenvalue
+is asymptotically distributed
+as~${\lambda_{\sf{max}} \sim \distNormal(\mu N,\, \sigma^2)}$.
 
-Finally, in some cases the process identities,~${c_m}$, must also be
-inferred. With gang incidents in Chicago we may have only a
-location,~${\bx_m\in\reals^2}$. In this case, we may place a spatial
-Gaussian mixture model over the~$c_m$'s, as in
-\citet{Cho-2013}. Alternatively, we may be given the label of the
-community in which the incident occurred, but we suspect that
-interactions occur between clusters of communities. In this case we
-can use a simple clustering model or a nonparametric model like that
-of \citet{Blundell-2012}.
+In the simple case of~${w_{n \to n'}\sim \distGamma(\alpha,\beta)}$
+and~${a_{n \to n'}\sim\distBernoulli(\rho)}$, we have ${\mu = \rho
+  \alpha/\beta}$ and
+${\sigma=\sqrt{\rho((1-\rho)\alpha^2+\alpha)}/\beta}$. For a
+given~$N$,~$\alpha$ and~$\beta$, we can tune the sparsity
+parameter~$\rho$ to achieve stability with high probability. We simply
+set~$\rho$ such that the minimum of~$\sigma\sqrt{N}$ and, say,~${\mu N
+  + 3\sigma}$, equals one. Figures~\ref{fig:stability_p_w}
+and~\ref{fig:stability_max_rho} show a variety of weight distributions
+and the maximum stable~$\rho$. Increasing the network size, the mean,
+or the variance will require a concomitant increase in sparsity.
+
+\begin{figure}[t]
+\vspace{-.5em}
+\begin{center}
+\begin{subfigure}[b]{.22\textwidth}
+\caption{}
+\label{fig:stability_p_w}
+%\vspace{-.9em}
+\includegraphics[height=1.25in]{figures/ch2/stability_p_w} 
+\end{subfigure}
+~
+\begin{subfigure}[b]{.22\textwidth}
+\caption{}
+%\vspace{-1em}
+\label{fig:stability_max_rho}
+\includegraphics[height=1.25in]{figures/ch2/stability_max_rho} 
+\end{subfigure}
+~
+\hspace{1em}
+\begin{subfigure}[b]{.22\textwidth}
+\caption{}
+\label{fig:stability_1_5}
+%\vspace{-.5em}
+%\vspace{.8em}
+\includegraphics[height=1.2in]{figures/ch2/stability_1_5} 
+\end{subfigure}
+~
+\begin{subfigure}[b]{.22\textwidth}
+%\vspace{.7em}
+\caption{}
+\label{fig:stability_8_12}
+%\vspace{-.5em}
+\includegraphics[height=1.2in]{figures/ch2/stability_8_12} 
+\end{subfigure}
+\end{center}
+\vspace{-1em}
+\caption[Distribution of the maximum eigenvalue for Erd\H{o}s-Renyi
+  graphs with gamma weights]{Empirical and theoretical distribution of
+  the maximum eigenvalue for Erd\H{o}s-Renyi graphs with gamma
+  weights. (a) Four gamma weight distributions. The colors correspond
+  to the curves in the remaining panels. (b) Sparsity that
+  theoretically yields ${99\%}$ probability of stability as a function
+  of~${p(W)}$ and~$N$. (c) and (d) Theoretical (solid) and empirical
+  (dots) distribution of the maximum eigenvalue. Color corresponds to
+  the weight distribution in (a) and intensity indicates~$N$
+  and~$\rho$ shown in (b).}
+\label{fig:stability}
+\end{figure}
+
+ 
+This approach relies on asymptotic eigenvalue distributions, and it is
+unclear how quickly the spectra of random matrices will converge to
+this distribution. To test this, we computed the empirical eigenvalue
+distribution for random matrices of various size, mean, and
+variance. We generated~$10^4$ random matrices for each weight
+distribution in Figure~\ref{fig:stability_p_w} with sizes~$N=4$,~$64$,
+and~$1024$, and~$\rho$ set to the theoretical maximum indicated by
+dots in Figure~\ref{fig:stability_max_rho}. The theoretical and
+empirical distributions of the maximum eigenvalue are shown in
+Figures~\ref{fig:stability_1_5} and~\ref{fig:stability_8_12}. We find
+that for small mean and variance weights, for
+example~$\distGamma(1,5)$ in the Figure~\ref{fig:stability_1_5}, the
+empirical results closely match the theory. As the weights grow
+larger, as in~${\distGamma(8,12)}$ in~\ref{fig:stability_8_12}, the
+empirical eigenvalue distributions have increased variance and lead to
+a greater than expected probability of unstable matrices for the range
+of network sizes tested here. We conclude that networks with strong
+weights should be counterbalanced by strong sparsity limits, or
+additional structure in the adjacency matrix that prohibits excitatory
+feedback loops.
+
 
 \section{Bayesian Inference with Gibbs Sampling}
 \label{sec:hawkes_inference}
 We present a Gibbs sampling procedure for inferring the model
-parameters,~$\bA$,~$\bW$,~$\btheta$,$\{\lambda_{0,n}(t)\}$, and, if
-necessary,~${\{c_m\}}$. In order to simplify our Gibbs updates, we
+parameters,~$\bA$,~$\bW$, $\{\lambda_{0,n}\}$, $\{\theta_{n \to n'}\}$,
+and the paremeters of the network,~$\{\bz_n\}$ and~$\bvartheta$.
+In order to simplify our Gibbs updates, we
 will also sample a set of parent assignments for each
 event~$\{\omega_m\}$. Incorporating these parent variables enables
-conjugate prior distributions for~$\bW$,~$\theta_{n \to n'}$, and, in
-the case of constant background rates,~$\lambda_{0,n}$.
-
-By combining
-Equations~\ref{eq:poisson_lkhd}~and~\ref{eq:hawkes_likelihood}, we can
-write the joint likelihood, with the auxiliary parent variables, as,
-\begin{multline}
-  \label{eq:complete_likelihood}
-  p(\{s_m, c_m, \omega_m\}_{m=1}^M \given \{\lambda_{0,n}(t)\}_{n=1}^N, \{h_{n \to n'}(\Delta t)\}) = \\
-  \prod^N_{n=1} \bigg[
-  \exp\left\{ -\int_0^T \lambda_{0,n}(t)\mathrm{d}t \right\} \,
-  \prod^M_{m=1}
-   \lambda_{0,n}(s_m)^{\bbI[c_m=n] \bbI[\omega_m = 0]} \bigg]\\
-  \quad\times \prod_{m=1}^M \prod_{n'=1}^N \bigg[
-  \exp\left\{-\int^T_{s_m} h_{c_m \to n'}(t - s_m) \mathrm{d}t \right\} \\
-  \prod_{m'=1}^M h_{c_m^{~} \to c_{m'}}(s_{m'}-s_m)^{\bbI[c_{m'}=n'] \bbI[\omega_{m'}=m]}\bigg].
-\end{multline}
-The second line corresponds to the likelihood of the background
-processes; the third and fourth correspond to the likelihood of the
-induced processes triggered by each spike.
+conjugate prior distributions and simple and efficient Gibbs sampling
+algorithm.
 
 \paragraph{Sampling weights $\bW$.} 
 To derive the updates for weights, recall from
@@ -679,11 +816,10 @@ and~${c_{m'}=n'}$, so the likelihood is propotional to,
     w_{n \to n'}\bigg]^{\bbI[c_{m}=n] \bbI[c_{m'}=n'] \bbI[\omega_{m'}=m]}.
 \end{align*}
 If~${a_{n \to n'}=0}$, the impulse response is deterministically zero
-and, as a result, no spikes on neuron~$n'$ will be attributed to spikes
+and, as a result, none of the spikes on neuron~$n'$ will be attributed to spikes
 on neuron~$n$. Thus, the likelihood reduces to the prior,~$p(w_{n \to n'})$.
-If~${a_{n \to n'}=1}$, we have to consider the likelihood.
-Assume that there are no spikes after~${T-\Delta t_{\mathsf{max}}}$. Then,
-for all spikes~$s_m$, 
+If~${a_{n \to n'}=1}$, the likelihood is more complicated.
+Note, however, that if~$s_m < T - \Delta t_{\mathsf{max}}$,
 \begin{align*}
   -\int^T_{s_m} a_{n \to n'} \cdot w_{n \to n'} \cdot
   \hbar(t - s_m; \theta_{n \to n'}) \, \mathrm{d}t
@@ -691,6 +827,9 @@ for all spikes~$s_m$,
   &= - w_{n \to n'},
 \end{align*}
 since~$\hbar$ is a density defined on~$[0,\Delta t_{\mathsf{max}}]$.
+In general, it is safe to ignore the impulse responses from spikes that 
+occur in the time after~$T-\Delta t_{\mathsf{max}}$ since this will be 
+quite small compared to the total recording. 
 With this approximation, the conditional distribution of~$w_{n \to n'}$
 reduces to,
 \begin{align*}
@@ -710,7 +849,10 @@ spikes on neuron~$n$.
 
 Now that we have simplified the augmented log likelihood, we see that it is
 conjugate with a gamma prior on the weights,
-${w_{n \to n'}\sim \distGamma(\alpha_w, \beta_w})$.
+${w_{n \to n'} \sim \distGamma(\alpha_w, \beta_w})$.
+In Section~\ref{sec:graph_models} we introduced weight models that 
+output a
+
 The resulting conditional distribution is,
 \begin{multline*}
   p(w_{n \to n'}\given \{s_m,c_m,\omega_m\}_{m=1}^M, a_{n\to n'}=1, \alpha_w, \beta_w)
@@ -726,7 +868,7 @@ where
 
 \paragraph{Sampling constant background rates.}
 Similarly, the likelihood of a constant background rate,
-${\lambda_{0,n}(t)\equiv\lambda_{0,n}}$, is conjugate with a gamma
+${\lambda_{0,n}}$, is conjugate with a gamma
 prior~${\lambda_{0,n} \sim
   \distGamma(\alpha_{\lambda},\beta_{\lambda})}$.  The conditional
 distribution is,
@@ -738,10 +880,10 @@ distribution is,
   \widetilde{\beta}_{0,n} &= \beta_\lambda + T
 \end{align*}
 
-This conjugacy no longer holds for log Gaussian Cox process background
-rates, but conditioned upon the parent variables, we must simply fit a
-log Gaussian Cox process for those events for which~${\omega_m=0}$. We use
-elliptical slice sampling \cite{Murray-2010} for this purpose.
+% This conjugacy no longeu r holds for log Gaussian Cox process background
+% rates, but conditioned upon the parent variables, we must simply fit a
+% log Gaussian Cox process for those events for which~${\omega_m=0}$. We use
+% elliptical slice sampling \cite{Murray-2010} for this purpose.
 
 \paragraph{Sampling impulse response parameters $\theta_{n \to n'}$.}
 The logistic-normal density with parameters~${\theta_{n \to
@@ -796,10 +938,11 @@ update~${\bA\given\{s_m,c_m\},\bW,\theta_{n \to n'}}$ by marginalizing
 the parent variables. By the Poisson superposition principle, the marginal
 distribution is still a Poisson process:
 \begin{align*}
-  p(a_{n \to n'} \given \{s_m, c_m\}, &\bA_{\neg n \to n'}, \bW, \btheta) \\
-  &\propto p(\{s_m, c_m\}, \bA, \bW, \btheta) \\
-  &= \sum_{\omega_1} \cdots \sum_{\omega_M} p(\{s_m, c_m, \omega_m\}, \bA, \bW, \btheta) \\
-  &\propto \PP \big(\{s_m: c_m=n'\} \, \big| \, \lambda_{n'}(t \given \mcH_t)\big)
+  p(a_{n \to n'} \given \{s_m, c_m\}, &\bA_{\neg n \to n'}, \bW, \btheta) 
+  %\\
+  %&\propto p(\{s_m, c_m\}, \bA, \bW, \btheta)  \\
+  %&= \sum_{\omega_1} \cdots \sum_{\omega_M} p(\{s_m, c_m, \omega_m\}, \bA, \bW, \btheta) \\
+  \propto \PP \big(\{s_m: c_m=n'\} \, \big| \, \lambda_{n'}(t \given \mcH_t)\big)
   \times p(a_{n \to n'}) \\
   &= \exp \left \{ -\int_0^T \lambda_{n'}(t \given \mcH_t) \, \mathrm{d}t \right\}
   \prod_{m=1}^M \left[ \lambda_{n'}(s_m \given \mcH_t)^{\bbI[c_m=n']} \right]
@@ -835,13 +978,55 @@ independent, so the~$M$ auxiliary variables can be sampled in parallel.
 We have implemented our inference algorithm on GPUs to capitalize
 on this parallelism.
 
-%\paragraph{Sampling process identities $c_m$.}
-%As with the adjacency matrix, we use a collapsed Gibbs sampler to
-%marginalize out the parent variables when sampling the process
-%identities. Unfortunately, the~$c_m$'s are not conditionally
-%independent and hence must be sampled sequentially.
+\paragraph{Sampling Network Variables and Parameters}
+Given the network and the spike train, the conditional distributions 
+for the latent variables,~$\{\bz_n\}$, and the parameters,~$\theta$ 
+are easy by design.
+
+\begin{itemize}
+  \item \textit{Latent class updates}:
+    If a stochastic block model is used for either the adjacency matrix
+    or the weights, then it is necessary to sample the class assignments
+    from their conditional distribution. We iterate over each neuron and
+    update its assignment given the rest by sampling from the conditional
+    distribution. For example, if~$z_n$ governs a stochastic block model
+    for the adjacency matrix, the conditional distribution of the label
+    for neuron~$n$ is given by,
+    \begin{align}
+      p(z_n = k \given \bz_{\neg n}, \bA, \theta)
+      &\propto \pi_{k} \,
+      \prod_{n'=1}^N p(a_{n' \to n} \given \rho_{z_{n'} \to k}) \,
+                    p(a_{n \to n'} \given \rho_{k \to z_{n'}}),
+    \end{align}
+    where~$\theta = \{\bpi, \{\rho_{k \to k'}\} \}$. For stochastic block
+    models of the weight matrix,~$\bW$, the conditional distribution
+    depends on~$w_{n' \to n}$ and~$w_{n \to n'}$ instead.
+
+    Given the class assignments and the network, the
+    parameters~$\rho_{k \to k'}$,~$\mu_{k \to k'}$, and~$\bpi$ are easily updating
+    according to their conditional distributions, since the model is
+    conjugate.
+    
+  \item \textit{Latent location updates}:
+    We resample the locations using hybrid Monte Carlo (HMC) \cite{Neal10}.
+    Since the latent variables are continuous and unconstrained,
+    this method is quite effective.
+
+    In addition to the locations, the latent distance model is parameterized
+    by a location scale,~$\eta$. Given the locations and an inverse gamma
+    prior, the inverse gamma conditional distribution can be computed in
+    closed form.
+    
+    The remaining parameters include the log-odds,~$\gamma_0$, if the
+    distance model applies to the adjacency matrix. This can be
+    sampled alongside the locations with HMC.  For a latent distance
+    model of weights, the baseline mean and
+    variance,~$(\mu_0,\sigma^2)$, are conjugate with a normal
+    inverse-gamma prior.
+\end{itemize}
 
 \paragraph{Computational concerns.}
+\todo{discuss complexity on a serial machine}
 Compact impulse responses limit the number of potential event parents
 and significantly reduce the memory requirements and running time of
 our algorithm. If the average firing rate is constant, the expected
@@ -858,135 +1043,6 @@ implementation
 %\footnote{\url{https://github.com/slinderman}}
 achieves 5-50 iterations per second.
 
-\section{Stability of Network Hawkes Processes}
-\label{sec:stability}
-
-\begin{figure}[t]
-\vspace{-.5em}
-\begin{center}
-\begin{subfigure}[b]{.22\textwidth}
-\caption{}
-\label{fig:stability_p_w}
-%\vspace{-.9em}
-\includegraphics[height=1.25in]{figures/ch2/stability_p_w} 
-\end{subfigure}
-~
-\begin{subfigure}[b]{.22\textwidth}
-\caption{}
-%\vspace{-1em}
-\label{fig:stability_max_rho}
-\includegraphics[height=1.25in]{figures/ch2/stability_max_rho} 
-\end{subfigure}
-~
-\hspace{1em}
-\begin{subfigure}[b]{.22\textwidth}
-\caption{}
-\label{fig:stability_1_5}
-%\vspace{-.5em}
-%\vspace{.8em}
-\includegraphics[height=1.2in]{figures/ch2/stability_1_5} 
-\end{subfigure}
-~
-\begin{subfigure}[b]{.22\textwidth}
-%\vspace{.7em}
-\caption{}
-\label{fig:stability_8_12}
-%\vspace{-.5em}
-\includegraphics[height=1.2in]{figures/ch2/stability_8_12} 
-\end{subfigure}
-\end{center}
-\vspace{-1em}
-\caption[Distribution of the maximum eigenvalue for Erd\H{o}s-Renyi
-  graphs with gamma weights]{Empirical and theoretical distribution of
-  the maximum eigenvalue for Erd\H{o}s-Renyi graphs with gamma
-  weights. (a) Four gamma weight distributions. The colors correspond
-  to the curves in the remaining panels. (b) Sparsity that
-  theoretically yields ${99\%}$ probability of stability as a function
-  of~${p(W)}$ and~$N$. (c) and (d) Theoretical (solid) and empirical
-  (dots) distribution of the maximum eigenvalue. Color corresponds to
-  the weight distribution in (a) and intensity indicates~$N$
-  and~$\rho$ shown in (b).}
-\label{fig:stability}
-\end{figure}
-
-Due to their recurrent nature, Hawkes processes must be constrained to
-ensure their positive feedback does not lead to infinite numbers of
-events. A stable system must satisfy
-%\footnote{In this
-%  context~${\lambda_{\mathsf{max}}}$ refers to an eigenvalue rather
-%  than a rate, and~$\odot$ denotes the Hadamard product.}
-\begin{align*}
-  \lambda_{\mathsf{max}}=\max\; |\,\mathrm{eig}(\bA\odot\bW)\,| < 1
-\end{align*}
-(c.f. \citet{Daley-1988}).
-%When we are conditioning on finite datasets
-%we do not have to worry about this.
-%We simply place weak priors on the
-%network parameters, e.g., a beta prior on the sparsity~${\rho}$ of an
-%Erd\H{o}s-Renyi graph, and a Jeffreys prior on the scale of the gamma
-%weight distribution.
-For the generative model, we would like
-to set our hyperparameters such that the prior distribution places
-little mass on unstable networks. In order to do so, we use tools from
-random matrix theory.
-
-The circular law describes the asymptotic eigenvalue distribution for
-$N \times N$~random matrices with entries that are i.i.d. with zero
-mean and variance~$\sigma^2$. As~$N$ grows, the eigenvalues are
-uniformly distributed over a disk in the complex plane centered at the
-origin and with radius~$\sigma\sqrt{N}$. In our case, however, the
-mean of the entries,~${\mu=\mathbb{E}[a_{n \to n'} \cdot w_{n \to
-      n'}]}$, is not zero. \citet{Silverstein-1994} has analyzed such
-``noncentral'' random matrices and shown that the largest eigenvalue
-is asymptotically distributed
-as~${\lambda_{\sf{max}} \sim \distNormal(\mu N,\, \sigma^2)}$.
-
-% Replacing this paragraph with the simple statement that
-%\lambda_{\sf{max}}\sim\distNormal(\mu K, \sigma^2).
-%\citet{Silverstein-1994} has shown that we can analyze noncentral
-%random matrices by considering them to be perturbations about the
-%mean. Consider~${\bA\odot\bW=\bV+\bU}$, where~${\bV=\mu K e_K e_K^T}$
-%is a deterministic rank-one matrix with every entry equal to~$\mu$,
-%${e_K\in\reals^K}$ is a column vector with all entries equal
-%to~${K^{-1/2}}$, and~$\bU$ is a random matrix with i.i.d.\ zero-mean
-%entries. Then, as~$K$ approaches infinity, the largest eigenvalue
-%will come from~$\bV$ and will be distributed
-%as~${\lambda_{\sf{max}}\sim\distNormal(\mu K, \sigma^2)}$, and the
-%remaining eigenvalues will be uniformly distributed over the complex
-%disc.
-
-In the simple case of~${w_{n \to n'}\sim \distGamma(\alpha,\beta)}$
-and~${a_{n \to n'}\sim\distBernoulli(\rho)}$, we have ${\mu = \rho
-  \alpha/\beta}$ and
-${\sigma=\sqrt{\rho((1-\rho)\alpha^2+\alpha)}/\beta}$. For a
-given~$N$,~$\alpha$ and~$\beta$, we can tune the sparsity
-parameter~$\rho$ to achieve stability with high probability. We simply
-set~$\rho$ such that the minimum of~$\sigma\sqrt{N}$ and, say,~${\mu N
-  + 3\sigma}$, equals one. Figures~\ref{fig:stability_p_w}
-and~\ref{fig:stability_max_rho} show a variety of weight distributions
-and the maximum stable~$\rho$. Increasing the network size, the mean,
-or the variance will require a concomitant increase in sparsity.
-
-This approach relies on asymptotic eigenvalue distributions, and it is
-unclear how quickly the spectra of random matrices will converge to
-this distribution. To test this, we computed the empirical eigenvalue
-distribution for random matrices of various size, mean, and
-variance. We generated~$10^4$ random matrices for each weight
-distribution in Figure~\ref{fig:stability_p_w} with sizes~$N=4$,~$64$,
-and~$1024$, and~$\rho$ set to the theoretical maximum indicated by
-dots in Figure~\ref{fig:stability_max_rho}. The theoretical and
-empirical distributions of the maximum eigenvalue are shown in
-Figures~\ref{fig:stability_1_5} and~\ref{fig:stability_8_12}. We find
-that for small mean and variance weights, for
-example~$\distGamma(1,5)$ in the Figure~\ref{fig:stability_1_5}, the
-empirical results closely match the theory. As the weights grow
-larger, as in~${\distGamma(8,12)}$ in~\ref{fig:stability_8_12}, the
-empirical eigenvalue distributions have increased variance and lead to
-a greater than expected probability of unstable matrices for the range
-of network sizes tested here. We conclude that networks with strong
-weights should be counterbalanced by strong sparsity limits, or
-additional structure in the adjacency matrix that prohibits excitatory
-feedback loops.
 
 \section{Synthetic Results}
 \label{sec:synth}
