@@ -1,37 +1,7 @@
 
 \chapter{Dynamic Network Models}
-% Learning and memory in the brain are implemented by complex,
-% time-varying changes in neural circuitry. The computational rules
-% according to which synaptic weights change over time are the subject
-% of much research, and are not precisely understood. Until recently,
-% limitations in experimental methods have made it challenging to test
-% hypotheses about synaptic plasticity on a large scale.  However, as
-% such data become available and these barriers are lifted, it becomes
-% necessary to develop analysis techniques to validate plasticity
-% models.  In this chapter, we present an extensible framework for modeling
-% arbitrary synaptic plasticity rules on spike train data in populations
-% of interconnected neurons. 
+\label{chap:six}
 
-% We treat synaptic weights as a (potentially
-% nonlinear) dynamical system embedded in a nonlinear autoregressive model
-% of neural activity. Building on the work of preceding chapters, 
-% we we show how synaptic plasticity rules can be modeled as dynamics 
-% rules that govern how weights evolve in an activity-dependent manner.
-% In doing so, we imbue the weights with a biophysical interpretation 
-% that we explicitly avoided in previous chapters. We discuss when this
-% interpretive leap is warranted. 
-
-% To fit this model, we develop an algorithm that uses particle MCMC
-% \cite{Andrieu-2010} to fit the synaptic weight trajectories alongside
-% the parameters of the GLM and of the learning rules. Using this
-% method, we perform model comparison of two proposed variants of the
-% well-known spike-timing-dependent plasticity (STDP) rule, where
-% nonlinear effects play a substantial role. On synthetic data generated
-% from the biophysical simulator NEURON, we show that we can recover the
-% weight trajectories, the pattern of connectivity, and the underlying
-% learning rules.
-
-%\section{Introduction}
 Synaptic plasticity is believed to be the fundamental building block
 of learning and memory in the brain. Its study is of crucial
 importance to understanding the activity and function of neural
@@ -435,7 +405,7 @@ The particle weights also provide an unbiased estimate of the marginal
 likelihood of entries in the adjacency matrix,~$\bA$, integrating out
 the corresponding weight trajectory. We have,
 \begin{align*}
-p(\bA \given & \bS, \{\btheta_{n \to n'}\}, \{\psi_n^{(0)}\}) \\
+p(\bA \given \bS, \{\btheta_{n \to n'}\}, \{\psi_n^{(0)}\}) 
 &\propto  \sum_{t=1}^{T} \int  p( \bA, \bW[t] \given \bS, \{\btheta_{n \to n'}\}, \{\psi_n^{(0)}\}) \, \mathrm{d}\bW[t] \\
 &\approx \left[\prod_{t=1}^T \sum_{p=1}^P v_t^{(p)} \alpha_t^{(p)} \right] p(\bA \given \{\bz_n\}, \bvartheta).
 \end{align*}

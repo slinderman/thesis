@@ -279,11 +279,11 @@ competing value, then the first value is twice as likely. We introduce
 the notion of an \emph{integration time},~$T_I$, over which spikes are
 counted to estimate the probability distribution. With this notation,
 the empirical distribution,~$\widehat{\bpi}_t^{(j)}$, is defined by,
-\begin{align}
+\begin{align*}
   \widehat{\pi}_{t,k}^{(j)} &=
   \frac{\sum_{\Delta = 1}^{T_I} \sum_{n=1}^N \bbI[j_n=j, k_n=k] \, s_{t-\Delta,n}}
        {\sum_{\Delta = 1}^{T_I} \sum_{n=1}^N \bbI[j_n=j] \, s_{t-\Delta,n}}.
-\end{align}
+\end{align*}
 The numerator counts spikes from neurons representing the particular value,~$z_j=k$;
 the denominator counts all spikes from neurons representing~$z_j$.
 
@@ -291,9 +291,9 @@ the denominator counts all spikes from neurons representing~$z_j$.
 We assume these neurons are stochastic, each endowed
 with an instantaneous firing rate,~$\lambda_{t,n}$, which gives rise to an
 instantaneous spike count,~$s_{t,n}$ according to a Poisson distribution,
-\begin{align}
+\begin{align*}
 s_{t,n} &\sim \distPoisson(\lambda_{t,n}).
-\end{align}
+\end{align*}
 Thus, while the firing rate may encode one distribution, the distribution
 that is read out from a finite number of spikes will differ. 
 
@@ -390,44 +390,46 @@ then~$\bbE[\widehat{\pi}_{t,k}] = \pi_{k}$.
 
 \begin{proof}
   Let,
-  \begin{align}
+  \begin{align*}
     S_{t,k} &= \sum_{\Delta = 1}^{T_I} \sum_{n=1}^N \bbI[j_n=j, k_n=k] \, s_{t-\Delta,n},
-  \end{align}
+  \end{align*}
   and
-  \begin{align}
+  \begin{align*}
     S_{t} &= \sum_{\Delta = 1}^{T_I} \sum_{n=1}^N \bbI[j_n=j] \,  s_{t,n} = \sum_{k=1}^K S_{t,k}.
-  \end{align}
+  \end{align*}
   Iterating expectations, we have,
-  \begin{align}
+  \begin{align*}
     \bbE[\widehat{\pi}_{t,k}] &=
     \bbE \left[ \frac{S_{t, k}}{S_{t}} \right]
     = \bbE \left[
       \bbE \left[
         \frac{S_{t,k}}{S_t} \, \bigg|\, S_{t}  
       \right] \right].
-  \end{align}
+  \end{align*}
   Since~$s_{t, n}$ are independent Poisson random variables, their partial
   sums are as well.  Specifically,
   \begin{align}
+    \nonumber
     S_{t,k} &\sim \distPoisson \left( \sum_{\Delta = 1}^{T_I} \sum_{n} \bbI[j_n=j, k_n=k] \lambda_{t,n} \right) \\
+    \nonumber
     &= \distPoisson \left(\lambdamax T_I \sum_n \bbI[j_n=j, k_n=k] \, \pi_{k} \right) \\
     \label{eq:S_t_rate}
     &= \distPoisson(\lambdamax \, T_I \, R \, \pi_{k}),
   \end{align}
   which implies,
-  \begin{align}
+  \begin{align*}
     S_{t} = \sum_{k} S_{t,k} &\sim \distPoisson(\lambdamax \, T_I \, R).
-  \end{align}
+  \end{align*}
   Moreover, by the Poisson superposition principle, their conditional
   distribution is binomial,
-  \begin{align}
+  \begin{align*}
     S_{t,k} \given S_t &\sim
     \distBinomial \left( S_t, \frac{\lambdamax \, T_I \, R \, \pi_{k}}{\lambdamax \, T_I \, R} \right)
     =\distBinomial(S_t, \pi_{k}),
-  \end{align}
+  \end{align*}
   with expectation~$\pi_{k} \, S_t$.
   Plugging this into the iterated expectation above, 
-  \begin{align}
+  \begin{align*}
     \bbE[\widehat{\pi}_{t,k}]
     &= \bbE \left[
       \bbE \left[
@@ -435,7 +437,7 @@ then~$\bbE[\widehat{\pi}_{t,k}] = \pi_{k}$.
     &= \bbE \left[ 
       \frac{\pi_{k} S_t}{S_t} \right]\\
     &= \pi_{k}.
-  \end{align}
+  \end{align*}
   Thus, this procedure is unbiased.
 \end{proof}
 
@@ -449,10 +451,10 @@ required to guarantee that the represented probability differs from
 the true probability by more than~$\epsilon$. We measure this
 difference with the total variation distance between the
 distributions,
-\begin{align}
+\begin{align*}
   \dtv(\widehat{\bpi}_t, \bpi) &= 
   \max_{\ell} |\widehat{\pi}_{t,k} - \pi_{k}|.
-\end{align}
+\end{align*}
 
 \begin{theorem}
 \label{thm:fixed_count}
@@ -464,14 +466,14 @@ such that if~$S_t \geq S^*$, the conditional probability of error is
 bounded
 by~$\Pr(\dtv(\widehat{\bpi}_t, \bpi) > \epsilon \given S_t) <
 \delta$.  Furthermore, this minimum number of spikes is at most,
-\begin{align}
+\begin{align*}
 S^* &\leq \frac{1}{2\epsilon^2} \ln \frac{2K}{\delta},  
-\end{align}
+\end{align*}
 \end{theorem}
 
 \begin{proof}
 First, consider the probability that a particular entry differs from its mean by more than~$\epsilon$.
-\begin{align}
+\begin{align*}
   &\Pr(|\widehat{\pi}_k - \pi_k |  > \epsilon \given S_t) \\
   &\qquad= \Pr(\widehat{\pi}_k - \pi_k  > \epsilon \given S_t) + 
   \Pr(\widehat{\pi}_k - \pi_k  < -\epsilon \given S_t) \\
@@ -479,7 +481,7 @@ First, consider the probability that a particular entry differs from its mean by
   +\Pr \left(S_{t, k} < S_t \pi_{ k} \left(1-\frac{\epsilon}{\pi_{ k}} \right) \, \bigg| \, S_t\right) \\
   &\qquad= \Pr \left(S_{t, k} > \bbE[S_{t,k} \given S_t] \left(1+\frac{\epsilon}{\pi_{ k}} \right) \right) 
    +\Pr \left(S_{t, k} < \bbE[S_{t,k} \given S_t] \left(1-\frac{\epsilon}{\pi_{ k}} \right) \right)
-\end{align}
+\end{align*}
 As in Lemma~\ref{lem:consistency}, we have used the fact
 that~$S_{t, k} \given S_t \sim \distBinomial(S_t, \pi_{ k})$,
 and hence has expectation~$S_t \pi_{ k}$. 
@@ -494,26 +496,26 @@ Now suppose~$S_t=S^*$.  We use a Chernoff bound to upper bound the
 probability that the binomial random variable,~$S_{t,k}$, deviates
 from its mean by more than a multiplicative factor. Leveraging the
 fact that~$\pi_{k} \leq 1$, we have,
-\begin{align}
+\begin{align*}
   \Pr \left(S_{t,k} > \bbE[S_{t,k} \given S^*] \left(1+\frac{\epsilon}{\pi_{k}} \right) \right) 
   &\leq \exp \left \{-2S^* \epsilon^2 \right \}, \\
   \Pr \left(S_{t,k} < \bbE[S_{t,k} \given S^*] \left(1-\frac{\epsilon}{\pi_{k}} \right) \right) 
   &\leq \exp \left \{-2S^* \epsilon^2 \right \},
-\end{align}
+\end{align*}
 which together imply,
-\begin{align}
+\begin{align*}
   \Pr(|\widehat{\pi}_{t,k} - \pi_{k} |  > \epsilon \given S^*) 
   &\leq 2 \exp \left \{-2S^* \epsilon^2 \right \}.
-\end{align}
+\end{align*}
 We bound the maximum deviation of any entry in~$\widehat{\bpi}$ with a union bound,
-\begin{align}
+\begin{align*}
   \Pr(\dtv(\widehat{\bpi}_t, \bpi) > \epsilon \given S^*) 
   & \leq 2K \exp \left\{-2S^* \epsilon^2 \right\}.
-\end{align}
+\end{align*}
 Setting this probability equal to~$\delta$ yields the desired bound on~$S^*$,
-\begin{align}
+\begin{align*}
   S^* &\leq \frac{1}{2\epsilon^2} \ln \frac{2K}{\delta}.
-\end{align}
+\end{align*}
 
 \end{proof}
 
@@ -543,20 +545,20 @@ total variation distance is less than~$\epsilon$ with probability~$1-\delta$.
   probability of error is bounded
   by~$\Pr(\dtv(\widehat{\bpi}_t, \bpi) > \epsilon) < \delta$
   if~$\lambdamax T_I R \geq \mu^*$, where~$\mu^*$ is at most,
-  \begin{align}
+  \begin{align*}
     \mu^* &\leq \frac{1}{1-e^{-2\epsilon^2}} \ln \frac{2K}{\delta}.  
-  \end{align}
+  \end{align*}
 \end{theorem}
 
 \begin{proof}
   We have, 
-  \begin{align}
+  \begin{align*}
     \Pr(\dtv(\widehat{\bpi}_t, \bpi) > \epsilon) 
     &= \sum_{m=0}^\infty \Pr(S_t=m) \Pr(\dtv(\widehat{\bpi}_t, \bpi) > \epsilon \given S_t=m) \\
     &\leq \sum_{m=0}^\infty  \Pr(S_t=m) \times 2K \exp \left \{-2m\epsilon^2 \right\} \\
     &= 2K \bbE_{S_t} \left[ \exp \left \{ -2S_t \epsilon^2 \right \} \right] \\
     &= 2K \exp \left \{\mu^* (e^{-2\epsilon^2}-1) \right\},
-  \end{align}
+  \end{align*}
   where the last line follows from moment generating function of~${S_t \sim \distPoisson(\mu^*)}$.
   Setting this equal to~$\delta$ and solving for~$\mu^*$ yields the stated bound.
 \end{proof}
@@ -589,13 +591,13 @@ corollary.
   desired confidence~$\delta < 1$, and~$\rho R$ observed neurons for
   each of the~$K$ values, the probability of error is bounded
   by~$\Pr(\dtv(\widehat{\bpi}_t, \bpi) > \epsilon) < \delta$ if
-  \begin{align}
+  \begin{align*}
     (\lambdamax T_I) (\rho R) \geq \mu^*,
-  \end{align} 
+  \end{align*} 
   where~$\mu^*$ is at most,
-  \begin{align}
+  \begin{align*}
     \mu^* &\leq \frac{1}{1-e^{-2\epsilon^2}} \ln \frac{2K}{\delta}.  
-  \end{align}
+  \end{align*}
 \end{corollary}
 
 \begin{proof}
@@ -825,11 +827,11 @@ chapter.
 In general, the posterior distribution of a subset of hidden
 variables~$\bz_H \subseteq \bz$ 
 given the observed variables~$\bz_O = \bz \setminus \bz_H$ is,
-\begin{align}
+\begin{align*}
   p(\bz_H \given \bz_O, \btheta) &=
   \frac{p(\bz_H, \bz_O \given \btheta)}
        {\sum_{\bz_H} p(\bz_H, \bz_O \given \btheta)}.
-\end{align}
+\end{align*}
 Typically, this cannot be efficiently computed since it requires a sum
 over all possible hidden variable assignments.  However, as we have
 seen in previous chapters, there are many methods of approximating
@@ -837,9 +839,9 @@ posterior distributions. Mean field variational inference maps
 particularly nicely onto the natural constraints of neural dynamics.
 In mean field variational inference, the intractable exact
 posterior distribution is approximated with a tractable, factorized distribution,
-\begin{align}
+\begin{align*}
   p(\bz_H \given \bz_O, \btheta) &\approx q(\bz_H) \equiv \prod_{z_j \in \bz_H} q(z_j).
-\end{align}
+\end{align*}
 The terms in this product are called \emph{variational factors}.  We
 solve for the variational factors that minimize KL-divergence between
 the true and approximate posterior,~$\KL(q(\bz_H) \,||\, p(\bz_H
@@ -860,9 +862,9 @@ must satisfy the mean field consistency equation:
 where~$\simeq$ denotes equality up to an additive constant and the
 expectations are taken with respect to the variational
 distribution over other hidden variables,
-\begin{align}
+\begin{align*}
   q(\bz_{\neg j}) &= \prod_{i \neq j} q(z_{i}).
-\end{align}
+\end{align*}
 The additive constant
 ensures normalization of the probabilities, and will be discussed
 subsequently.  
@@ -872,9 +874,9 @@ vectors specifying the posterior probability of each variable,~$z_j$.
 Under the direct representation described above, these instantaneous
 values of these factors are encoded in the relative spike counts of
 populations of neurons,
-\begin{align}
+\begin{align*}
   q_t(z_j=k) &= \widehat{\pi}_{t,k}^{(j)} 
-\end{align}
+\end{align*}
 To perform inference, the neuronal dynamics must be such that at each
 time step, the relative spike counts satisfy~Eq.~\ref{eq:mf_consistency}. 
 %For discrete random variables, this implies that the rate of a neuron~$n$
@@ -900,12 +902,12 @@ into the activation,~$\psi_{t,k}^{(j)}$.
 Since~$\widehat{\bpi}_{t}^{(j)}$ is a probability distribution, we
 know it must sum to one. Thus the additive constant must be set to
 ensure this normalization.  Thus,
-\begin{align}
+\begin{align*}
   \widehat{\pi}_{t,k}^{(j)} &=
   \exp \left \{\psi_{t,k}^{(j)} -\log \nu_{t}^{(j)} \right \},
   & & &
   \nu_t^{(j)} &= \sum_{k'} \exp \left \{\psi_{t,k'}^{(j)} \right \}.
-\end{align}
+\end{align*}
 
 %Note that the pairwise factor functions are not necessarily symmetric.
 %In fact, the two variables may have support for different ranges of
@@ -923,10 +925,10 @@ neurons the variable-value pair~${(z_j,k)}$ are proportional
 to~$\widehat{\pi}_{t,k}^{(j)}$, then in expectation, the empirical
 distribution represented by the spike counts will be equal to the
 desired distribution. Thus, we aim to set,
-\begin{align}
+\begin{align*}
   \lambda_{t,n} &= \lambdamax \, \widehat{\pi}_{t,k_n}^{(j_n)}
   = \lambdamax \exp \left \{\psi_{t,k_n}^{(j_n)} -\log \nu_{t}^{(j_n)} \right \},
-\end{align}
+\end{align*}
 for maximum firing rate,~$\lambdamax$. While this rate function is
 nearly a linear-nonlinear cascade, as we studied in previous
 chapters, there is one major impediment to realizing this
@@ -943,9 +945,9 @@ This motivates our next assumptions,
   indicates whether or not there exists a synaptic connection from
   neuron~$m$ to neuron~$n$. These connections are modeled as
   independent and identically distributed Bernoulli random variables,
-  \begin{align}
+  \begin{align*}
     a_{n \from m} &\sim \distBernoulli(\rho).
-  \end{align}
+  \end{align*}
   We combine these variables into a binary adjacency 
   matrix,~$\bA \in \{0,1\}^{N \times N}$.
 \end{assumption}
@@ -954,20 +956,20 @@ This motivates our next assumptions,
   All neurons in the population share the same gain,~$\lambdamax$. 
   Thus, neuron~$n$'s estimate of~$\bpi^{(j)}$ is 
   informed by~$(\lambdamax T_I)(\rho R)$ spikes, in expectation:
-  \begin{align}
+  \begin{align*}
     \bbE_{\bA,\bs} \bigg[ \sum_{\Delta = 1}^{T_I} & \sum_{m=1}^N \bbI[j_m=j] \, a_{n \from m} \cdot s_{t-\Delta,m} \bigg] \\
     &= \bbE_{\bA,\bs} \left[ \sum_{\Delta = 1}^{T_I} \sum_{m=1}^N \sum_{k=1}^K \bbI[j_m=j, k_m=k] \, a_{n \from m} \cdot s_{t,m} \right] \\
     &= \lambdamax T_I \rho \sum_{m=1}^N \sum_{k=1}^K \bbI[j_m=j, k_m=k] \, \widehat{\pi}_{t,k}^{(j)} \\
     &= (\lambdamax T_I) (\rho R).
-  \end{align}
+  \end{align*}
 
   Moreover, the instantaneous probability is well-approximated by,
-  \begin{align}
+  \begin{align*}
       \widehat{\pi}_{t,k}^{(j)} &=
   \frac{\sum_{\Delta=1}^{T_I} \sum_{m=1}^N \bbI[j_m=j, k_m=k] \, a_{n \from m} \cdot s_{t-\Delta, m}}
        {\sum_{\Delta=1}^{T_I} \sum_{m=1}^N \bbI[j_m=j] \, a_{n \from m} \cdot s_{t-\Delta, m}} \\
        &\approx (\lambdamax T_I \rho R)^{-1} \sum_{\Delta=1}^{T_I} \sum_{m=1}^N \bbI[j_m=j, k_m=k] \, a_{n \from m} \cdot s_{t-\Delta, m}.
-  \end{align}
+  \end{align*}
   In other words, the total spike count is concentrated around its mean.
 \end{assumption}
 
@@ -981,18 +983,18 @@ simplify to,
   - \log \nu_t^{(j_n)} \right \}
 \end{align}
 where
-\begin{align}
+\begin{align*}
   b_n &= \log \phi(z_{j_n} = k_n \given \btheta),
-\end{align}
+\end{align*}
 and
-\begin{align}
+\begin{align*}
   w_{n \from m} &=
   \begin{cases}
     \log \phi(z_{j_n}=k_n, z_{j_m}=k_m \given \btheta) & \text{if }j_m
     \in \neigh(j_n) \\
     0 & \text{o.w.}
   \end{cases}
-\end{align}
+\end{align*}
 
 The last step is to compute the normalizing input,~$\nu_t^{(j)}$.
 This requires summing the instantaneous rates of all neurons representing the
@@ -1004,13 +1006,13 @@ neurons representing~$z_j$ is equal to~$\lambdamax R$. If the distribution
 is not properly normalized, the expected spike count will deviate.
 Thus, a reasonable gain controller can estimate the population
 can estimate the population rate,
-\begin{align}
+\begin{align*}
 \widehat{\lambda}_{t}^{(j)} &= \sum_{\Delta = 1}^{T_G} \sum_{n=1}^N \bbI[j_n=j] s_{t-\Delta, n},
-\end{align}
+\end{align*}
 and set the control input to,
-\begin{align}
+\begin{align*}
   \nu_{t}^{(j)} &= \frac{\widehat{\lambda}_{t}^{(j)}}{\lambdamax T_G R}.
-\end{align}
+\end{align*}
 The time scale of the gain controller is typically set to be
 less than the time scale of inference, that is~$T_G < T_I$.
 
@@ -1068,18 +1070,18 @@ class probability vector,~$\balpha$, which we assume is uniform,
 and class-conditional probabilities for each observation,
 ${\rho_{j,k} = \Pr(x_j=1 \given z=k)}$. Together, these
 specify the probabilistic model,
-\begin{align}
+\begin{align*}
   \balpha &= \tfrac{1}{K} \bone, & & &
     z &\sim \distCategorical(\balpha), \\
   \rho_{j,k} &\sim \distBeta(\tfrac{1}{2},\tfrac{1}{2}),  & & &
   x_j &\sim \distBernoulli(\rho_{j,z}).  
-\end{align}
+\end{align*}
 This can be easily transformed into a factor graph with,
-\begin{align}
+\begin{align*}
   \phi(z=k) &= \alpha_k, \\
   \phi(x_j=1, z=k) &= \rho_{j,k}, \\
   \phi(x_j=0, z=k) &= 1-\rho_{j,k}.
-\end{align}
+\end{align*}
 
 We simulate inference in this model with a population of neurons.
 Each variable-value pair is represented by~$R=10$ neurons, and each
@@ -1125,11 +1127,11 @@ Chapter 4.
 
 Recall the theoretical dynamics proposed in Section~\ref{sec:inference},
  reproduced here in slightly simplified form,
-\begin{align}
+\begin{align*}
   \lambda_{t,n} &= \lambdamax
   \exp \left \{b_n + \gamma \sum_{\Delta=1}^{T_I} \sum_{m=1}^N a_{n \from m} \cdot w_{n \from m} \cdot s_{t-\Delta,m}
   - \log \nu_t^{(j_n)} \right \}.
-\end{align}
+\end{align*}
 The instantaneous firing rate take the form of a generalized linear model.
 Each neuron has a baseline rate that is a function of~$b_n$ and~$\lambdamax$.
 Moreover, the rate is influenced by recent spiking activity through
@@ -1150,11 +1152,11 @@ for the adjacency matrix, and a stochastic block model (SBM) for the
 weight matrix. The SBM has latent variables for each neuron that
 indicate the cluster assignment, and parameters that specify the
 average weight between each pair of clusters:
-\begin{align}
+\begin{align*}
   c_n & \sim \distCategorical(\alpha \bone), \\
   \mu_{c \from c'} &\sim \distGaussian(0, \sigma_0^2), \\
   w_{n \from m} &\sim \distGaussian(\mu_{c_n \from c_m}, \sigma^2).
-\end{align}
+\end{align*}
 By performing Bayesian inference in this model, we recover a posterior
 distribution over biases,~$\{b_n\}_{n=1}^N$; weighted adjacency
 matrices,~$\bA$ and~$\bW$; latent variables,~$\{c_n\}_{n=1}^N$; and
@@ -1306,10 +1308,10 @@ The parameters of the model,~$\btheta$, specify the conditional
 probabilities for pairs of hidden and visible variables. Rather than
 treating the parameters as given, we now treat them as part of the
 model.
-\begin{align}
+\begin{align*}
   p(\bx, \bz, \btheta) &= p(\btheta) \, p(\bx, \bz \given \btheta)  \\
   &= \frac{p(\btheta)}{Z(\btheta)} \prod_{h \in \mcG} \phi(z_j \given \btheta) \prod_{h,h' \in \mcG} \phi(z_j, z_{h'} \given \btheta.
-\end{align}
+\end{align*}
 The challenge with learning is that the parameters appear in the
 normalizing constant,~$Z(\btheta)$, which is typically an intractable
 summation over variable assignments. For this simple example,
@@ -1323,9 +1325,9 @@ formulated as directed graphical models.
   graphical model in which the variables have at most one ``parent''
   variable. That is, the variables are ordered such that the
   joint probability is equal to,
-  \begin{align}
+  \begin{align*}
     p(\bz, \btheta) &= p(\btheta) \prod_{j=1}^J p(z_j \given \pa(z_j), \btheta),
-  \end{align}
+  \end{align*}
   where~$\pa(z_j) \in \{z_1, \ldots, z_{j-1}\} \cup \varnothing$.
   Each conditional distribution in this product is properly normalized,
   which implies that the joint distribution is normalized as well.
@@ -1345,10 +1347,10 @@ probability of~$z_j$ (if~$\pa(z_j)=\varnothing$) or the rows of a
 conditional probability table (if~$\pa(z_j) \in \{z_1, \ldots, z_{j-1}\}$).
 We
 make this explicit with the following notation,
-\begin{align}
+\begin{align*}
   p(z_j \given \pa(z_j)=\varnothing, \btheta) &= \distCategorical(\btheta^{(j)}), \\
   p(z_j \given \pa(z_{j})=z_{j'}=k, \btheta) &=  \distCategorical(\btheta^{(j,k)}).
-\end{align}
+\end{align*}
 In words, if the variable~$z_j$ has no parent, it is marginally distributed
 according to a categorical distribution with parameter~$\btheta^{(j)}$.
 If variable~$z_j$ has parent~$z_{j'}$, then when~$z_{j'}=k$, the
@@ -1357,38 +1359,38 @@ parameter~$\btheta^{(j,k)}$.
 
 To incorporate these parameters into the model, we introduce Dirichlet priors
 over the probability vectors,
-\begin{align}
+\begin{align*}
   \btheta^{(j)} &\sim \distDirichlet(\alpha \bone), & & &
   \btheta^{(j,k)} &\sim \distDirichlet(\alpha \bone).
-\end{align}
+\end{align*}
 
 Learning in a Bayesian framework corresponds to performing posterior
 inference over the parameters. Thus, we introduce a variational factor
 for~$\btheta$ as well,
-\begin{align}
+\begin{align*}
   q(\btheta) &=
   \prod_{j: \pa(z_j)=\varnothing} q(\btheta^{(j)})
   \prod_{j: \pa(z_j)\neq \varnothing} \prod_{k} q(\btheta^{(j,k)})
-\end{align}
+\end{align*}
 Now consider the mean field consistency equation governing the parameter
 of a root variable (with no parent),
-\begin{align}
+\begin{align*}
   \log q_t(\btheta^{(j)}) &\simeq
   \bbE_{q_{t-1}(\bz)}\left[ \log p(\bz, \btheta) \right] \\
   &\simeq \bbE_{q_{t-1}(\bz)}
   \left[ \sum_{k=1}^K \bbI[z_j=k] \log \theta_k^{(j)} \right]
   + \sum_{k=1}^K (\alpha-1) \log \theta_k^{(j)}  \\
   &\simeq  \sum_{k=1}^K (\widehat{\pi}_{t-1,k}^{(j)} + \alpha-1) \log \theta_k^{(j)}
-\end{align}
+\end{align*}
 This is the form of a Dirichlet distribution, which implies,
-\begin{align}
+\begin{align*}
   q_t(\btheta^{(j)})
   &= \distDirichlet(\btheta^{(j)} \given  \balpha_{t}^{(j)}) \\
   \balpha_{t}^{(j)} &= \alpha + \widehat{\bpi}_{t-1}^{(j)}
-\end{align}
+\end{align*}
 Similarly, the variational factors for~$\btheta^{(j,k)}$
 follows a Dirichlet distribution as well,
-\begin{align}
+\begin{align*}
   q_t(\btheta^{(j,k)}) &=
   \distDirichlet(\btheta^{(j,k)} \given \balpha_{t}^{(j,k)}), \\
   \balpha_{t}^{(j,k)} &= \alpha + \widehat{\bpi}_{t-1}^{(j)} \cdot \widehat{\pi}_{t-1,k}^{(\pa(z_j))}.
@@ -1396,37 +1398,43 @@ follows a Dirichlet distribution as well,
   %\distGamma(\theta_{k,k'}^{(v,h)} \given
   %\alpha + \widehat{\pi}_{t-1,k}^{(v)} \cdot \widehat{\pi}_{t-1,k'}^{(j)},
   %\, \beta).
-\end{align}
+\end{align*}
 
 Returning to the task of inferring the posterior distribution over
 hidden variables, we see that the updates for~$q(z_j)$ must now
 be derived with respect to the expectation of~$q(\btheta)$ as well,
-\begin{align}
+\begin{align*}
   \log q(z_j) &\simeq \bbE_{q(\bz_{\neg j})} \bbE_{q(\btheta)} \left[ p(\bz, \btheta) \right].
-\end{align}
+\end{align*}
 Instead of working directly with~$\log p(z_j \given \pa(z_j), \btheta)$,
 the updates must work with its expectation under the Dirichlet
 variational factor. If~$\pa(z_j)=\varnothing$, we have
 \begin{align}
+  \nonumber
   \bbE_{q_t(\btheta)} \left[\log p(z_j=k \given \pa(z_j)=\varnothing, \btheta)\right]
   &= \bbE_{q_t(\btheta)} \left[\log \theta_{k}^{(j)} \right] \\
-  \label{eq:expected_log_theta}
+  \nonumber
   &= \psi\big(\alpha_{t,k}^{(j)}\big)
   - \psi\big(\sum_{i=1}^K \alpha_{t,i}^{(j)} \big) \\
+  \nonumber
   &= \psi\big(\alpha_{t,k}^{(j)}\big)
   - \psi\big(\sum_{i=1}^K \alpha + \widehat{\pi}_{t-1,i}^{(j)} \big) \\
+  \label{eq:expected_log_theta}
   &= \psi\big(\alpha_{t,k}^{(j)}\big)
   - \psi\big(K\alpha\big).
 \end{align}
 where~$\psi(\cdot)$ is the digamma function. Otherwise,
 \begin{align}
+  \nonumber
   \bbE_{q_t(\btheta)} \left[\log p(z_j=k \given \pa(z_j)=k', \btheta)\right]
   &= \bbE_{q_t(\btheta)} \left[\log \theta_{k}^{(j,k')} \right] \\
-  \label{eq:expected_log_theta}
+  \nonumber
   &= \psi\big(\alpha_{t,k}^{(j,k')}\big)
   - \psi\big(\sum_{i=1}^K \alpha_{t,i}^{(j,k')} \big) \\
+  \nonumber
   &= \psi\big(\alpha_{t,k}^{(j,k')}\big)
   - \psi\big(\sum_{i=1}^K \alpha + \widehat{\pi}_{t-1,i}^{(j)} \widehat{\pi}_{t-1,k'}^{(\pa(z_j)} \big) \\
+  \label{eq:expected_log_theta2}
   &= \psi\big(\alpha_{t,k}^{(j,k')}\big)
   - \psi\big(K\alpha + \widehat{\pi}_{t-1,k'}^{(\pa(z_j)} \big).
 \end{align}
@@ -1442,14 +1450,14 @@ For root variables,~$\theta_k^{(j)}$ sets an activation bias that sets
 the baseline firing rate. We assume that these neurons have a dynamic
 state variable,~$\alpha_{t,n}$, that roughly computes a moving average
 of its firing rate,
-\begin{align}
+\begin{align*}
   \alpha_{t,n} &= \alpha + (\lambdamax T_L)^{-1} \cdot \sum_{\Delta = 1}^{T_L} s_{t-\Delta ,n} \\
   &\approx \alpha + \widehat{\pi}_{t,k_n}^{(j_n)}
-\end{align}
+\end{align*}
 This state variable governs the instantaneous activation bias,
-\begin{align}
+\begin{align*}
   b_{t,n} &= \psi \big(\alpha_{t,n} \big) - \psi \big( K\alpha \big).
-\end{align}
+\end{align*}
 If a neuron tends to have a high firing rate, reflecting a high 
 marginal posterior probability, this will eventually be learned and
 incorporated into the activation bias.
@@ -1457,7 +1465,7 @@ incorporated into the activation bias.
 
 
 We want the synaptic weights to equal the expected log parameter
-value, as in Eq.~\ref{eq:expected_log_theta}.  In theory, the weights
+value, as in~\eqref{eq:expected_log_theta}.  In theory, the weights
 should be identical for all synapses between neurons
 representing~$(z_j=k)$ and neurons representing~$(z_{j'}=k')$.  It is
 unreasonable to assume this in practice, since these synapses exist on
@@ -1469,32 +1477,32 @@ Assume that each synapse has a two latent states,~$\alpha_{t, n \from m}$,
 and~$\beta_{t,n \from m}$. These will enable us to compute
 the expectation with respect to the variational parameter.
 We propose the following learning rule for the first state,
-\begin{align}
+\begin{align*}
   \alpha_{t, n \from m} &=
   \alpha +
   (\lambdamax^2 T_L)^{-1}  \sum_{\Delta = 1}^{T_L} s_{t-\Delta ,n} \cdot s_{t-\Delta,m} \\
-  &\approx \alpha + \widehat{\pi}_{t-1,k_n}^{(j_n)} \cdot \widehat{\pi}_{t-1,k_m}^{(h_m)}. 
-\end{align}
+  &\approx \alpha + \widehat{\pi}_{t-1,k_n}^{(j_n)} \cdot \widehat{\pi}_{t-1,k_m}^{(j_m)}. 
+\end{align*}
 The tricky, asymmetric part comes in whether the is on the
-child neuron,~$z_{h_m} = \pa(z_{j_n})$, or the parent
-neuron,~$z_{j_n}= \pa(z_{h_m})$. This determines how the second
+child neuron,~$z_{j_m} = \pa(z_{j_n})$, or the parent
+neuron,~$z_{j_n}= \pa(z_{j_m})$. This determines how the second
 state must be computed. If~$z_{j_n}$ is the child, then
-\begin{align}
+\begin{align*}
   \beta_{t,n \from m} &= K\alpha + (\lambdamax T_L)^{-1} \sum_{\Delta = 1}^{T_L} s_{t -\Delta, m} \\
-  &\approx K\alpha + \widehat{\pi}_{t-1,k_m}^{(z_{h_m})}.
-\end{align}
-Otherwise, if~$z_{j_n} = \pa(z_{h_m})$,
-\begin{align}
+  &\approx K\alpha + \widehat{\pi}_{t-1,k_m}^{(z_{j_m})}.
+\end{align*}
+Otherwise, if~$z_{j_n} = \pa(z_{j_m})$,
+\begin{align*}
   \beta_{t,n \from m} &= K\alpha + (\lambdamax T_L)^{-1} \sum_{\Delta = 1}^{T_L} s_{t -\Delta, n} \\
   &\approx K\alpha + \widehat{\pi}_{t-1,k_n}^{(z_{j_n})}.
-\end{align}
+\end{align*}
 The difference is in whether the second state counts pre- or post-synaptic
 spikes. 
 
 The synaptic weight is a deterministic function of these two state variables,
-\begin{align}
+\begin{align*}
   w_{t, n \from m} &= \psi(\alpha_{t, n \from m}) - \psi(\beta_{t, n \from m}).
-\end{align}
+\end{align*}
 This state-based learning rule is Hebbian in that correlated spiking
 activity leads to increases in~$\alpha_{t,n\from m}$, which in turn
 lead to larger weights (since the digamma function is increasing on
@@ -1526,38 +1534,38 @@ mean and variance of a Gaussian, the brain may use a nonparametric
 representation like a kernel density estimate for the variational factors
 \cite{Anderson1994, Barber2003}.
 Suppose,
-\begin{align}
+\begin{align*}
   q_t(z_j) &\propto
   \sum_{k=1}^K \eta_{t,k}^{(j)} \, \zeta(z_j; \mu_k),
-\end{align}
+\end{align*}
 where~$\{\eta_{t,k}^{(j)}\}_{k=1}^K$ is a set of non-negative weights that
 sum to one, ~$\zeta(z; \mu)$ is a non-negative ``kernel function''
 that integrates to one and has mean~$\mu$, and~$\{\mu_k\}$ is the set of
 means at which these kernels are located. This defines a proper
 density function because~$q_t(z_j)$ is non-negative and integrates to one,
-\begin{align}
+\begin{align*}
   \int q_t(z_j) \, \mathrm{d}z_j &=
   \sum_{k=1}^K  \int \eta_{t,k}^{(j)} \, \zeta(z; \mu_k) \, \mathrm{d}z_j
   = \sum_{k=1}^K \eta_{t,k} = 1.
-\end{align}
+\end{align*}
 To implement this with a distributed population of neurons, let
-\begin{align}
+\begin{align*}
   \eta_{t,k}^{(j)} &=
   \frac{\sum_{n=1}^N \sum_{k=1}^K \bbI[j_n=j, k_n=k] \, s_{t,n}}
        {\sum_{n=1}^N \bbI[j_n=j] s_{t,n}}.
-\end{align}
+\end{align*}
 %While the kernel function is relatively unconstrained, a simple choice 
 %is a spherical Gaussian,
-%\begin{align}
+%\begin{align*}
 %  \zeta(z_k; \mu_k) &= \distNormal(z \given \mu_k, \sigma^2 \bI).
-%\end{align}
+%\end{align*}
 
 The mean field variational inference algorithm is no longer as simple as in
 Section~\ref{sec:inference}, but the key quantities of the variational
 lower bound, namely the entropy of the variational factor and the
 expected log probability, are still tractable. Using an approach similar
 to that of \citet{gershman2012nonparametric}, we have,
-\begin{align}
+\begin{align*}
   \bbE_{q_t(\bz)} &\left[ \log p(\bz \given \btheta) \right] 
   = \bbE_{q_t(\bz)} \left[ \sum_{j \in \mcG}\log \phi(z_j \given \btheta) +
     \sum_{i,j \in \mcG} \log \phi(z_i, z_j \given \btheta) \right] \\
@@ -1569,41 +1577,41 @@ to that of \citet{gershman2012nonparametric}, we have,
   &= \sum_{j \in \mcG} \sum_{k=1}^K \eta_{t,k}^{(j)} \, \widetilde{b}_k^{(j)} +
   \sum_{i,j \in \mcG} \sum_{k'=1}^K \sum_{k=1}^K \eta_{t,k'}^{(i)} \, \eta_{t,k}^{(j)} \,
   \widetilde{w}_{k',k}^{(i,j)}
-\end{align}
+\end{align*}
 
 The second term of the variational lower bound is the entropy of the
 variational distribution,
-\begin{align}
+\begin{align*}
   \mcH[q_t(z_j)] &= -\int q_t(z_j) \log q_t(z_j) \, \mathrm{d}z_j \\
   &= -\int q_t(z_j) \log \sum_{k=1}^K \eta_{t,k}^{(j)} \, \zeta(z_j; \mu_k) \, \mathrm{d}z_j.
-\end{align}
+\end{align*}
 We can lower bound this with Jensen's inequality to get,
-\begin{align}
+\begin{align*}
   \mcH[q_t(z_j)] &\geq \sum_{k=1}^K \log \int q_t(z_j) \, \eta_{t,k}^{(j)} \, \zeta(z_j; \mu_k) \, \mathrm{d} z_j \\
   &= \sum_{k=1}^K \log \left( \eta_{t,k}^{(j)} \sum_{k'=1}^K \eta_{t,k'}^{(j)} \int  \zeta(z_j; \mu_{k'}) \, \zeta(z_j; \mu_k) \, \mathrm{d} z_j \right) \\
   &= \sum_{k=1}^K \log \left( \eta_{t,k}^{(j)} \sum_{k'=1}^K \eta_{t,k'}^{(j)} \, \zeta_{k,k'}^\ast \right) \\
-\end{align}
+\end{align*}
 where we have defined~${\zeta_{k,k'}^\ast = \zeta_{k',k}^\ast = \int  \zeta(z_j; \mu_{k'}) \, \zeta(z_j; \mu_k) \, \mathrm{d} z_j}$ as the convolution of a pair of kernel functions.
 
 Now, to perform inference, we can perform gradient ascent directly on the
 \emph{evidence lower bound} (ELBO) on the log marginal likelihood,
 which is just the sum of these two terms. That is, we drive firing
 rates such that,
-\begin{align}
+\begin{align*}
   \eta_{t,k}^{(j)} %&= \eta_{t-1,k}^{(j)} + \alpha \nabla_{\boldsymbol{\eta}} \mcL \\
   &= \eta_{t-1,k}^{(j)} +
   \alpha \nabla_{\boldsymbol{\eta}} \left( \bbE_{q_{t-1}(\bz)} \left[ \log p(\bz \given \btheta) \right] + \mcH[q_{t-1}(z_j)] \right).
-\end{align}
+\end{align*}
 
 The gradient of the ELBO has two components, the first from the
 expected log probability and the second from the entropy. The first is
 quite intuitive,
-\begin{align}
+\begin{align*}
   \frac{\partial}{\partial \eta_{t,k}^{(j)}} \bbE_{q_t(\bz)} \left[ \log p(\bz \given \btheta) \right]
   &=
   \widetilde{b}_k^{(j)} +
   \sum_{i \in \neigh(j)} \sum_{k'=1}^K \eta_{t,k'}^{(i)} \, \widetilde{w}_{k',k}^{(i,j)}.
-\end{align} 
+\end{align*} 
 As in the discrete random variable case, the firing rates of neurons representing
 the pair~$(j,k)$, are driven by a bias and a weighted sum of activity from
 connected neurons. Now, however, the bias and the weights reflect integrations
