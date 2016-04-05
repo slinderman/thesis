@@ -224,21 +224,21 @@ plethora of models for the evolution of synaptic weights
 \cite{Caporale-2008}. In most cases, this evolution can be written as
 a dynamical system,
 \begin{align*} 
-\bW[t] &= \bW[t-1] + \ell\left(\bW[t-1], \, \mcH_t, \bvartheta \right) + \epsilon(\bW[t], \bvartheta)
+\bW[t+1] &= \bW[t] + \ell\left(\bW[t], \, \bS_{\leq t}, \bvartheta \right) + \epsilon(\bW[t], \bvartheta)
 \end{align*}
 where~$\ell$ is a potentially nonlinear \emph{learning rule} that
 determines how synaptic weights change as a function of previous
 spiking. This framework encompasses rate-based rules such as the Oja
 rule \cite{Oja-1982} and timing-based rules such as STDP and its
-variants. The additive noise,~${\epsilon(\bW(t), \bvartheta)}$, need not be
+variants. The additive noise,~${\epsilon(\bW[t], \bvartheta)}$, need not be
 Gaussian, and many models require truncated noise distributions.
 
 Following biological intuition, many common learning rules factor into
 a product of simpler functions. For example, STDP (defined below)
 updates each synapse independently such that the learning rule for 
 ~$w_{n' \to n}$ only
-depends on~${w_{n'\to n}[t-1]}$ and the presynaptic spike
-history~${\bs_{1:t-1,n}}$. Biologically speaking, this means that
+depends on~${w_{n'\to n}[t]}$ and the pre- and post-synaptic spike
+history~${\bS_{\leq t}}$. Biologically speaking, this means that
 plasticity is local to the synapse. More sophisticated rules allow
 dependencies among the columns of~$\bW$. For example, the incoming
 weights to neuron~$n$ may depend upon one another through
@@ -260,14 +260,14 @@ effect of a given pair of pre-synaptic and post-synaptic spikes on a
 weight may be written:
 \begin{align}
 \label{eqn:AddSTDP}
- \ell\left(w_{n' \to n}[t], \mcH_t, \bvartheta \right) &= 
- \;s_{t,n} \, \ell_+(\mcH_t, A_+, \tau_+) 
- \;-\;s_{t,n'} \, \ell_-(\mcH_t, A_-, \tau_-),
+ \ell\left(w_{n' \to n}[t], \bS_{\leq t}; \bvartheta \right) &= 
+ \ell_+(\bS_{\leq t}, A_+, \tau_+) 
+ -\ell_-(\bS_{\leq t}, A_-, \tau_-),
 \end{align}
 where,
 \begin{align*}
-\ell_+(\mcH_t; A_+, \tau_+) &= \sum_{t'=1}^{t-1} s_{t', n'} \cdot  A_+ \cdot e^{(t-t')/\tau_+}, \\
-\ell_-(\mcH_t; A_-, \tau_-) &= \sum_{t'=1}^{t-1} s_{t', n} \cdot  A_- \cdot e^{(t-t')/\tau_-}.
+\ell_+(\bS_{<t}, A_+, \tau_+) &= s_{t,n} \sum_{t'=1}^{t} s_{t', n'} \cdot  A_+ \cdot e^{(t-t')/\tau_+}, \\
+\ell_-(\bS_{<t}, A_-, \tau_-) &= s_{t,n'} \sum_{t'=1}^{t} s_{t', n} \cdot  A_- \cdot e^{(t-t')/\tau_-}.
 \end{align*}
 This rule states that weight changes only occur at the time of pre- or
 post-synaptic spikes, and that the magnitude of the change is a
@@ -286,9 +286,9 @@ by~$W_{\mathsf{max}}$ and~$W_{\mathsf{min}}$, respectively
 scaled by the distance from the threshold:
 \begin{align}
  \label{eqn:MultSTDP}
- \ell\left(w_{n' \to n}[t], \mcH_t, \bvartheta \right) = 
- \;& s_{t,n} \;  \tilde\ell_+(\mcH_t; A_+, \tau_+) \; (W_{\mathsf{max}}-w_{n'\to n}[t]), \nonumber \\
-  \;-\; &s_{t,n'}\;  \tilde\ell_-(\mcH_t; A_-, \tau_-) \; (w_{n'\to n}[t]-W_{\mathsf{min}}).
+ \ell\left(w_{n' \to n}[t], \bS_{\leq t}, \bvartheta \right) = 
+     &\;\tilde\ell_+(\bS_{\leq t}, A_+, \tau_+) \; (W_{\mathsf{max}}-w_{n'\to n}[t]), \nonumber \\
+   - &\;\tilde\ell_-(\bS_{\leq t}, A_-, \tau_-) \; (w_{n'\to n}[t]-W_{\mathsf{min}}).
 \end{align}
 Here, by setting ${\tilde\ell_\pm = \min(\ell_\pm,1)}$, we enforce
 that the synaptic weights always fall
@@ -376,18 +376,20 @@ We build up the collection of weight trajectories iteratively, one
 time bin at a time. We start by sampling the initial synaptic weights
 from the prior distribution,
 \begin{align*}
-  \bW^{(p)}[1] &\sim p(\bW \given \bvartheta),
+  \bW^{(p)}[1] &\sim p(\bW[1] \given \bvartheta),
 \end{align*}
 and initializing the particle weights to~${v_1^{(p)} = \frac{1}{P}}$.
 Then, we iteratively proceed, updating the synaptic weights according to the 
 learning rule and updating the particle weights according to the likelihood 
-of the spikes. That is, for~${t=2, \ldots, T}$, we perform the following steps:
+of the spikes. 
+
+That is, for~${t=2, \ldots, T}$, we perform the following steps:
 \begin{enumerate}
 \item Sample the next synaptic weight given the weight in the
   preceding time bin, the learning rule, the spike history, and the
   global parameters,
   \begin{align*}
-    \bW^{(p)}[t] &\sim p(\bW[t] \given \bW^{(p)}[t-1], \mcH_t, \bvartheta).
+    \bW^{(p)}[t] &\sim p(\bW[t] \given \bW^{(p)}[t-1], \bS_{\leq t-1}, \bvartheta).
   \end{align*}
 
 \item Compute the likelhood of the current spikes,
