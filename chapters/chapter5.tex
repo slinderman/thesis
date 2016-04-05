@@ -1,114 +1,93 @@
-% \begin{savequote}[75mm]
-% Nulla facilisi. In vel sem. Morbi id urna in diam dignissim feugiat. Proin molestie tortor eu velit. Aliquam erat volutpat. Nullam ultrices, diam tempus vulputate egestas, eros pede varius leo.
-% \qauthor{Quoteauthor Lastname}
-% \end{savequote}
 
 \chapter{Networks with Nonlinear Autoregressive Dynamics}
-\TODO{Additive impulse responses was a property of Hawkes processes.
-Now we generalize the model with linear-nonlinear model. Unfortunately,
-in doing so we invalidate the assumptions of the Poisson superposition 
-principle. Instead, we need new approaches to inference.}
+The last two chapters combined network models and Hawkes processes to
+construct probabilistic models for dynamic neural spike trains. The
+key assumption of Hawkes processes, the assumption we leverage to
+derive efficient inference algorithms, is that the firing rate is the
+sum of non-negative impulse responses from preceding spikes. In other
+words, the interactions in a Hawkes process are additive and purely
+excitatory. While this leads to interpretable network models for some
+systems, in many cases it is more natural to expect a mix of
+excitatory and inhibitory interactions. Unfortunately, we cannot have
+inhibitory interactions with simple linear dynamics because this could
+yield negative firing rates. Instead, we need to revisit the
+assumption of linear dynamics.
 
-Our inference algorithm for Hawkes process relied on an augmentation strategy 
-made possible by the Poisson superposition principle, which 
-only applies to firing rates that are a linear combination of 
-nonnegative components. 
-In many cases, however, the representation we 
-seek is a network with both excitatory \emph{and} inhibitory 
-connections. This motivates a more general, nonlinear autoregressive
-formulation,
+Chapter~\ref{chap:two} introduced a simple way to generalize the 
+linear autoregressive dynamics of the Hawkes process. We retain the 
+linear combination of impulse responses from preceding events, but then 
+we apply a rectifying nonlinear function to obtain a firing rate. 
+Formally, we assume the following model: let,
 \begin{align*}
-\psi_{t,n} &= \psi_{0,n} + \sum_{n'=1}^N \sum_{d=1}^{D} s_{t-d, n'} \cdot h_{n' \to n}[d] \\
-\lambda_{t,n} &= g(\psi_{t,n}),
+\psi_{t,n} &= \psi_{0,n} + \sum_{n'=1}^N \sum_{d=1}^{D} s_{t-d, n'} \cdot h_{n' \to n}[d], \\
+\lambda_{t,n} &= g(\psi_{t,n}), \\
+s_{t,n} &\sim p(s_{t,n} \given \lambda_{t,n}, \nu_n)
 \end{align*}
-where~$\psi_{t,n}$ is a real-valued signal called the \emph{activation} and 
-${g: \reals \to \reals_+}$ is a rectifying nonlinear function that
-deterministcally  converts
-the activation into a firing rate. 
-Once this nonlinearity has been introduced, the impulse response 
-functions~$h_{n' \to n}[d]$ are free to be both positive and negative. 
-Unfortunately, the resulting firing rate is no longer amenable to 
-Poisson thinning.
+where~$\psi_{t,n}$ is a real-valued signal called the
+\emph{activation}, ${g: \reals \to \reals_+}$ is a rectifying
+nonlinear function that converts the activation into a firing rate,
+and the spike count is randomly drawn from a discrete distribution parameterized 
+by~$\lambda_{t,n}$ and, potentially, neuron-specific global parameters~$\nu_n$.
+Once this nonlinearity has been introduced, the impulse response
+functions~$h_{n' \to n}[d]$ are free to be both positive and negative.
 
 This is known as a generalized 
-linear model, and it is widely used in computational neuroscience 
-\cite{Paninski-2004, Truccolo-2005, Pillow-2008}. 
-\todo{really explain what's novel in this chap}
-In this chapter, we develop a novel approach that leverages the 
-\polyagamma augmentation to enable efficient, fully-conjugate 
-inference. As in Chapters~\ref{chap:three} and~\ref{chap:four}, 
-we combine this model with a 
-prior distribution on the network of interactions.
+linear model (GLM), and it is widely used in computational neuroscience 
+\cite{Paninski-2004, Truccolo-2005, Pillow-2008}. When the spike counts 
+are Poisson distributed, then under general conditions~\cite{Paninski-2004} 
+the likelihood of the spike counts will be log concave and amenable to 
+efficient, exact optimization. Unfortunately, once we introduce nontrivial
+prior distributions, like the network models we are considering, 
+the posterior becomes multimodal and Bayesian inference becomes more 
+challenging. 
 
-% \TODO{rework the rest of the intro}
-% To perform this inference, we develop novel a Markov chain Monte
-% Carlo (MCMC) algorithm that can efficiently invert the generative
-% procedure above in order to find the posterior distribution over
-% latent variables given observed spike trains or calcium fluorescence
-% traces.  Since we do not know \textit{a priori} what types of latent
-% variables to expect, we show how a wide range of hypotheses can be
-% encoded as prior distributions over networks. Since weighted,
-% directed networks can be equivalently represented as sparse matrices,
-% prior distributions over the space networks correspond to
-% distributions over matrices. Specifically, a network can be
-% represented as the elementwise product of a real-valued weight
-% matrix~$\bW$, whose entries,~$\bw_{n \from m}$, specify the strength
-% of the directed connection from neuron~$m$ to neuron~$n$, and a
-% binary adjacency matrix~$\bA$, whose entries,~$a_{n \from m}$, denote
-% whether or not a connection is present. Thus,~$\bA$ specifies the
-% sparsity of the network, while~$\bW$ specifies the strength. This
-% decomposition is known as a spike-and-slab model in machine
-% learning~\cite{Mitchell1988}.
+This chapter develops efficient MCMC algorithms for approximating the 
+posterior distribution of weights in a GLM with prior distributions on the 
+impulse responses that are derived from probabilistic network models.
+Unfortunately, the augmentation scheme developed for linear Hawkes 
+processes is no longer viable due to the nonlinear interactions. Instead,
+we develop an inference algorithm based on a recently developed scheme 
+known as \polyagamma augmentation. The basic idea behind this scheme is 
+to introduce a set of auxiliary variables conditioned upon which the 
+discrete spike counts actually ``look'' like Gaussian observations.
+Once we have reduced the problem to inference in a linear Gaussian model,
+a host of efficient inference algorithms are at our disposal. 
 
-
-% Once we have specified a class network models, we can perform inference and 
-% evaluate them on the basis of their predictive power. A good model should 
-% be able to generalize to new neurons by predicting the neurons' latent 
-% variables and connections. If these predictions are accurate, the model 
-% will assign high probability to the held-out neurons' spike trains. 
-% In this way, we can assess the quality of the different network models
-% and determine which latent variable model is most appropriate for the 
-% neural population under study. This provides a flexible, data-driven 
-% method of exploring a variety of hypotheses about interpretable structure 
-% underlying complex, dynamical models of neural activity.
 
 \section{Probabilistic Model}
+The underlying model is very similar to the linear autoregressive 
+models of the preceding chapter. Rather than considering Poisson 
+distributed spike counts, however, here we work with other discrete 
+observation models that are amenable to \polyagamma augmentation. 
+As we generalize to allow both excitatory and inhibitory interactions, 
+we revisit the form of our impulse response and introduce a simpler
+form. Finally, we outline a variety of network models that provide 
+multivariate Gaussian prior distributions on the interaction weights.
 
-
-A probabilistic model specifies a joint probability distribution over
-measured signals, the underlying network, and latent structural
-variables we wish to infer.  
-
-\subsection{Observation models}
-In our model, the measured signal from
-neuron~$n$ in the~$t$-th time bin is denoted~$s_{t,n}$, which may 
-denote either a discrete spike count or a real-valued signal, like 
-the calcium fluorescence. In either case, this signal is assumed 
-to be stochastically drawn from a distribution parameterized by 
-an underlying, real-valued \emph{activation},~$\psi_{t,n}$,
-and a static parameter,~$\nu_n$. The
-activation is typically related to the expected spike count via
-a logistic transformation,~$\sigma(\psi) = e^\psi \, (1+e^\psi)^{-1}$,
-which has the property~$\sigma(-\psi) = 1-\sigma(\psi)$.
+\subsection{Spike count models}
 
 \begin{table}
 \begin{center}
 \begin{tabular}{c|c|c|c|c}
-  \textbf{Distribution} & $p(s \given \psi, \nu)$ & Standard Form & $\bbE[s]$ & $\Var(s)$ \\
+  \textbf{Name} & Parameters & $p(s \given \psi, \nu)$ & $\bbE[s]$ & $\Var(s)$ \\
   \hline
-  Gaussian & $\frac{1}{\sqrt{2 \pi \nu}}\exp \left \{ -\frac{1}{2 \nu} (s - \psi)^2 \right \}$
-  & --- 
+  Gaussian 
+  & $\distNormal(\psi, \nu)$ 
+  & $\frac{1}{\sqrt{2 \pi \nu}} e^{ -\frac{1}{2 \nu} (s - \psi)^2}$
   & $\psi$ & $\nu$ \\
-  Bernoulli & $\sigma(\psi)^s \, \sigma(-\psi)^{1-s}$
+  Bernoulli 
+  %& $\sigma(\psi)^s \, \sigma(-\psi)^{1-s}$
+  & $\distBernoulli(\sigma(\psi))$ 
   & $\frac{(e^\psi)^s}{1+e^\psi}$
   & $\sigma(\psi)$ & $\sigma(\psi) \, \sigma(-\psi)$ \\
-  Binomial & ${\nu \choose s} \, \sigma(\psi)^s \, \sigma(-\psi)^{\nu-s}$
+  Binomial 
+  %& ${\nu \choose s} \, \sigma(\psi)^s \, \sigma(-\psi)^{\nu-s}$
+  & $\distBinomial(\nu, \sigma(\psi))$ 
   & ${\nu \choose s} \,\frac{(e^\psi)^s}{(1+e^\psi)^\nu}$
   & $\nu \sigma(\psi)$ & $\nu \sigma(\psi) \, \sigma(-\psi)$ \\
-  Poisson (Exp) & $\frac{1}{s!} e^{-e^\psi} e^{\psi  s}$
-  & ---
-  & $e^\psi$ & $e^\psi$ \\
-  Neg. Binomial & ${\nu + s -1 \choose s} \, \sigma(\psi)^s \, \sigma(-\psi)^{\nu}$
+  Neg. Binomial 
+  %& ${\nu + s -1 \choose s} \, \sigma(\psi)^s \, \sigma(-\psi)^{\nu}$
+  & $\distNegBinomial(\nu, \sigma(\psi))$
   & ${\nu +s - 1 \choose s} \,\frac{(e^\psi)^s}{(1+e^\psi)^{\nu+s}}$
   & $\nu e^\psi$ & $\nu e^\psi / \sigma(-\psi)$ \\
 \end{tabular}
@@ -117,14 +96,28 @@ which has the property~$\sigma(-\psi) = 1-\sigma(\psi)$.
 \label{tab:obs_models}
 \end{table}
 
+The spike counts are stochastically drawn from a distribution
+parameterized by an underlying, real-valued
+\emph{activation},~$\psi_{t,n}$, and a static parameter,~$\nu_n$. 
+The \polyagamma augmentation can be applied to observation models 
+that depend on a logistic transformation of the activation,
+\begin{align*}
+  \sigma(\psi) &= \frac{e^\psi}{1+e^\psi},
+\end{align*}
+which has the property~$\sigma(-\psi) = 1-\sigma(\psi)$. The Bernoulli,
+binomial, and negative binomial distributions are all natural choices.
+% Since the Poisson distribution can be seen as a limit of either the binomial
+% or the negative binomial distribution, we can approximate a Poisson model 
+% as well. 
+While the Gaussian distribution is not a proper model for discrete
+spike counts, we include it in our list since our inference procedure will 
+reduce the other models to a Gaussian. Table~\ref{tab:obs_models} 
+lists the basic properties of these observation distributions.
 
-We consider the four observation models shown in Table~\ref{tab:obs_models}.
-The Gaussian model assumes~$s_{t,n}$ is real-valued, and may be
-appropriate for modeling calcium fluorescence, for example.
 The Bernoulli distribution is appropriate for binary spike counts,
 whereas the binomial and negative binomial have support
-for~$s\in[0,\nu]$ and~$s \in [0, \infty)$, respectively.
-Notably lacking from this list is the Poisson distribution,
+for integer~$s\in \{0, \ldots, \nu\}$ and~$s \in \{0, 1, \ldots \}$, respectively.
+Notably missing from this list is the Poisson distribution,
 which does not seem to be amenable to the augmentation schemes
 we will derive below. Nevertheless, both the binomial and negative
 binomial distributions converge to the Poisson under certain
@@ -135,170 +128,160 @@ is always under-dispersed, since its mean always exceeds its variance,
 and the negative binomial is always over-dispersed, with variance greater 
 than its mean.
 
-The generalized linear model (GLM) \cite{Paninski-2004, Truccolo-2005, Pillow-2008} 
-models the activation at time~$t$ as a weighted function of 
-the spike counts at preceding times~${[0,t-1]}$. Specifically,
-let,
+\subsection{Linear Gaussian Activation Model}
+As in the previous chapter, we model the impulse response as a weighted 
+sum of basis functions,
 \begin{align}
-  \label{eq:glm_activation}
-  \psi_{t,n} &\triangleq w_n^{(0)}  +                 
-               \sum_{m=0}^N  \sum_{k=1}^K a_{n \from m} \, w_{n \from m}^{(k)}
-               \left( \sum_{\Delta t=1}^{\Delta t_{\mathsf{max}}} \phi_{k, \Delta t} \cdot s_{t-\Delta t, m} \right) \\
-             &= w_n^{(0)}  + \sum_{m=0}^N \sum_{k=1}^K a_{n \from m} \, w_{n \from m}^{(k)} \, \widehat{s}_{t,m}^{(k)} \\
+\label{eq:glm_impulse}
+h_{n' \to n}[d] &= a_{n' \to n} \sum_{b=1}^B w_{n' \to n}^{(b)} \cdot \phi_b[d].
+\end{align}
+Here, however, we combine the scalar weight and 
+the normalized basis function. In this more complicated model, the normalized 
+basis function lacks the same simple interpretation of a distribution over 
+induced spike times.  Moreover, in some cases, we may even wish to model interactions that 
+are both excitatory \emph{and} inhibitory --- for example, the effect of a
+spike may be inhibitory at short time scales and excitatory after a certain
+delay. While these types of interactions may not correspond to actual biological synapses, they 
+can still capture salient autocorrelations in neural spike trains.
+
+Plugging~Eq.~\ref{eq:glm_impulse} into the activation model, we have,
+\begin{align}
+  \nonumber
+  \psi_{t,n} &\triangleq \psi_n^{(0)}  +                 
+               \sum_{n'=0}^N  \sum_{b=1}^B a_{n' \to n} \, w_{n' \to n}^{(b)}
+               \left( \sum_{d=1}^{D} \phi_{b}[d] \cdot s_{t-d, n'} \right) \\
+  \nonumber
+             &= \psi_n^{(0)}  + \sum_{n'=0}^N \sum_{b=1}^B a_{n' \to n} \, w_{n' \to n}^{(b)} \, \widehat{s}_{t,n'}^{(b)} \\
   \label{eq:linear_activation}
              &= (\ba_{n} \odot \bw_n)^\trans \, \widehat{\bs}_t,
 \end{align}
-where~$w_n^{(0)}$ is the baseline activation of neuron~$n$,
-$\bphi_{k,1:\Delta t_{\mathsf{max}}}$ is a basis function 
+where~$\psi_n^{(0)}$ is the baseline activation of neuron~$n$,
+$\bphi_{b}$ is a basis function 
 that weights the previous spike counts for 
-offsets~${\Delta t \in [1, \Delta t_{\mathsf{max}}]}$
-, the binary variable~${a_{n \from m} \in \{0,1\}}$ 
+offsets~${d \in \{1, \ldots, D\}}$
+, the binary variable~${a_{n' \to n} \in \{0,1\}}$ 
 indicates whether or not there exists 
-a directed connection from neuron~$m$ to neuron~$n$,
-and~$w_{n \from m}^{(k)}$ captures the influence that
-spikes on neuron~$m$ exert on neuron~$n$ at
-offsets weighted by the~$k$-th basis function.  
+a directed connection from neuron~$n'$ to neuron~$n$,
+and~$w_{n' \to n}^{(b)}$ captures the influence that
+spikes on neuron~$n'$ exert on neuron~$n$ at
+offsets weighted by the~$b$-th basis function.  
 Since the basis function and the signal 
 are assumed to be fixed,  can precompute the inner sum, which is simply the 
-convolution of the signal with the basis function, to get~$\widehat{s}_{t,m}^{(k)}$.
+convolution of the signal with the basis function, to get~$\widehat{s}_{t,n}^{(b)}$.
 Since this is a linear function, we can combine the
 connections, weights, and filtered spike trains into
 vectors to get the linear form  in Eq.~\ref{eq:linear_activation}.
 Here, we have,
-\begin{align}
+\begin{align*}
   \ba_n &=
     \bigg[
       1,  
-      &a_{n \from 1}, & & \ldots, & & a_{n \from 1}, 
+      & a_{1 \to n}, & & \ldots, & & a_{1 \to n}, 
       & & \ldots, &
-      &a_{n \from N}, & & \ldots, & &a_{n \from N} 
+      &a_{N \to n}, & & \ldots, & &a_{N \to n} 
     &\bigg]^\trans, \\
   \bw_n &=
     \bigg[
-      w_n^{(0)}, 
-      &w_{n \from 1}^{(1)}, & & \ldots, & &w_{n \from 1}^{(K)}, 
+      \psi_n^{(0)}, 
+      &w_{1 \to n}^{(1)}, & & \ldots, & &w_{1 \to n}^{(B)}, 
       & &\ldots, &
-      &w_{n \from N}^{(1)}, & & \ldots, & &w_{n \from N}^{(K)} 
+      &w_{N \to n}^{(1)}, & & \ldots, & &w_{N \to n}^{(B)} 
       &\bigg]^\trans, \\
   \widehat{\bs}_t &=
     \bigg[
       1, 
-      &\widehat{s}_{t,1}^{(1)}, & & \ldots, & &\widehat{s}_{t,1}^{(K)}, 
+      &\widehat{s}_{t,1}^{(1)}, & & \ldots, & &\widehat{s}_{t,1}^{(B)}, 
       & &\ldots, &
-      &\widehat{s}_{t,N}^{(1)}, & & \ldots, & &\widehat{s}_{t,N}^{(K)} 
+      &\widehat{s}_{t,N}^{(1)}, & & \ldots, & &\widehat{s}_{t,N}^{(B)} 
     &\bigg]^\trans,
-\end{align}
-and~$\odot$ dentoes the elementwise product. For convenience, we
-let~$\bA$ and~$\bW$ refer to the~$N \times NK+1$ matrices obtained
+\end{align*}
+\sloppy
+and~$\odot$ dentoes the elementwise product. Note that each~$a_{n' \to n}$ 
+is repeated~$B$ times in the vector~$\ba_{n}$. For convenience, we
+let~$\bA$ and~$\bW$ refer to the~${N \times NB+1}$ matrices obtained
 by stacking the vectors~$\ba_n^\trans$ and~$\bw_n^\trans$, and we
-let~$\widehat{\bS}$ denote the~$T \times NK+1$ matrix with rows
+let~$\widehat{\bS}$ denote the~${T \times NB+1}$ matrix with rows
 given by~$\widehat{\bs}_t^\trans$. The major difference between this formulation and that of the standard 
 GLM is that here we have explicitly modeled the sparsity of the 
 weights via the ``adjacency matrix'' $\bA$. Under the standard 
-formulation, all weights are present, that is,~${a_{n \from m} \equiv 1}$.
+formulation, all weights are present, that is,~${a_{n' \to n} \equiv 1}$.
 
-Consider a model with one basis function ($K=1$) defined
-by,~${\phi_{1,\Delta t} = e^{-\Delta t/\tau}}$.
-Then~$\widehat{s}_{t,m}^{(1)}$ is a weighted sum of spikes in the
-window~$[t-\Delta t_{\mathsf{max}},t-1]$, where the weights decay
+Consider a model with one basis function ($B=1$) defined
+by,~${\phi_{1,d} = e^{-d/\tau}}$.
+Then~$\widehat{s}_{t,n}^{(1)}$ is a weighted sum of spikes in the
+window~$[t-D,t-1]$, where the weights decay
 according to an exponential function with time constant~$\tau$.  
-If~${a_{n \from m}=1}$, indicating a
-connection from neuron~$m$ to neuron~$n$, and
-the weight,~$w_{n \from m}^{(1)}$, is positive, the influence will be
+If~${a_{n' \to n}=1}$, indicating a
+connection from neuron~$n'$ to neuron~$n$, and
+the weight,~$w_{n' \to n}^{(1)}$, is positive, the influence will be
 excitatory. If it is negative, the effect will be inhibitory.
 Together, the weights~$\bW$ define a functional \emph{network} of
 interactions.
 
-The popularity of generalized linear models is due, in large part, to
-the intuitive appeal of networks as a description of neuronal
-dynamics.  While the weights of the GLM may not necessarily correspond
-to direct synaptic connections, they provide an interpretable
-representation of firing rate dynamics in terms of a functional
-network. However, this interpretability is hampered by the fact that
-there are~$O(N^2)$ weights to reason about, and as the number of
-neurons,~$N$, grows, it becomes impossible to make sense of the entire
-network.
-
-\TODO{Do something with all this network model stuff}
-We extend our probabilistic model with hierarchical latent variable
-models that capture intuitive structure in the network, while
-retaining the interpretable network-based representation that makes
-the GLM so popular. We assume that each neuron is endowed with a set
-of latent features that govern the probability of functional
-interactions. Specifically, we consider two types of features:
-discrete classes,~$c_n \in \{1, \ldots, C\}$, and continuous
-locations,~$\bell_n \in \reals^D$. These can determine either the
-probability of connection,~$\rho_{n \from m}$, or the mean and
-variance of a multivariate Gaussian prior on the
-weights,~$\bmu_{n \from m}$ and~$\bSigma_{n \from m}$.
-Conditioned upon these latent variables, the connections and 
-their weights are all conditionally independent of one another.
-That is,
-\begin{align}
-  p(\ba_n, \bw_n \given c_n, \bell_n, \theta) = 
-  p(\ba_n \given c_n, \bell_n, \theta) \, p(\bw_n \given c_n, \bell_n, \theta),
-\end{align}
-where
-\begin{align}
-  p(\ba_n \given c_n, \bell_n, \theta) 
-  &= \prod_{m=1}^N \distBernoulli(a_{n \from m} \given \rho_{n \from m}), \\
-  p(\bw_n \given c_n, \bell_n, \theta) 
+\subsection{Network Models}
+With this new impulse response model, each edge of the network 
+is now associated with a~$B$-dimensional weight vector. We can 
+use the same adjacency matrix models as in the previous chapters,
+but we need to consider new models for the weight matrix. A 
+multivariate Gaussian prior is a natural choice. We consider 
+weight models of the form,
+\begin{align*}
+  p(\bw_n \given \{\bz_n\}, \bvartheta) 
   &= \distNormal(w_n^{(0)} \given \mu_0, \sigma^2_0 ) \prod_{m=1}^N 
-     \distNormal(\bw_{n \from m} \given \bmu_{n \from m}, \, \bSigma_{n \from m}), \\
-  &= \distNormal(\bw_n \given \bmu_n, \bSigma_n).
-\end{align}
-Here, we have combined the Gaussian factors into single multivariate Gaussian prior
+     \distNormal(\bw_{n' \to n} \given \bmu_{n' \to n}, \, \bSigma_{n' \to n}), \\
+  &= \distNormal(\bw_n \given \bmu_n, \bSigma_n),
+\end{align*}
+where~$\bmu_{n' \to n}$ and~$\bSigma_{n' \to n}$ are the mean and covariance,
+and they implicitly depend on the latent variables,~$\bz_{n'}$ and~$\bz_n$, and
+the parameters of the network model,~$\bvartheta$.
+The last line combines the Gaussian factors into single multivariate Gaussian prior
 with parameters,
 \begin{align}
   \bmu_n 
     &= \begin{bmatrix}
       \mu_0 \\
-      \bmu_{n \from 1} \\
+      \bmu_{1 \to n} \\
       \vdots \\
-      \bmu_{n \from N}
+      \bmu_{N \to n}
     \end{bmatrix}, & \text{ and } & &
   \bSigma_n 
   &= \begin{bmatrix}
     \sigma_0^2 &                     &        & \\
-               & \bSigma_{n \from 1} &        & \\
+               & \bSigma_{1 \to n}   &        & \\
                &                     & \ddots & \\
-               &                     &        & \bSigma_{n \from N} 
+               &                     &        & \bSigma_{N \to n} 
     \end{bmatrix}.
 \end{align}
-As previously mentioned, the parameters~$\rho_{n \from m}$,~$\bmu_{n \from m}$, and~$\bSigma_{n \from m}$ 
-may depend on~$c_n$,~$\bell_n$, and the parameters of the model,~$\theta$.
-The form of these dependencies is a function of the underlying models, 
-which we describe next.
-
+As previously mentioned, the parameters~$\rho_{n' \to n}$,~$\bmu_{n' \to n}$, and~$\bSigma_{n' \to n}$ 
 
 \begin{table}
 \begin{center}
 \begin{tabular}{c|c|c|c}
-Name & Latent Variable & $\bmu_{n \from m}$ & $\bSigma_{n \from m}$\\
+Name & $\text{dom}(\bz_n)$ & $\bmu_{n' \to n}$ & $\bSigma_{n' \to n}$\\
 \hline
 Gaussian Model & --- & $\bmu$ & $\bSigma$ \\
-Stochastic Block Model & $c_n$ & $\bmu_{c_n \from c_m}$ & $\bSigma_{c_n \from c_m}$ \\
-Latent Distance Model (${K=1}$) & $\bell_n$ & $-||\bell_n - \bell_m||_2^2 + \mu_0$ & $\sigma^2$
+Stochastic Block Model & $\{1, \ldots, K\}$ & $\bmu_{z_{n'} \to z_n}$ & $\bSigma_{z_{n'} \to z_n}$ \\
+Latent Distance Model (${B=1}$) & $\reals^K $ & $-||\bz_n - \bz_{n'}||_2^2 + \mu_0$ & $\sigma^2$
 \end{tabular}
 \end{center}
 \caption{Gaussian Weight Models}
 \label{tab:W_models}
 \end{table}
 
-Table~\ref{tab:W_models} defines the three weight models we
-consider.  Each model defines the mean and variance of a multivariate
-normal distribution,~$\bw_{n \from m} \sim \distNormal(\bmu_{n \from
-  m}, \bSigma_{n \from m})$.  In the Gaussian model, all weights are
+Table~\ref{tab:W_models} defines the three weight models considered in this chapter.  
+Each model defines the mean and variance of a multivariate
+normal distribution,~$\bw_{n' \to n} \sim \distNormal(\bmu_{n' \to
+  n}, \bSigma_{n' \to n})$.  In the Gaussian model, all weights are
 independent and identically distributed.  The stochastic block model,
 has parameters for each pair of classes, each drawn from a normal
-inverse-Wishart prior,~$(\bmu_{c \from c'}, \bSigma_{c \from c'}) \sim
+inverse-Wishart prior,~$(\bmu_{k' \to k}, \bSigma_{k' \to k}) \sim
 \distNormalInvWishart(\mu_0, \kappa_0, \Sigma_0, \nu_0)$. Finally, we
 consider a latent distance model, but only for the case where the
-weights are scalar, i.e.~$K=1$. In this case, the distance between
+weights are scalar, i.e.~$B=1$. In this case, the distance between
 points is inversely proportional to the mean weight.  For higher order
 weights, additional assumptions would be required in order to relate
 distance to vector weights. In this model, we assume standard normal
-priors on the parameters~$\bell_n$ and~$\mu_0$.  The variance is given
+priors on the parameters~$\bz_n$ and~$\mu_0$.  The variance is given
 an inverse gamma prior,~$\sigma^2 \sim \distInvGamma(\alpha, \beta)$.
 
 Of course, many other models could be added to this list, and in the
@@ -309,25 +292,21 @@ attention to these models, based on latent classes and locations,
 which are particularly interpretable and easily visualized.
 
 
-\section{Bayesian Inference}
+\section{Inference via Gibbs Sampling}
 Inference is the process of evaluating the posterior distribution over latent variables given the observed signal, which is related to the joint distribution by Bayes' rule:
 \begin{align}
-p(\{\nu_n, \ba_n, \bw_n, c_n, \bell_n\}_{n=1}^N, \theta \given \bs)  
-  &= \frac{p(\bs, \{\nu_n, \ba_n, \bw_n, c_n, \bell_n\}_{n=1}^N, \theta) }{p(\bs)}.
+p(\{\nu_n, \ba_n, \bw_n, \bz_n\}_{n=1}^N, \bvartheta \given \bS)  
+  &= \frac{p(\bS, \{\nu_n, \ba_n, \bw_n, \bz_n\}_{n=1}^N, \bvartheta) }{p(\bS)}.
 \end{align}
-The denominator on the right hand side is known as the \emph{marginal likelihood} of the spike train. 
-%It will play a crucial role in model selection. 
-
 It is computationally intractable to compute this posterior exactly and it has no simple closed form solution, so we must instead resort to approximate methods. 
 We use Markov chain Monte Carlo (MCMC) methods to collect samples from this posterior distribution.
-With these samples, we can compute unbiased expectations with respect to the posterior distribution.
-For example, we can compute the expected probability that two neurons belong to the same class, the expected weight of a functional connection between two neurons, or the expected predictive likelihood of heldout test data.
+% With these samples, we can compute unbiased expectations with respect to the posterior distribution.
+% For example, we can compute the expected probability that two neurons belong to the same class, the expected weight of a functional connection between two neurons, or the expected predictive likelihood of heldout test data.
 
-
-\subsection{Collapsed network updates}
+\subsection{Collapsed Gibbs Network Updates}
 The most challenging aspect of inference is sampling the
 posterior distribution over connections,~$\bA$. In the
-dense model, where~$a_{n \from m} \equiv 1$, the posterior
+dense model, where~$a_{n' \to n} \equiv 1$, the posterior
 distribution over weights is often log concave, which
 makes it easy to find the MAP estimate and characterize
 the local uncertainty around the most likely weights.
@@ -347,47 +326,51 @@ is conjugate with the Gaussian prior, and hence the
 posterior is Gaussian as well. We can
 compute the posterior distribution in closed form:
 \begin{align}
-  p(\bw_n \given \widehat{\bS}, \ba_n, \bmu_n, \bSigma_n)
+  \nonumber
+  p(\bw_n \given \bS, \ba_n, \{\bz_n\}, \bvartheta)
   &\propto
   \distNormal(\bw_n \given \bmu_n, \bSigma_n) \,
   \prod_{t=1}^T \distNormal(s_{t,n} \given (\ba_n \odot \bw_n)^\trans \, \widehat{\bs}_t, \, \nu_n) \\
+  \nonumber
   &= \distNormal(\bw_n \given \bmu_n, \bSigma_n) \,
   \distNormal(\bs_n \given (\ba_n \odot \bw_n)^\trans \, \widehat{\bS}, \, \nu_n \bI) \\
   \label{eq:w_conditional}
   &\propto \distNormal(\bw_n \given \widetilde{\bmu}_n, \widetilde{\bSigma}_n),
 \end{align}
 where
-\begin{align}
+\begin{align*}
   \widetilde{\bSigma}_n &= \left[ \bSigma_n^{-1} +
   \left(\widehat{\bS}^\trans (\nu_n^{-1} \bI) \widehat{\bS} \right) \odot (\ba_n \ba_n^\trans) \right]^{-1}, \\
   \widetilde{\bmu}_n &= \widetilde{\bSigma}_n \left[ \bSigma_n^{-1} \bmu_n +
   \left(\widehat{\bS}^\trans (\nu_n^{-1} \bI)\bs_n \right) \odot \ba_n \right].
-\end{align}
+\end{align*}
 
 Given this closed-form Gaussian conditional, we can also compute
 the conditional distribution over just~$\ba_n$, integrating out
 the corresponding weights,~$\bw_n$:
 \begin{align}
-  p(\ba_n \given \widehat{\bS}, \brho_n, \bmu_n, \bSigma_n)
-  &= \int p(\ba_n, \bw_n \given \widehat{\bS}, \brho_n, \bmu_n, \bSigma_n) \, \mathrm{d} \bw_n \\
-  &\propto p(\ba_n \given \brho_n) \, \int p(\bw_n \given \widehat{\bS}, \ba_n, \bmu_n, \bSigma_n) \, \mathrm{d} \bw_n \\
+  \nonumber
+  p(\ba_n \given \widehat{\bS}, \brho_n, \{\bz_n\}, \bvartheta)
+  &= \int p(\ba_n, \bw_n \given {\bS}, \{\bz_n\}, \bvartheta) \, \mathrm{d} \bw_n \\
+  \nonumber
+  &\propto p(\ba_n \given \{\bz_n\}, \bvartheta) \, \int p(\bw_n \given {\bS}, \ba_n, \{\bz_n\}, \bvartheta) \, \mathrm{d} \bw_n \\
   \label{eq:a_conditional}
-  &= p(\ba_n \given \brho_n) \, \frac{\big| \bSigma_n \big|^{-\frac{1}{2}} \exp \Big \{-\frac{1}{2} \bmu_n^\trans \bSigma_n^{-1} \bmu_n \Big \} }
+  &= p(\ba_n \given \{\bz_n\}, \bvartheta) \, \frac{\big| \bSigma_n \big|^{-\frac{1}{2}} \exp \Big \{-\frac{1}{2} \bmu_n^\trans \bSigma_n^{-1} \bmu_n \Big \} }
   {\big| \widetilde{\bSigma}_n \big|^{-\frac{1}{2}} \exp \Big \{-\frac{1}{2} \widetilde{\bmu}_n^\trans \widetilde{\bSigma}_n^{-1} \widetilde{\bmu}_n \Big \}}.
 \end{align}
 Thus, we can efficiently sample from the conditional
 distribution of~$\ba_n$ and~$\bw_n$ by first iterating
-over each neuron~${m \in \{1, \ldots, N\}}$ and sampling
-a new value of~$a_{n \from m}$, fixing the values of~$a_{n \from m'}$
-for~$m' \neq m$ and integrating out the value of~$\bw_n$.
+over each neuron~${n' \in \{1, \ldots, N\}}$ and sampling
+a new value of~$a_{n' \to n}$, fixing the values of~$a_{n'' \to n}$
+for~$n'' \neq n$ and integrating out the value of~$\bw_n$.
 To do so, we simply evaluate the marginal probability in Eq.~\ref{eq:a_conditional}
-for both values of~$a_{n \from m}$ and resample accordingly.
+for both values of~$a_{n' \to n}$ and resample accordingly.
 %This is a valid Gibbs step.
-Moreover, note that if~$a_{n \from m}$, the log determinant and the quadratic
+Moreover, note that if~$a_{n' \to n}$, the log determinant and the quadratic
 form in the numerator of Eq.~\ref{eq:a_conditional} will cancel with the
 corresponding term in the denominator. Thus, if~$\bA$ is $d$-sparse (i.e. 
-each neuron  has at most~$d$ incoming edges) evaluating
-the marginal probability of~$\ba_n$ has complexity an~$O(d^3)$.
+each neuron  has at most~$p$ incoming edges) evaluating
+the marginal probability of~$\ba_n$ has complexity an~$O(p^3)$.
 Once~$\ba_n$ has been completely
 resampled, we can sample a new value of~$\bw_n$ from its multivariate
 Gaussian conditional distribution, given by~Eq.~\ref{eq:w_conditional}.
@@ -405,9 +388,9 @@ auxiliary variables, the discrete likelihood appears Gaussian.
 First, notice that the discrete likelihoods in Table~\ref{tab:obs_models}
 can all be put into  a ``standard'' form in which the probability
 mass function can be written,
-\begin{align}
+\begin{align*}
   p(s \given \psi, \nu) &= c(s, \nu) \, \frac{(e^\psi)^{a(s, \nu)}}{(1+e^\psi)^{b(s, \nu)}},
-\end{align}
+\end{align*}
 for some functions,~$a$,~$b$, and~$c$ that do not depend on~$\psi$.
 The integral identity at the heart of the P\'{o}lya-gamma augmentation scheme  is
 \begin{align}
@@ -420,6 +403,7 @@ distribution~${\distPolyaGamma(b, 0)}$, which does not depend on $\psi$.
 Using Eq.~\ref{eq:pg_identity} along with priors~$p(\psi)$ and~$p(\nu)$, we can write the joint density of $(\psi, s, \nu)$ as
 \begin{align}
   \label{eq:pg_joint}
+  \nonumber
   p(s, \nu, \psi)
   &= p(\nu) \, p(\psi) \, c(s, \nu) \frac{(e^\psi)^{a(s, \nu)}}{(1+e^\psi)^{b(s, \nu)}} \\
   &= \int_0^\infty
@@ -427,40 +411,40 @@ Using Eq.~\ref{eq:pg_identity} along with priors~$p(\psi)$ and~$p(\nu)$, we can 
 \end{align}
 The integrand of Eq.~\ref{eq:pg_joint} defines a joint density on $(s, \nu, \psi, \omega)$ which admits $p(s, \nu, \psi)$ as a marginal density.
 Conditioned on these auxiliary variables $\omega$, we have that the likelihood as a function of~$\psi$ is,
-\begin{align}
+\begin{align*}
   p(s \given \psi, \nu, \omega)
   &\propto e^{\kappa(s, \nu) \psi} e^{- \omega \psi^2/2} 
 \propto \distNormal \left(\frac{\kappa(s, \nu)}{\omega} \, \bigg| \, \psi, \, \frac{1}{\omega} \right).
-\end{align}
+\end{align*}
 
 Thus, we effectively have a Gaussian likelihood for~$\psi$, after conditioning 
 on~$s$ and~$\omega$. Now we can apply this augmentation scheme to the full
 model, introducing auxiliary variables,~$\omega_{t,n}$ for each spike count,~$s_{t,n}$.
 Given these variables, the conditional distribution of~$\bw_n$ can be computed in closed form,
 as before. Let,
-\begin{align}
+\begin{align*}
   \bkappa_n
   &= \begin{bmatrix} \kappa(s_{1,n}, \nu_n), &\ldots, &\kappa(s_{T,n}, \nu_n)
   \end{bmatrix}^\trans,
-\end{align}
+\end{align*}
 and
-\begin{align}
+\begin{align*}
   \bOmega_n &= \diag \left(
   \begin{bmatrix}
     \omega_{1,n}, & \ldots, & \omega_{T,n}
   \end{bmatrix}
   \right).
-\end{align}
+\end{align*}
 Then we have~$
-  p(\bw_n \given \bs_n,  \widehat{\bS}, \ba_n, \bmu_n, \bSigma_n, \bomega_n, \nu_n)
+  p(\bw_n \given \bS, \ba_n, \{\bz_n\}, \bvartheta, \bomega_n, \nu_n)
   \propto \distNormal(\bw_n \given \widetilde{\bmu}_n, \widetilde{\bSigma}_n)$,
 where
-\begin{align}
+\begin{align*}
   \widetilde{\bSigma}_n &= \left[ \bSigma_n^{-1} +
   \left(\widehat{\bS}^\trans \bOmega_n \widehat{\bS} \right) \odot (\ba_n \ba_n^\trans) \right]^{-1}, \\
   \widetilde{\bmu}_n &= \widetilde{\bSigma}_n \left[ \bSigma_n^{-1} \bmu_n +
   \left(\widehat{\bS}^\trans \bkappa_n \right) \odot \ba_n \right].
-\end{align}
+\end{align*}
 
 Having introduced auxiliary variables, we must now also derive
 Markov transitions to update them as well. Fortunately, the
@@ -476,7 +460,7 @@ be updated in parallel. Moreover, efficient algorithms are available
 to generate \polyagamma random variates~\cite{windle2014sampling}, and
 we have ported these to Python\footnote{\url{https://github.com/slinderman/pypolyagamma}}.
 
-\paragraph{Observation parameter updates}
+\subsection{Observation Parameter Updates}
 The observation parameter updates depend on the particular distribution.
 For Gaussian observations,~$\nu_n$ is the observation variance, and
 it is conjugate with an inverse gamma prior.
@@ -486,6 +470,13 @@ possible spikes --- this is best set a priori.
 For negative binomial spike counts, the shape parameter~$\nu_n$ can
 be resampled as in~\cite{Zhou2012}.
 
+
+\subsection{Sampling Network Variables and Parameters}
+As before, the latent variables and parameters of the network are relatively 
+easy to resample for a given network. The stochastic block model priors are 
+conjugate with the Gaussian distributed weights. The locations of the latent 
+distance model are not conjugate, but we can update them with hybrid Monte Carlo
+\cite{Neal10}.
 
 \subsection{Model Selection}
 We have constructed a probabilistic model that supports a variety
@@ -510,28 +501,26 @@ observed spike train. To compute this, we must integrate
 over the latent variables and parameters underlying the
 observed spike train, as well as those underlying the
 new spike train. 
-Let~$\bZ = \{\{\bw_n, \ba_n, \nu_n, c_n, \bell_n\}_{n=1}^N, \theta\}$, and
-let~$\bz_{n^*} = \{\nu_{n^*}, \bw_{n^*}, \ba_{n^*}, c_{n^*}, \bell_{n^*}\}$.
+Let~$\bV = \{\{\bw_n, \ba_n, \nu_n, \bz_n\}_{n=1}^N, \bvartheta\}$, and
+let~$\bv_{n^*} = \{\nu_{n^*}, \bw_{n^*}, \ba_{n^*}, \bz_{n^*}\}$.
 This objective can be written,
 \begin{align}
   p(\bs_{n^*} \given \bS) &\approx
-  \int p(\bs_{n^*} \given \bz_{n^*}, \bS) \, p(\bz_{n^*} \given \bZ) \, p(\bZ \given \bS) \,
-  \mathrm{d} \bz_{n^*} \, \mathrm{d} \bZ \\
+  \int p(\bs_{n^*} \given \bv_{n^*}, \bS) \, p(\bv_{n^*} \given \bV) \, p(\bV \given \bS) \,
+  \mathrm{d} \bv_{n^*} \, \mathrm{d} \bZ \\
   &\approx
-  \frac{1}{Q} \sum_{q=1}^Q p(\bs_{n^*} \given \bz_{n^*}^{(q)}, \bS),
-  %\int p(\bs_{n^*} \given \bS, \bz_{n^*}) \,
-  %p(\bz_{n^*} \given \{c_n, \bell_n\}, \theta) \, \mathrm{d}\bz_{n^*}
+  \frac{1}{L} \sum_{\ell=1}^L p(\bs_{n^*} \given \bv_{n^*}^{(\ell)}, \bS),
 \end{align}
 where
 \begin{align}
-  \bz_{n^*}^{(q)} &\sim p(\bz_{n^*} \given \bZ^{(q)}),
+  \bv_{n^*}^{(\ell)} &\sim p(\bv_{n^*} \given \bV^{(\ell)}),
   &\text{ and }& & 
-  \bZ^{(q)} &\sim p(\bZ \given \bS).
+  \bV^{(\ell)} &\sim p(\bV \given \bS).
 \end{align}
-The samples~$\{\bZ^{(q)}\}_{q=1}^Q$ are the posterior samples generated
+The samples~$\{\bV^{(\ell)}\}_{\ell=1}^L$ are the posterior samples generated
 by the MCMC algorithm presented above. For each sample, we
 sample a new set of latent variables and connections for neuron~$n^*$,
-given the parameters included in~$\bZ^{(q)}$. These, combined with
+given the parameters included in~$\bV^{(\ell)}$. These, combined with
 the spike train, enable us to compute the likelihood of~$\bs_{n^*}$.
 
 This approach constitutes a minor approximation:
@@ -1116,14 +1105,13 @@ ruling out connections and limiting this cost.
 
 The total cost could actually be worse than quadratic because the cost
 of updating each connection could depend on~$N$. Fortunately, the
-complexity of our collapsed Gibbs sampling algorithm (described in
-Section~\ref{sec:methods}) only depends on the number of incident
-connections received by each neuron,~$d$.  Specifically, we must
-invert a~$d \times d$ matrix, which incurs an~$O(d^3)$
-cost. Figure~\ref{fig:runtime_vs_rho} illustrates this for a Bernoulli
-network with~$N=200$ neurons. The expected number of incoming
-connections is related to the probability of connection
-by~$\bbE[d]=\rho N$. If we increased the number of neurons but kept
+complexity of our collapsed Gibbs sampling algorithm only depends on
+the number of incident connections received by each neuron,~$p$.
+Specifically, we must invert a~$p \times p$ matrix, which incurs
+an~$O(p^3)$ cost. Figure~\ref{fig:runtime_vs_rho} illustrates this for
+a Bernoulli network with~$N=200$ neurons. The expected number of
+incoming connections is related to the probability of connection
+by~$\bbE[p]=\rho N$. If we increased the number of neurons but kept
 the average in-degree constant, the total cost would scale only
 quadratically with~$N$.
 

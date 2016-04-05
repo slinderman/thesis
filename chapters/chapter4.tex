@@ -91,18 +91,18 @@ in the same bin. Then the rate becomes,
 \begin{align}
 \label{eq:disc_hawkes_rate}
 \lambda_{t,n} &= \lambda_n^{(0)} +
-\sum_{n' = 1}^N \sum_{t'=1}^{t-1} s_{t',n'} \cdot h_{n' \to n}[t-t'], \\
+\sum_{n' = 1}^N \sum_{d=1}^{D} s_{t-d,n'} \cdot h_{n' \to n}[d], \\
 s_{t,n} &\sim \distPoisson(\lambda_{t,n} \cdot \Delta t),
 \end{align}
 where~$s_{t,n}$ is the number of spikes fired by neuron~$n$ at time~$t$
-and~${h_{n' \to n}[t-t']}$ is an impulse response function describing
+and~${h_{n' \to n}[d]}$ is an impulse response function describing
 the influence that events on neuron~$n'$ have on the
-rate of process~$n$ at discrete time lag~${t-t'}$. As we will show,
+rate of process~$n$ at discrete time lag~${d}$. As we will show,
 under this formulation the auxiliary variables only assume a fixed set
 of values independent of the rate.
 
 In order to incorporate the network model as a prior distribution for
-the Hawkes process, we follow the approach of~\citet{Linderman-2014}
+the Hawkes process, we follow the approach of the previous chapter
 and decompose the impulse response function into the product of a
 scalar weight that specifies the strength of the interaction and a
 probability mass function that specifies the time course of
@@ -112,10 +112,9 @@ interaction:
   &= a_{n \to n'} \cdot w_{n \to n'} \cdot \hbar[d; \, \btheta_{n \to n'}] 
 \end{align*}
 for~${d \in\{1,\ldots,D\}}$.  
-
 The function~${\hbar[d]: \{1, \ldots, D\} \to
-  [0,1]}$ is now a probability mass function.  We model itas a convex
-combination of basis functions,~$\bphi_b$, that integrate to one,
+  [0,1]}$ is now a probability mass function, which we model as a convex
+combination of normalized basis functions,~$\bphi_b$,
 \begin{align*}
   \hbar[d; \, \btheta_{n \to n'}]
   &\triangleq \sum_{b=1}^B \theta_{n \to n'}^{(b)} \cdot \phi_b[d], \\

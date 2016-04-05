@@ -493,7 +493,7 @@ general model known as Hawkes processes \cite{Hawkes-1971}.
 First, consider the spike train of a single neuron,~$\{s_m\}_{m=1}^M \subset [0,T]$.
 In a Hawkes process, the firing rate at time,~$\lambda(t \given \mcH_t)$, is a function of 
 the spike history,~${\mcH_t = \{s_m: s_m < t\}}$.  The neuron has a 
-baseline firing rate,~$\lambda_{0}$. On top of this baseline, 
+baseline firing rate,~$\lambda^{(0)}$. On top of this baseline, 
 each spike 
 adds a nonnegative impulse response,~$h(\Delta t)$, to the 
 subsequent firing rate.  This allows for spike-driven dynamics that are not possible in Poisson
@@ -503,10 +503,10 @@ t)$ to~${\Delta t \in [0,\Delta t_{\mathsf{max}}]}$.
 The rate is thus given by,
 \begin{align*}
   \lambda(t \given \mcH_t)
-  &= \lambda_{0} + \sum_{m=1}^M h(t - s_m).
+  &= \lambda^{(0)} + \sum_{m=1}^M h(t - s_m).
 \end{align*}
 When the impulse response is equal to zero, the Hawkes process
-reduces to a standard Poisson process with rate~$\lambda_0$.
+reduces to a standard Poisson process with rate~$\lambda^{(0)}$.
 
 By the superposition theorem for Poisson processes, these additive
 components can be considered independent processes, each giving rise
@@ -527,7 +527,7 @@ the rate of the~$n$-th neuron,~${\lambda_n(t\given
   \mcH_t)}$,  depends on the spike history, but here the spike history 
 contains the spikes of all neurons through time~$t$. 
 The multineuronal generalization also allows for different background rates 
-for each neuron,~$\lambda_{0,n}$, and  different impulse 
+for each neuron,~$\lambda^{(0)}_{n}$, and  different impulse 
 responses for each pair of neurons. For example, the impulse 
 response from neuron~$n$ to neuron~$n'$, which we now call~$h_{n \to n'}$, 
 may be much stronger than the reverse connection. As before, we
@@ -536,7 +536,7 @@ Putting it all together, the rate of the~$n$-th neuron is,
 \begin{align}
   \label{eq:hawkes_rate}
   \lambda_n(t \given \mcH_t)
-  &= \lambda_{0,n}(t) + \sum_{m=1}^M h_{c_m \to n}(t - s_m).
+  &= \lambda^{(0)}_{n}(t) + \sum_{m=1}^M h_{c_m \to n}(t - s_m).
 \end{align}
 
 \begin{figure}[t]
@@ -556,8 +556,8 @@ a product of Poisson process likelihoods for each background rate and
 each impulse response:
 \begin{multline*}
   p(\{(s_m,c_m,\omega_m)\}_{m=1}^M \given 
-  \{\lambda_{0,n}(t)\}, \{\{h_{n \to n'}(\Delta t)\}\}) = \\
-  \prod_{n=1}^N \PP \big(\{s_{m}: c_{m}=n \wedge \omega_{m}=0\} \given \lambda_{0,n}(t) \big) \; \times\\
+  \{\lambda^{(0)}_{n}(t)\}, \{\{h_{n \to n'}(\Delta t)\}\}) = \\
+  \prod_{n=1}^N \PP \big(\{s_{m}: c_{m}=n \wedge \omega_{m}=0\} \given \lambda^{(0)}_{n}(t) \big) \; \times\\
   \prod_{m=1}^M \prod_{n'=1}^N \PP \big(\{s_{m'}: c_{m'}=n' \wedge \omega_{m'}=m\} \given h_{c_m \to n'}(t-s_m) \big).
 \end{multline*}
 Combining this with 
@@ -565,11 +565,11 @@ Eq.~\ref{eq:poisson_lkhd}, we can
 write the augmented likelihood as,
 \begin{multline}
   \label{eq:hawkes_likelihood}
-  p(\{s_m, c_m, \omega_m\}_{m=1}^M \given \{\lambda_{0,n}\}, \{\{h_{n \to n'}(\Delta t)\}\}) = \\
+  p(\{s_m, c_m, \omega_m\}_{m=1}^M \given \{\lambda^{(0)}_{n}\}, \{\{h_{n \to n'}(\Delta t)\}\}) = \\
   \prod^N_{n=1} \bigg[
-  \exp\left\{ -\int_0^T \lambda_{0,n}(t)\mathrm{d}t \right\} \,
+  \exp\left\{ -\int_0^T \lambda^{(0)}_{n}(t)\mathrm{d}t \right\} \,
   \prod^M_{m=1}
-   \lambda_{0,n}(s_m)^{\bbI[c_m=n] \bbI[\omega_m = 0]} \bigg]\\
+   \lambda^{(0)}_{n}(s_m)^{\bbI[c_m=n] \bbI[\omega_m = 0]} \bigg]\\
   \quad\times \prod_{m=1}^M \prod_{n'=1}^N \bigg[
   \exp\left\{-\int^T_{s_m} h_{c_m \to n'}(t - s_m) \mathrm{d}t \right\} \\
   \prod_{m'=1}^M h_{c_m^{~} \to c_{m'}}(s_{m'}-s_m)^{\bbI[c_{m'}=n'] \bbI[\omega_{m'}=m]}\bigg].
@@ -632,20 +632,20 @@ under a stochastic block model for the weights.
 The joint probability is,
 \begin{multline}
 \label{eq:hawkes_complete_model}
-p(\{s_m, c_m, \omega_m\}, \bA, \bW, \{\{\theta_{n \to n'}\}\}, \{\lambda_{0,n}\}, \{\bz_n\}, \bvartheta \given \boldeta) 
+p(\{s_m, c_m, \omega_m\}, \bA, \bW, \{\{\theta_{n \to n'}\}\}, \{\lambda^{(0)}_{n}\}, \{\bz_n\}, \bvartheta \given \boldeta) 
 =  \\
 p(\bvartheta \given \boldeta)
 \times \overbrace{p(\{\bz_n\} \given \bvartheta, \boldeta)}^\text{latent variables}
 \times \overbrace{p(\bA, \bW \given \{\bz_{n}\}, \bvartheta, \boldeta)}^\text{network} 
-\times \overbrace{p(\{\lambda_{0,n}\} \given \boldeta)}^\text{background}
+\times \overbrace{p(\{\lambda^{(0)}_{n}\} \given \boldeta)}^\text{background}
 \times \overbrace{p(\{\theta_{n\to n'}\} \given \boldeta)}^\text{impulses} \\
-\times \overbrace{  p \left(\{s_m, c_m, \omega_m\} \given \bA, \bW, \{\theta_{n \to n'}\}, \{\lambda_{0,n}\} \right) }^\text{augmented likelihood}.
+\times \overbrace{  p \left(\{s_m, c_m, \omega_m\} \given \bA, \bW, \{\theta_{n \to n'}\}, \{\lambda^{(0)}_{n}\} \right) }^\text{augmented likelihood}.
 \end{multline}
 Before deriving inference algorithms for this model, however, we pause 
 to consider some of its theoretical properties.
 
 
-% Intuitively, the background rates,~$\lambda_{0,n}(t)$, explain events
+% Intuitively, the background rates,~$\lambda^{(0)}_{n}(t)$, explain events
 % that cannot be attributed to preceding events. In the simplest case
 % the background rate is constant. However, there are often fluctuations
 % in overall intensity that are shared among the processes, and not
@@ -655,7 +655,7 @@ to consider some of its theoretical properties.
 % we use a sparse log Gaussian Cox process \cite{Moller-1998} to model
 % the background rate:
 % \begin{align*}
-%   \lambda_{0,n}(t)
+%   \lambda^{(0)}_{n}(t)
 %   & = \mu_{n} + \alpha_{n}\exp\{\by(t)\}, \\
 %   \by(t) &\sim \mathcal{GP}(\boldsymbol{0},K(t,t')).
 % \end{align*}
@@ -707,14 +707,19 @@ mean of the entries,~${\mu=\mathbb{E}[a_{n \to n'} \cdot w_{n \to
 is asymptotically distributed
 as~${\lambda_{\sf{max}} \sim \distNormal(\mu N,\, \sigma^2)}$.
 
-In the simple case of~${w_{n \to n'}\sim \distGamma(\alpha,\beta)}$
-and~${a_{n \to n'}\sim\distBernoulli(\rho)}$, we have ${\mu = \rho
-  \alpha/\beta}$ and
-${\sigma=\sqrt{\rho((1-\rho)\alpha^2+\alpha)}/\beta}$. For a
-given~$N$,~$\alpha$ and~$\beta$, we can tune the sparsity
+In the simple case of~${w_{n \to n'}\sim \distGamma(\kappa,\nu)}$
+and~${a_{n \to n'}\sim\distBernoulli(\rho)}$, we have
+${\mu = \rho \kappa/\nu}$ and
+${\sigma=\sqrt{\rho((1-\rho)\kappa^2+\kappa)}/\nu}$. We are using the 
+rate parameterization of the gamma distribution, 
+\begin{align*}
+\distGamma(w \given \kappa, \nu) &= \frac{\nu^{\kappa}}{\Gamma(\kappa)}w^{\kappa- 1} e^{-\nu w}.
+\end{align*}
+For a
+given~$N$,~$\kappa$ and~$\nu$, we can tune the sparsity
 parameter~$\rho$ to achieve stability with high probability. We simply
-set~$\rho$ such that the minimum of~$\sigma\sqrt{N}$ and, say,~${\mu N
-  + 3\sigma}$, equals one. Figures~\ref{fig:stability_p_w}
+set~$\rho$ such that the minimum of~$\sigma\sqrt{N}$ and,
+say,~${\mu N + 3\sigma}$, equals one. Figures~\ref{fig:stability_p_w}
 and~\ref{fig:stability_max_rho} show a variety of weight distributions
 and the maximum stable~$\rho$. Increasing the network size, the mean,
 or the variance will require a concomitant increase in sparsity.
@@ -760,7 +765,7 @@ or the variance will require a concomitant increase in sparsity.
   weights. (a) Four gamma weight distributions. The colors correspond
   to the curves in the remaining panels. (b) Sparsity that
   theoretically yields ${99\%}$ probability of stability as a function
-  of~${p(W)}$ and~$N$. (c) and (d) Theoretical (solid) and empirical
+  of~${p(w)}$ and~$N$. (c) and (d) Theoretical (solid) and empirical
   (dots) distribution of the maximum eigenvalue. Color corresponds to
   the weight distribution in (a) and intensity indicates~$N$
   and~$\rho$ shown in (b).}
@@ -793,7 +798,7 @@ feedback loops.
 \section{Bayesian Inference with Gibbs Sampling}
 \label{sec:hawkes_inference}
 We present a Gibbs sampling procedure for inferring the model
-parameters,~$\bA$,~$\bW$, $\{\lambda_{0,n}\}$, $\{\theta_{n \to n'}\}$,
+parameters,~$\bA$,~$\bW$, $\{\lambda^{(0)}_{n}\}$, $\{\theta_{n \to n'}\}$,
 and the paremeters of the network,~$\{\bz_n\}$ and~$\bvartheta$.
 In order to simplify our Gibbs updates, we
 will also sample a set of parent assignments for each
@@ -849,33 +854,33 @@ spikes on neuron~$n$.
 
 Now that we have simplified the augmented log likelihood, we see that it is
 conjugate with a gamma prior on the weights,
-${w_{n \to n'} \sim \distGamma(\alpha_w, \beta_w})$.
+${w_{n \to n'} \sim \distGamma(\kappa, \nu})$.
 In Section~\ref{sec:graph_models} we introduced weight models that 
 output a
 
 The resulting conditional distribution is,
 \begin{multline*}
-  p(w_{n \to n'}\given \{s_m,c_m,\omega_m\}_{m=1}^M, a_{n\to n'}=1, \alpha_w, \beta_w)
+  p(w_{n \to n'}\given \{s_m,c_m,\omega_m\}_{m=1}^M, a_{n\to n'}=1, \kappa, \nu)
   = 
-  \distGamma(w_{n \to n'} \given \widetilde{\alpha}_{n \to n'}, \widetilde{\beta}_{n \to n'}),
+  \distGamma(w_{n \to n'} \given \widetilde{\kappa}_{n \to n'}, \widetilde{\nu}_{n \to n'}),
 \end{multline*}
 where
 \begin{align*}
-  \widetilde{\alpha}_{n \to n'} &= \alpha_w + M_{n \to n'}, \\
-  \widetilde{\beta}_{n \to n'} &= \beta_w + M_n.
+  \widetilde{\kappa}_{n \to n'} &= \kappa + M_{n \to n'}, \\
+  \widetilde{\nu}_{n \to n'} &= \nu + M_n.
 \end{align*}
 
 
 \paragraph{Sampling constant background rates.}
 Similarly, the likelihood of a constant background rate,
-${\lambda_{0,n}}$, is conjugate with a gamma
-prior~${\lambda_{0,n} \sim
+${\lambda^{(0)}_{n}}$, is conjugate with a gamma
+prior~${\lambda^{(0)}_{n} \sim
   \distGamma(\alpha_{\lambda},\beta_{\lambda})}$.  The conditional
 distribution is,
 \begin{align*}
-  p(\lambda_{0,n} \given \{s_m,c_m, \omega_m\}_{m=1}^M, \alpha_\lambda, \beta_\lambda)
+  p(\lambda^{(0)}_{n} \given \{s_m,c_m, \omega_m\}_{m=1}^M, \alpha_\lambda, \beta_\lambda)
   &=
-  \distGamma(\lambda_{0,n} \given \widetilde{\alpha}_{0,n},  \widetilde{\beta}_{0,n}),\\
+  \distGamma(\lambda^{(0)}_{n} \given \widetilde{\alpha}_{0,n},  \widetilde{\beta}_{0,n}),\\
   \widetilde{\alpha}_{0,n} &= \alpha_{\lambda} + \sum_m \bbI[c_m = n] \, \bbI[\omega_m=0] \\
   \widetilde{\beta}_{0,n} &= \beta_\lambda + T
 \end{align*}
@@ -954,11 +959,11 @@ Importantly, the integral of the rate function appearing in the
 likelihood can be computed without numerical quadrature,
 \begin{align*}
   \int_0^T \lambda_{n'}(t \given \mcH_t) \, \mathrm{d}t
-  &= \lambda_{0,n'} T +
+  &= \lambda^{(0)}_{n'} T +
   \sum_{m=1}^M a_{c_m \to n'} \cdot w_{c_m \to n'}
   \int_0^T  \hbar(t-s_m; \theta_{c_m \to n'}) \, \mathrm{d}t \\
-  &\approx \lambda_{0,n'} T + \sum_{m=1}^M a_{c_m \to n'} \cdot w_{c_m \to n'} \\
-  &= \lambda_{0,n'} T + \sum_{n=1}^N a_{n \to n'} \cdot w_{n \to n'} \cdot M_{n}.
+  &\approx \lambda^{(0)}_{n'} T + \sum_{m=1}^M a_{c_m \to n'} \cdot w_{c_m \to n'} \\
+  &= \lambda^{(0)}_{n'} T + \sum_{n=1}^N a_{n \to n'} \cdot w_{n \to n'} \cdot M_{n}.
 \end{align*}
 Again, the approximation stems from spikes that occur in the final
 interval of the recording,~${(T-\Delta t_{\mathsf{max}}, T]}$.
@@ -980,7 +985,7 @@ on this parallelism.
 
 \paragraph{Sampling Network Variables and Parameters}
 Given the network and the spike train, the conditional distributions 
-for the latent variables,~$\{\bz_n\}$, and the parameters,~$\theta$ 
+for the latent variables,~$\{\bz_n\}$, and the parameters,~$\bvartheta$ 
 are easy by design.
 
 \begin{itemize}
@@ -993,12 +998,12 @@ are easy by design.
     for the adjacency matrix, the conditional distribution of the label
     for neuron~$n$ is given by,
     \begin{align}
-      p(z_n = k \given \bz_{\neg n}, \bA, \theta)
+      p(z_n = k \given \bz_{\neg n}, \bA, \bvartheta)
       &\propto \pi_{k} \,
       \prod_{n'=1}^N p(a_{n' \to n} \given \rho_{z_{n'} \to k}) \,
                     p(a_{n \to n'} \given \rho_{k \to z_{n'}}),
     \end{align}
-    where~$\theta = \{\bpi, \{\rho_{k \to k'}\} \}$. For stochastic block
+    where~$\bvartheta = \{\bpi, \{\rho_{k \to k'}\} \}$. For stochastic block
     models of the weight matrix,~$\bW$, the conditional distribution
     depends on~$w_{n' \to n}$ and~$w_{n \to n'}$ instead.
 

@@ -1,29 +1,37 @@
 
 \chapter{Dynamic Network Models}
+% Learning and memory in the brain are implemented by complex,
+% time-varying changes in neural circuitry. The computational rules
+% according to which synaptic weights change over time are the subject
+% of much research, and are not precisely understood. Until recently,
+% limitations in experimental methods have made it challenging to test
+% hypotheses about synaptic plasticity on a large scale.  However, as
+% such data become available and these barriers are lifted, it becomes
+% necessary to develop analysis techniques to validate plasticity
+% models.  In this chapter, we present an extensible framework for modeling
+% arbitrary synaptic plasticity rules on spike train data in populations
+% of interconnected neurons. 
 
-Learning and memory in the brain are implemented by complex,
-time-varying changes in neural circuitry. The computational rules
-according to which synaptic weights change over time are the subject
-of much research, and are not precisely understood. Until recently,
-limitations in experimental methods have made it challenging to test
-hypotheses about synaptic plasticity on a large scale.  However, as
-such data become available and these barriers are lifted, it becomes
-necessary to develop analysis techniques to validate plasticity
-models.  Here, we present a highly extensible framework for modeling
-arbitrary synaptic plasticity rules on spike train data in populations
-of interconnected neurons. We treat synaptic weights as a (potentially
-nonlinear) dynamical system embedded in a fully-Bayesian generalized
-linear model (GLM). In addition, we provide an algorithm for inferring
-synaptic weight trajectories alongside the parameters of the GLM and
-of the learning rules. Using this method, we perform model comparison
-of two proposed variants of the well-known spike-timing-dependent
-plasticity (STDP) rule, where nonlinear effects play a substantial
-role. On synthetic data generated from the biophysical simulator
-NEURON, we show that we can recover the weight trajectories, the
-pattern of connectivity, and the underlying learning rules.
+% We treat synaptic weights as a (potentially
+% nonlinear) dynamical system embedded in a nonlinear autoregressive model
+% of neural activity. Building on the work of preceding chapters, 
+% we we show how synaptic plasticity rules can be modeled as dynamics 
+% rules that govern how weights evolve in an activity-dependent manner.
+% In doing so, we imbue the weights with a biophysical interpretation 
+% that we explicitly avoided in previous chapters. We discuss when this
+% interpretive leap is warranted. 
 
+% To fit this model, we develop an algorithm that uses particle MCMC
+% \cite{Andrieu-2010} to fit the synaptic weight trajectories alongside
+% the parameters of the GLM and of the learning rules. Using this
+% method, we perform model comparison of two proposed variants of the
+% well-known spike-timing-dependent plasticity (STDP) rule, where
+% nonlinear effects play a substantial role. On synthetic data generated
+% from the biophysical simulator NEURON, we show that we can recover the
+% weight trajectories, the pattern of connectivity, and the underlying
+% learning rules.
 
-\section{Introduction}
+%\section{Introduction}
 Synaptic plasticity is believed to be the fundamental building block
 of learning and memory in the brain. Its study is of crucial
 importance to understanding the activity and function of neural
@@ -41,47 +49,57 @@ at the monosynaptic and network level, investigate the effects of
 disease on synaptic plasticity, and potentially design stimuli to
 modify neural networks.
 
-Despite the popularity of GLMs for spike data, relatively little work
-has attempted to model the time-varying nature of neural interactions.
-Here we model interaction weights as a dynamical system governed by
-parametric synaptic plasticity rules. To perform inference in this
-model, we use particle Markov Chain Monte Carlo (pMCMC)
-\cite{Andrieu-2010}, a recently developed inference technique for
-complex time series.  We use this new modeling framework to examine
-the problem of using recorded data to distinguish between proposed
-variants of spike-timing-dependent plasticity (STDP) learning rules.
+Despite the popularity of autoregressive models for spike data, like 
+the GLM~\cite{Paninski-2004, Truccolo-2005, Pillow-2008},
+relatively little work has attempted to model the time-varying nature
+of neural interactions.  Here we model interaction weights as a
+dynamical system governed by parametric synaptic plasticity rules. 
+% We treat synaptic weights as a (potentially
+% nonlinear) dynamical system embedded in a nonlinear autoregressive model
+% of neural activity. 
+Building on the work of preceding chapters, 
+we we show how synaptic plasticity rules can be modeled as dynamics 
+rules that govern how weights evolve in an activity-dependent manner.
+In doing so, we imbue the weights with a biophysical interpretation 
+that we explicitly avoided in previous chapters. We discuss when this
+interpretive leap is warranted. 
 
-\section{Related Work}
-The GLM is a probabilistic model that considers spike trains to be
-realizations from a point process with conditional rate~$\lambda(t)$
-\cite{Paninski-2004, Truccolo-2005}. From a biophysical perspective,
-we interpret this rate as a nonlinear function of the cell's membrane
-potential. When the membrane potential exceeds the spiking threshold
-potential of the cell,~$\lambda(t)$ rises to reflect the rate of the
+To perform inference in this model, we use particle Markov Chain Monte
+Carlo (pMCMC) \cite{Andrieu-2010}, a recently developed inference
+technique for complex time series.  We use this new modeling framework
+to examine the problem of using recorded data to distinguish between
+proposed variants of spike-timing-dependent plasticity (STDP) learning
+rules. On synthetic data generated from the biophy sical simulator
+NEURON, we show that we can recover the weight trajectories, the
+pattern of connectivity, and the underlying learning rules.
+
+\section{A Biophysical Interpretation of the GLM}
+The nonlinear autoregressive models of the previous chapter 
+treat the spike count,~$s_{t,n}$, as a random variable whose 
+distribution depends on a non-negative firing rate,~$\lambda_{t,n}$.
+The firing rate is modeled as a nonlinear function of an activation,~$\psi_{t,n}$,
+which is taken to be a linear function of the spike history.
+This linear-nonlinear cascade is often called a generalized linear model 
+\cite{Paninski-2004, Truccolo-2005}.
+
+From a biophysical perspective, the activation can be thought of as 
+analogous to the cell's membrane potential. The nonlinearity that 
+links the activation to the firing rate approximates the spiking 
+threshold of the neuron.
+ When the membrane potential exceeds the spiking threshold
+potential of the cell,~$\lambda_{t,n}$ rises to reflect the rate of the
 cell's spiking, and when the membrane potential decreases below the
-spiking threshold,~$\lambda(t)$ decays to zero. The membrane potential
-is modeled as the sum of three terms: a linear function of the
-stimulus,~${\bI(t)}$, for example a low-pass filtered input current,
-the sum of excitatory and inhibitory PSPs induced by presynaptic
-neurons, and a constant background rate. In a network of $N$ neurons,
-let~${\mathcal{S}_{n}=\{s_{n,m}\}_{m=1}^{M_n} \subset [0,T]}$ be the
-set of observed spike times for neuron~$n$, where~$T$ is the duration
-of the recording and~$M_n$ is the number of spikes. The conditional
-firing rate of a neuron~$n$ can be written,
+spiking threshold,~$\lambda(t)$ decays to zero. 
+
+As before, we model the activation, or membrane potential,
+ as a linear function of the spike history,
 \begin{align}
-  \lambda_{n}(t) &= g\left(b_n + \int_0^t \bk_n(t-\tau) \cdot \bI(\tau)\,\mathrm{d} \tau + \sum_{n'=1}^N\sum_{m=1}^{M_{n'}} h_{n'\to n}(t-s_{n',m}) \cdot \bbI[s_{n',m} < t] \right),
   \label{eqn:glm_rate}
+  \psi_{t,n} &= \psi_n^{(0)} + \sum_{n=1}^N \sum_{d=1}^D h_{n' \to n}[d] \cdot s_{t-d, n'}.
 \end{align}
-where~$b_n$ is the background rate, the second term is a convolution
-of the (potentially vector-valued) stimulus with a linear stimulus
-filter,~${\bk_n(\Delta t)}$, and the third is a linear summation of
-impulse responses,~$h_{n'\to n}(\Delta t)$, which preceding spikes on
-neuron~$n'$ induce on the membrane potential of neuron~$n$. Finally,
-the rectifying nonlinearity~${g:\reals\to \reals_+}$ converts this
-linear function of stimulus and spike history into a nonnegative
-rate. While the spiking threshold potential is not explicitly modeled
-in this framework, it is implicitly inferred in the amplitude of the
-impulse responses.
+where~$\psi_n^{(0)}$ is the baseline activation,  and~$h_{n'\to n}[d]$
+is an impulse response that preceding spikes on
+neuron~$n'$ induce on the membrane potential of neuron~$n$ at lag~$d$. 
 
 \begin{figure}[t!]
   \centering
@@ -144,47 +162,48 @@ effectively performing inference in these models have been limited.
 \section{A Sparse Time-Varying Generalized Linear Model}
 In order to capture the time-varying nature of synaptic weights, we
 extend the standard GLM by first factoring the impulse responses in
-the firing rate of Equation~\ref{eqn:glm_rate} into a product of three
+the firing rate of Eq.~\ref{eqn:glm_rate} into a product of three
 terms:
 \begin{align}
 \label{eqn:tvwglm_ir}
-h_{n' \to n}(\Delta t, t) \equiv A_{n'\to n}\,W_{n' \to n}(t)\,r_{n' \to n}(\Delta t).
-\end{align}%\todo{weird notation to have both $\Delta t$ and $t$.  why not just parameterize with $t$ and $t'$?}
-Here,~${A_{n'\to n}\in\{0,1\}}$ is a binary random variable indicating
+h_{n' \to n}[d, t] \triangleq a_{n'\to n} \cdot w_{n' \to n}[t] \cdot \hbar_{n' \to n}[d].
+\end{align}
+Here,~${a_{n'\to n}\in\{0,1\}}$ is a binary random variable indicating
 the presence of a direct synapse from neuron~$n'$ to
-neuron~$n$,~~${W_{n'\to n}(t): [0,T]\to \reals}$ is a non stationary
-synaptic ``weight'' trajectory associated with the synapse, and~$r_{n'
-  \to n}(\Delta t)$ is a nonnegative, normalized impulse response,
-i.e. ~${\int_0^\infty r_{n' \to n}(\tau)\mathrm{d}\tau =
-  1}$. Requiring~${r_{n' \to n}(\Delta t)}$ to be normalized gives
-meaning to the synaptic weights: otherwise~$W$ would only be defined
-up to a scaling factor. For simplicity, we assume~$r(\Delta t)$ does
+neuron~$n$,~~${w_{n'\to n}[t] \in \reals}$ is a non stationary
+synaptic ``weight'' trajectory associated with the synapse, and~$\hbar_{n'
+  \to n}[d]$ is a nonnegative, normalized impulse response,
+i.e. ~${\sum_{d=1}^D \hbar_{n' \to n}[d] \cdot \Delta t =
+  1}$. Requiring~${\hbar_{n' \to n}[d]}$ to be normalized gives
+meaning to the synaptic weights: otherwise~$w$ would only be defined
+up to a scaling factor. For simplicity, we assume~$\hbar[d]$ does
 not change over time, that is, only the amplitude and not the duration
 of the PSPs are time-varying. This restriction could be adapted in
 future work.
 
 As is often done in GLMs, we model the normalized impulse responses as
 a linear combination of basis functions. In order to enforce the
-normalization of~$r(\cdot)$, however, we use a \emph{convex}
+normalization of~$\hbar[d]$, however, we use a \emph{convex}
 combination of normalized, nonnegative basis functions. That is,
 \begin{align*}
-r_{n' \to n}(\Delta t) \equiv \sum_{b=1}^B \beta^{(n' \to n)}_{b}\, r_b(\Delta t),
+\hbar_{n' \to n}[d] \equiv \sum_{b=1}^B \theta_{n' \to n}^{(b)}\, \phi_b[d],
 \end{align*}
-where~${\int_0^\infty r_b(\tau)\,\mathrm{d} \tau = 1,\,\forall b}$ and ${\sum_{b=1}^B \beta^{(n' \to n)}_{b} = 1,\,\forall n,n'}$. The same approach is used to model the stimulus filters,~$\bk_n(\Delta t)$, but without the normalization and non-negativity constraints.
+where~${\sum_{d=1}^D \phi_b[d] \cdot \Delta t = 1}$ and
+${\sum_{b=1}^B \theta_{n' \to n}^{(b)} = 1}$. 
 
-The binary random variables~$A_{n' \to n}$, which can be collected
+The binary random variables~$a_{n' \to n}$, which can be collected
 into an~${N\times N}$ binary matrix~$\bA$, model the connectivity of
 the synaptic network. Similarly, the collection of weight
-trajectories~${\{\{W_{n' \to n}(t)\}\}_{n',n}}$, which we will
-collectively refer to as~$\bW(t)$, model the time-varying synaptic
+trajectories~${\{\{w_{n' \to n}[t]\}\}_{n',n}}$, which we will
+collectively refer to as~$\bW[t]$, model the time-varying synaptic
 weights. This factorization is often called a \emph{spike-and-slab}
 prior \cite{Mitchell1988}, and it allows us to separate our prior
 beliefs about the structure of the synaptic network from those about
 the evolution of synaptic weights. For example, in the most general
-case we might leverage a variety of random network models
-\cite{Lloyd-2012} as prior distributions for~$\bA$, but here we limit
+case we might incorporate the probabilistic network models of previous chapters
+ as prior distributions for~$\bA$, but here we limit
 ourselves to the simplest network model, the Erd\H{o}s-Renyi
-model. Under this model, each~$A_{n' \to n}$ is an independent
+model. Under this model, each~$a_{n' \to n}$ is an independent
 identically distributed Bernoulli random variable with sparsity
 parameter~$\rho$.
 
@@ -199,33 +218,34 @@ figure. In order to model the dynamics of the time-varying synaptic
 weights, we turn to a rich literature on synaptic plasticity and
 learning rules.
 
-\subsection{Learning rules for time-varying synaptic weights}
+\subsection{Learning Rules for Time-Varying Synaptic Weights}
 Decades of research on synapses and learning rules have yielded a
 plethora of models for the evolution of synaptic weights
 \cite{Caporale-2008}. In most cases, this evolution can be written as
 a dynamical system,
-\begin{align*} \frac{\mathrm{d} \bW(t)}{\mathrm{d} t} &= \ell\left(\bW(t), \, \{s_{n,m} : s_{n,m} < t\} \,\right) + \epsilon(\bW(t), t),
+\begin{align*} 
+\bW[t] &= \bW[t-1] + \ell\left(\bW[t-1], \, \mcH_t, \bvartheta \right) + \epsilon(\bW[t], \bvartheta)
 \end{align*}
 where~$\ell$ is a potentially nonlinear \emph{learning rule} that
 determines how synaptic weights change as a function of previous
 spiking. This framework encompasses rate-based rules such as the Oja
 rule \cite{Oja-1982} and timing-based rules such as STDP and its
-variants. The additive noise,~${\epsilon(\bW(t), t)}$, need not be
+variants. The additive noise,~${\epsilon(\bW(t), \bvartheta)}$, need not be
 Gaussian, and many models require truncated noise distributions.
 
 Following biological intuition, many common learning rules factor into
 a product of simpler functions. For example, STDP (defined below)
-updates each synapse independently such that~${\mathrm{d}W_{n' \to
-    n}(t)/\mathrm{d}t}$ only depends on~${W_{n'\to n}(t)}$ and the
-presynaptic spike history~${\mathcal{S}_{n<t}=\{s_{n,m} : s_{n,m} <
-  t\}}$. Biologically speaking, this means that plasticity is local to
-the synapse. More sophisticated rules allow dependencies among the
-columns of~$\bW$. For example, the incoming weights to neuron~$n$ may
-depend upon one another through normalization, as in the Oja rule
-\cite{Oja-1982}, which scales synapse strength according to the total
-strength of incoming synapses.
-%Our model can capture all of these rules, leveraging various conditional independence structures as in the the directed graphical model shown in Figure~\ref{fig:graphical_model}.
+updates each synapse independently such that the learning rule for 
+~$w_{n' \to n}$ only
+depends on~${w_{n'\to n}[t-1]}$ and the presynaptic spike
+history~${\bs_{1:t-1,n}}$. Biologically speaking, this means that
+plasticity is local to the synapse. More sophisticated rules allow
+dependencies among the columns of~$\bW$. For example, the incoming
+weights to neuron~$n$ may depend upon one another through
+normalization, as in the Oja rule \cite{Oja-1982}, which scales
+synapse strength according to the total strength of incoming synapses.
 
+\sloppy 
 Extensive research in the last fifteen years has identified the
 relative spike timing between the pre- and postsynaptic neurons as a
 key component of synaptic plasticity, among other factors such as mean
@@ -235,18 +255,19 @@ today, with a number of proposed variants based on cell type and
 biological plausibility. In the experiments to follow, we will make
 use of two of these proposed variants. First, consider the canonical
 STDP rule with a ``double-exponential" function parameterized by
-$\tau_-$, $\tau_+$, $A_-$, and $A_+$ \cite{Song-2000}, in which the
+${\bvartheta = \{\tau_-, \tau_+, A_-, A_+\}}$ \cite{Song-2000}, in which the
 effect of a given pair of pre-synaptic and post-synaptic spikes on a
 weight may be written:
 \begin{align}
 \label{eqn:AddSTDP}
- \ell\left(W_{n' \to n}(t), \mathcal{S}_{n'}, \mathcal{S}_{n} \right) &= 
- \;\bbI[t \in \mathcal{S}_{n}]\, \ell_+(\mathcal{S}_{n'}; A_+, \tau_+) 
- \;-\;\bbI[t \in \mathcal{S}_{n'}]\, \ell_-(\mathcal{S}_{n}; A_-, \tau_-),
+ \ell\left(w_{n' \to n}[t], \mcH_t, \bvartheta \right) &= 
+ \;s_{t,n} \, \ell_+(\mcH_t, A_+, \tau_+) 
+ \;-\;s_{t,n'} \, \ell_-(\mcH_t, A_-, \tau_-),
 \end{align}
+where,
 \begin{align*}
-\ell_+(\mathcal{S}_{n'}; A_+, \tau_+) &= \sum_{s_{n',m}\in \mathcal{S}_{n'<t}}  A_+\,e^{(t-s_{n',m})/ \tau_+} &
-\ell_-(\mathcal{S}_{n}; A_-, \tau_-) &= \sum_{s_{n,m}\in \mathcal{S}_{n<t}} A_-\,e^{(t-s_{n,m})/\tau_-}.
+\ell_+(\mcH_t; A_+, \tau_+) &= \sum_{t'=1}^{t-1} s_{t', n'} \cdot  A_+ \cdot e^{(t-t')/\tau_+}, \\
+\ell_-(\mcH_t; A_-, \tau_-) &= \sum_{t'=1}^{t-1} s_{t', n} \cdot  A_- \cdot e^{(t-t')/\tau_-}.
 \end{align*}
 This rule states that weight changes only occur at the time of pre- or
 post-synaptic spikes, and that the magnitude of the change is a
@@ -263,17 +284,16 @@ rule extends this by bounding the weights above and below
 by~$W_{\mathsf{max}}$ and~$W_{\mathsf{min}}$, respectively
 \cite{Morrison-2008}. Then, the magnitude of the weight update is
 scaled by the distance from the threshold:
-% Mathematically this rule may be written,
 \begin{align}
  \label{eqn:MultSTDP}
- \ell\left(W_{n' \to n}(t), \mathcal{S}_{n'}, \mathcal{S}_{n} \right) = 
- \;&\bbI[t \in \mathcal{S}_{n}]\;  \tilde\ell_+(\mathcal{S}_{n'}; A_+, \tau_+) \;(W_{\mathsf{max}}-W_{n'\to n}(t)), \nonumber \\
-  \;-\; &\bbI[t \in \mathcal{S}_{n'}]\;  \tilde\ell_-(\mathcal{S}_{n}; A_-, \tau_-)\;(W_{n'\to n}(t)-W_{\mathsf{min}}).
+ \ell\left(w_{n' \to n}[t], \mcH_t, \bvartheta \right) = 
+ \;& s_{t,n} \;  \tilde\ell_+(\mcH_t; A_+, \tau_+) \; (W_{\mathsf{max}}-w_{n'\to n}[t]), \nonumber \\
+  \;-\; &s_{t,n'}\;  \tilde\ell_-(\mcH_t; A_-, \tau_-) \; (w_{n'\to n}[t]-W_{\mathsf{min}}).
 \end{align}
 Here, by setting ${\tilde\ell_\pm = \min(\ell_\pm,1)}$, we enforce
-that the synaptic weights always fall within~${[W_{\mathsf{min}},
-    W_{\mathsf{max}}]}$. With this rule, it often makes sense to set
-$W_{\mathsf{min}}$ to zero.
+that the synaptic weights always fall
+within~${[W_{\mathsf{min}}, W_{\mathsf{max}}]}$. With this rule, it
+often makes sense to set $W_{\mathsf{min}}$ to zero.
 
 Similarly, we can construct an additive, bounded model which is
 identical to the standard additive STDP model except that weights are
@@ -285,10 +305,10 @@ the canonical STDP model it is sensible to use Gaussian noise
 for~$\epsilon(t)$ in the bounded multiplicative model we use truncated
 Gaussian noise to respect the hard upper and lower bounds on the
 weights.  Note that this noise is dependent upon the current
-weight,~$W_{n'\to n}(t)$.
+weight,~$w_{n'\to n}[t]$.
 
 The nonlinear nature of this rule, which arises from the
-multiplicative interactions among the parameters,~${\theta_\ell =
+multiplicative interactions among the parameters,~${\bvartheta =
   \{A_+,\tau_+,A_-,\tau_-,W_{\mathsf{max}}, W_{\mathsf{max}}\}}$,
 combined with the potentially non-Gaussian noise models, pose
 substantial challenges for inference. However, the computational cost
@@ -303,82 +323,158 @@ expressive models of synaptic plasticity.
 
 \section{Inference via particle MCMC}
 The traditional approach to inference in the standard GLM is penalized
-maximum likelihood estimation. The log likelihood of a single
-conditional Poisson process is well known to be,
+maximum likelihood estimation. For a typical model with Poisson observations 
+and an link function,~${g: \reals \to \reals_+}$, the 
+log likelihood is,
 \begin{align}
 \label{eqn:glm_lkhd}
-\mathcal{L}\left(\lambda_n(t);\;\{\mathcal{S}_n\}_{n=1}^N, \bI(t)\right)
-&= -\int_0^T \lambda_n(t)\,\mathrm{d} t + \sum_{m=1}^{M_n} \log\left(\lambda_n(s_{n,m})\right),
+\log p(\bS \given \bLambda) 
+  &= 
+    \sum_{n=1}^N \sum_{t=1}^T  -\lambda_{t,n} \, \Delta t
+    + s_{t,n} \, \log \lambda_{t,n}  \\
+  &= \sum_{n=1}^N \sum_{t=1}^T  -g(\psi_{t,n}) \, \Delta t
+    + s_{t,n} \, \log g(\psi_{t,n}) 
 \end{align}
 and the log likelihood of a population of non-interacting spike trains
 is simply the sum of each of the log likelihoods for each neuron. The
-likelihood depends upon the
-parameters~${\theta_{\mathsf{GLM}}=\{b_n,\bk_n, \{h_{n'\to n}(\Delta
-  t)\}_{n'=1}^N\}}$ through the definition of the rate function given
-in Equation~\ref{eqn:glm_rate}. For some link functions~$g$, the log
-likelihood is a concave function of~$\theta_{\mathsf{GLM}}$, and the
-MLE can be found using efficient optimization techniques. Certain
-dynamical models, namely linear Gaussian latent state space models,
-also support efficient inference via point process filtering
-techniques \cite{Smith-2003}.
+likelihood depends upon the network 
+through the definition of the activation given
+in Eq.~\ref{eqn:glm_rate} and Eq.~\ref{eqn:tvwglm_ir}. 
+% For some link functions~$g$, the log
+% likelihood is a concave function of , and the
+% MLE can be found using efficient optimization techniques. Certain
+% dynamical models, namely linear Gaussian latent state space models,
+% also support efficient inference via point process filtering
+% techniques \cite{Smith-2003}.
 
 Due to the potentially nonlinear and non-Gaussian nature of STDP,
 these existing techniques are not applicable here. Instead we use
 particle MCMC~\cite{Andrieu-2010}, a powerful technique for inference
 in time series. Particle MCMC samples the posterior distribution over
-weight trajectories,~$\bW(t)$, the adjacency matrix~$\bA$, and the
-model parameters~$\theta_{\mathsf{GLM}}$ and~$\theta_\ell$, given the
+weight trajectories,~$\bW[t]$, the adjacency matrix~$\bA$, and the
+model parameters~$\btheta^{(n \to n')}$ and~$\bvartheta$, given the
 observed spike trains, by combining particle filtering with MCMC.  We
 represent the conditional distribution over weight trajectories with a
-set of discrete particles.  Let the instantaneous weights at
-(discretized) time~$t$ be represented by a set of~$P$
-particles,~${\{\bW_{t}^{(p)}\}_{p=1}^P}$. The particles live
-in~$\reals^{N \times N}$ and are assigned normalized \emph{particle
-  weights}\footnote{Note that the particle weights are \emph{not} the
-  same as the synaptic weights.},~$\omega_p$, which approximate the
-true distribution via~${\Pr(\bW_{t}) \approx \sum_{p=1}^P \omega_p \,
-  \delta_{\bW_{t}^{(p)}} (\bW_{t})}$.  Particle filtering is a method
-of inferring a distribution over weight trajectories
-% i.e., tuples~${(\bW_0,\ldots,\bW_{T})}$
-by iteratively propagating forward in time and reweighting according
-to how well the new samples explain the data.  For each
-particle~${\bW_{t}^{(p)}}$ at time~$t$, we propagate forward one time
-step using the learning rule to obtain a particle~${\bW_{t+1}^{(p)}}$.
-Then, using Equation~\ref{eqn:glm_lkhd}, we evaluate the log
-likelihood of the spikes that occurred in the window~${[t,t+1)}$ and
-  update the weights.
-%obtain unnormalized weights,~${\log(\hat{\omega}^{(p)}_t)}$, which are then exponentiated and normalized to update~${\omega_p}$.
-Since some of these particles may have very low weights, after each
-step we resample the particles. After the~$T$-th time step we are left
-with a set of weight trajectories
-~${\{(\bW_0^{(p)},\ldots,\bW_{T}^{(p)})\}_{p=1}^P}$, each associated
-with a particle weight~$\omega_p$.
+set of discrete particles,~${\{\bW^{(p)}\}_{p=1}^P}$. Each particle
+represents a sequence of weight
+matrices,~$\bW^{(p)} \in \reals^{N \times N \times T}$, and has an
+associated nonnegative \emph{particle weight}~$v^{(p)}$. Note that the particle
+weights are \emph{not} the same as the synaptic weights. Together,
+these define an atomic distribution over weight trajectories,
+\begin{align}
+p(\bW) &\approx \frac{\sum_{p=1}^P v_p \, \delta_{\bW^{(p)}} (\bW)}
+         {\sum_{p=1}^P v_p},
+\end{align}
+where~$\delta_{w*}(w)$ is the Dirac delta function located at~$w^*$.
 
-%Then we update the particle weight,~$\omega_p$, according to how
-%well~${\bW_{t+1}^{(p)}}$ explains the spiking in that time interval,
-%as measured by the likelihood given by
-%Equation~\ref{eqn:glm_lkhd}. Since some of these particles may have
-%very low likelihood, after each step we resample (with replacement)
-%the particles according to their particle weights, and reset their
-%weights to~${\omega_p=1/P}$. After the~$T$-th time step we are left
-%with a set of weight trajectories
-%~${\{(\bW_0^{(p)},\ldots,\bW_{T}^{(p)})\}_{p=1}^P}$, each associated
-%with a particle weight~$\omega_p$. Rather than resampling, we return
-%the particles and their weights, which together specify a
-%distribution over weight trajectories.
+\subsection{Particle Filtering}
+Particle filtering \cite{andrieu2003introduction} or \emph{sequential
+  Monte Carlo} is a method of inferring a distribution over weight
+trajectories by iteratively propagating forward in time and
+reweighting according to how well the new samples explain the data.
+We build up the collection of weight trajectories iteratively, one
+time bin at a time. We start by sampling the initial synaptic weights
+from the prior distribution,
+\begin{align*}
+  \bW^{(p)}[1] &\sim p(\bW \given \bvartheta),
+\end{align*}
+and initializing the particle weights to~${v_1^{(p)} = \frac{1}{P}}$.
+Then, we iteratively proceed, updating the synaptic weights according to the 
+learning rule and updating the particle weights according to the likelihood 
+of the spikes. That is, for~${t=2, \ldots, T}$, we perform the following steps:
+\begin{enumerate}
+\item Sample the next synaptic weight given the weight in the
+  preceding time bin, the learning rule, the spike history, and the
+  global parameters,
+  \begin{align*}
+    \bW^{(p)}[t] &\sim p(\bW[t] \given \bW^{(p)}[t-1], \mcH_t, \bvartheta).
+  \end{align*}
 
+\item Compute the likelhood of the current spikes,
+  \begin{align*}
+    \alpha_t^{(p)} &= p(\bs_t \given \bA, \bW^{(p)}[t], \{\btheta_{n \to n'}\}, \{\psi_n^{(0)}\}, \mcH_t )
+  \end{align*}
+\item Update the particle weight according to the likelhood of the current spikes,
+  \begin{align*}
+    v_t^{(p)} &\from v_{t-1}^{(p)} \cdot \alpha_t^{(p)}.
+  \end{align*}
+\end{enumerate}
+This is, in fact, a special case of \emph{sequential importance sampling} where
+our synaptic weights are sampled from the model's learning rule.
+
+The problem with this simple algorithm is that the weights will rapidly 
+decay to zero as particles drift from the regions of high likelihood. 
+To counteract this effect, we often introduce a third step in which we 
+\emph{resample} the particles with replacement according to their weights. 
+\begin{enumerate}
+\item[4.] Sample new particle indices with replacement according to the current weights, 
+  \begin{align*}
+    p' &\sim \distCategorical \left(
+         \left[ \frac{v^{(1)}}{\sum_{p} v^{(p)}}, \ldots,
+         \frac{v^{(P)}}{\sum_{p} v^{(p)}} \right] \right),
+  \end{align*}
+  and then replace the weights with the particle indices,
+  \begin{align*}
+    \bW^{(p)}[1,\ldots,t] &\from \bW^{(p')}[1,\ldots,t].
+  \end{align*}
+
+\item[5.]   Once we have resampled the particle indices, we can reset the weights.
+  \begin{align*}
+    v_t^{(p)} &\from \frac{1}{P}.
+  \end{align*}
+\end{enumerate}
+This is called \emph{sequential importance resampling}. At the end of~$T$
+time steps we are left with a weighted set of synaptic weight trajectories
+that approximates the conditional distribution over synaptic weights 
+for given global model parameters.
+
+\subsection{Collapsed Gibbs Sampling of $\bA$ and $\bW[t]$}
+The particle weights also provide an unbiased estimate of the marginal
+likelihood of entries in the adjacency matrix,~$\bA$, integrating out
+the corresponding weight trajectory. We have,
+\begin{align*}
+p(\bA \given & \bS, \{\btheta_{n \to n'}\}, \{\psi_n^{(0)}\}) \\
+&\propto  \sum_{t=1}^{T} \int  p( \bA, \bW[t] \given \bS, \{\btheta_{n \to n'}\}, \{\psi_n^{(0)}\}) \, \mathrm{d}\bW[t] \\
+&\approx \left[\prod_{t=1}^T \sum_{p=1}^P v_t^{(p)} \alpha_t^{(p)} \right] p(\bA \given \{\bz_n\}, \bvartheta).
+\end{align*}
+We can leverage this estimator in a particle marginal Metropolis-Hastings
+\cite{Andrieu-2010} update. First, we propose an update to~$\bA$, then
+we run a particle filter to estimate the marginal likelihood of~$\bA$, 
+and accept or reject the proposal accordingly.
+By marginalizing out the weight trajectory, we
+are able to explore the space of adjacency matrices more efficiently.
+
+\paragraph{Factored Learning Rules}
+If the learning rule factors into
+independent updates for each~$W_{n' \to n}[t]$, we can update
+each synapse's weight trajectory separately and reduce the particles
+to one-dimensional trajectories. The STDP learning rules considered 
+in this chapter all factor in this way. 
+
+
+\subsection{Particle MCMC}
 Particle filtering only yields a distribution over weight
 trajectories, and implicitly assumes that the other parameters have
 been specified. Particle MCMC provides a broader inference algorithm
-for both weights and other parameters. The idea is to interleave
+for both weights and static parameters. The idea is to interleave
 \emph{conditional} particle filtering steps that sample the weight
 trajectory given the current model parameters and the previously
 sampled weights, with traditional Gibbs updates to sample the model
 parameters given the current weight trajectory. This combination
 leaves the stationary distribution of the Markov chain invariant and
-allows joint inference over weights and parameters.  Gibbs updates for
-the remaining model parameters, including those of the learning rule,
-are described in the supplementary material.
+allows joint inference over weights and parameters.  
+
+In our implementation, we also make use of
+a pMCMC variant with ancestor sampling~\cite{Lindsten-2012} that
+significantly improves convergence. Any distribution may be used to
+propagate the particles forward; using the learning rule is simply the
+easiest to implement and understand.  We have omitted a number of
+details in this description; for a thorough overview of particle MCMC,
+the reader should consult \cite{Andrieu-2010, Lindsten-2012}.
+
+
+
+\section{Evaluation}
 
 \begin{figure}[t!]
   \centering
@@ -442,42 +538,8 @@ are described in the supplementary material.
     cases, the correct models yield the highest predictive log
     likelihood on the final 10 seconds of the dataset.}
   \label{fig:glm_pairs_inference}
-  \vspace{-2em}
 \end{figure}
 
-
-\paragraph{Collapsed sampling of $\bA$ and $\bW(t)$}
-In addition to sampling of weight trajectories and model parameters,
-particle MCMC approximates the marginal likelihood of entries in the
-adjacency matrix,~$\bA$, integrating out the corresponding weight
-trajectory. We have, up to a constant,
-\begin{align*}
-\Pr(A_{n'\to n} \given &S, \theta_\ell, \theta_{\mathsf{GLM}}, \bA_{\neg n' \to n}, \bW_{\neg n' \to n}(t)) \\
-&= \int_{0}^{T} \int_{-\infty}^{\infty} p( A_{n'\to n}, W_{n' \to n}(t) \given S, \theta_\ell, \theta_{\mathsf{GLM}}, \bA_{\neg n' \to n}, \bW_{\neg n' \to n}(t))\, \mathrm{d}W_{n' \to n}(t)\, \mathrm{d}t\\
-&\approx \left[\prod_{t=1}^T \frac{1}{P} \sum_{p=1}^P  \hat{\omega}^{(p)}_t \right] \Pr(A_{n'\to n}),
-\end{align*}
-where~${\neg n'\to n}$ indicates all entries except for~${n' \to n}$,
-and the particle weights are obtained by running a particle filter for
-each assignment of~$A_{n' \to n}$.  This allows us to jointly
-sample~$A_{n \to n'}$ and~${W_{n \to n'}(t)}$ by first sampling~${A_{n
-    \to n'}}$ and then~${W_{n \to n'}(t)}$ given~${A_{n \to n'}}$. By
-marginalizing out the weight trajectory, our algorithm is able to
-explore the space of adjacency matrices more efficiently.
-
-We capitalize on a number of other opportunities for computational
-efficiency as well. For example, if the learning rule factors into
-independent updates for each~$W_{n' \to n}(t)$, then we can update
-each synapse's weight trajectory separately and reduce the particles
-to one-dimensional objects. In our implementation, we also make use of
-a pMCMC variant with ancestor sampling~\cite{Lindsten-2012} that
-significantly improves convergence. Any distribution may be used to
-propagate the particles forward; using the learning rule is simply the
-easiest to implement and understand.  We have omitted a number of
-details in this description; for a thorough overview of particle MCMC,
-the reader should consult \cite{Andrieu-2010, Lindsten-2012}.
-
-
-\section{Evaluation}
 We evaluated our technique with two types of synthetic data. First, we
 generated data from our model, with known ground-truth. Second, we
 used the well-known simulator NEURON to simulate driven,
