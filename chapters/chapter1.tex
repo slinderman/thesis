@@ -15,38 +15,165 @@
 % instantiate and fit. In doing so, we continue to close the gap between our theory 
 % of neural computation and our methods of analysis.
 
-Neuroscience is undergoing a technological revolution. Where
-traditional methods were limited to either direct measurements of a
-handful of neurons or gross measurements of
-%average activity in
-entire brain volumes, modern calcium imaging techniques and
-microelectrode arrays enable precise measurements of thousands of
-neurons at a time. For some organisms, we can now monitor the activity
+Neuroscience is undergoing a technological revolution.
+Whereas traditional single and multi-electrode recordings
+poked around in the dark, touching on handfuls of neurons
+at a time, modern optical methods illuminate hundreds to
+thousands of neurons at a time.
+Gross EEG and fMRI recordings are giving way to precise,
+high-dimensional measurements from silicon probes.
+%Where traditional methods were limited to either direct measurements of a
+%handful of neurons or gross measurements of
+%entire brain volumes, modern calcium imaging techniques and
+%microelectrode arrays enable precise measurements of thousands of
+%neurons at a time.
+For some organisms, we can now monitor the activity
 of every single neuron in the brain.
-At the same time, advances in connectomics --- the
+Complementing these recording capabilities, recent advances in connectomics --- the
 mapping of synaptic connectivity --- are providing a
 more complete atlas of the wiring diagram that underlies neural
 activity.  Likewise, sophisticated tracking and processing algorithms
 are providing rich descriptions of the overt, natural behavior that
 this activity gives rise to.  These unprecedented technological
 capabilities are leading to a fundamental paradigm shift.
+
 % Paradigm shift -> data-driven science
 % new datasets contain patterns that can expose where existing theories fall short
 % new data contains patterns that can suggest new hypotheses, model additions
-Questions that were once intractable due to impoverished data,
-questions about the structure and dynamics of neural computation,
-can now be tackled with large-scale recordings.
-%Questions about the structure and dynamics of neural computation, once
-%intractable due to impoverished data, can now be tackled.
-What we lack are complementary computational and statistical tools to
-discover this hidden structure in neural data.  This thesis develops a
-set of modeling tools and inference algorithms to address this
-pressing need.
+The scientific process of proposing hypotheses, testing them with
+data, and revising them accordingly, is becoming increasingly
+data-driven.  Rather than collecting data to test a specific
+hypothesis, we can now collect large-scale recordings in relatively
+unstructured experimental setups (e.g. from freely behaving animals)
+and use statistical structure in the data to guide us toward novel
+hypotheses. Of course, there is no ``free lunch'' --- we must still
+specify what types of structure to look for, and in doing so we are
+implicitly expressing a hypothesis, albeit a more general one. For
+example, when we cluster neuronal data we are implicitly hypothesizing
+that there are different types of neurons, and when we apply principal
+components analysis to neural population recordings we are implicitly
+assuming that neural activity reflects a low-dimensional latent state.
 
-\section{Types, Features, and Representations}
+This thesis builds a sequence of modeling and inference tools for
+analyzing \emph{neural spike trains}, which are sequences of discrete
+events in time. We use probabilistic models to compose flexible hypotheses
+that allow us to \emph{discover structure} in the dynamics of spike trains.
+The workhorse of this process is a set of \emph{Bayesian methods},
+statistical inference algorithms that take in a neural recording and
+output a distribution over parameters and variables of our model.
+We begin by describing each of these these in turn.
 
 
-\section{Networks as a Bridge between Structure and Dynamics}
+% What is a neural spike train?
+\section{Neurons, Spikes, and Computation}
+The human brain is a bundle of densely packed cells that feels
+somewhat like a three pound ball of tofu. Amazingly, from this mass of
+cells our conscious thoughts, emotions, and intelligence arise.  About
+half of the roughly 170 billion cells in our brain are neurons, the
+fundamental units of computation.  Neurons are electrically excitable
+cells that contain an ionic soup of charged atoms like sodium,
+potassium, and calcium, which together maintain a voltage drop across
+the cell membrane. When the membrane potential is excited above a
+certain threshold, a cascade of ion channels opens and closes, causing
+the membrane potential to undergo a characteristic action potential,
+or ``spike.''
+
+% Spike hypothesis: at the heart of this computation is the action potential,
+% or ``spike.'' These spikes are
+The first challenge of deciphering neural computation is understanding
+how information is encoded in patterns of coordinated spiking activity
+across neural populations. To first approximation, spikes are
+fundamentally discrete events in time.  That is, in a short enough
+window of time, a neuron either does or does not fire an action
+potential.  Much progress has been made in understanding how sensory
+neurons digitize continuous signals, and how the activity of motor
+neurons innervates muscles and drives behavior, but how internal
+states, plans, goals, decisions, and thoughts are encoded remains
+largely a mystery.
+
+
+The second challenge is understanding how this information is
+transformed over time. The neurons in our brain are connected by
+about~$10^{14}$ synapses. When a pre-synaptic neuron fires an action
+potential, neurotransmitters are released that then bind with
+receptors on the post-synaptic neuron, causing its ion channels to
+open, and current to flow into or out of the post-synaptic cell. These
+currents induce brief changes in the membrane potential of the
+downstream cell called post-synaptic potentials (PSP's). Depending on
+the direction of current, the PSP will be either excitatory, making
+the downstream neuron more likely to spike, or inhibitory, suppressing
+post-synaptic spiking.
+
+% The dynamics of neural activity, which arise from a network of synaptic
+% connections, are the basis of computation: the transformation of inputs
+% to outputs. These dynamics enable the state of the brain to change
+% as sensory inputs are processed, thoughts are pondered, and decisions
+% are made. The challenge of deciphering neural computation is that of
+% understanding how information is encoded in neural activity, and how
+% the dynamics of neural activity transform this information into new
+% forms. 
+
+This web of synaptic connections imbues neural circuits with complex
+dynamics that govern how patterns of neural activity evolve over time,
+along with the information they encode. It is these dynamics that actually
+perform computation --- the transformation of an input into an output.
+While these dynamics have been very well studied at the level of
+single connections between pairs of neurons, the dynamics of large
+networks of interconnected neurons is at the frontier of research.
+
+% Learning and plasticity
+Perhaps the most fundamental aspect of intelligence is our ability to
+learn, to store memories, and to generalize from past experience.  In
+neural circuits, learning is most directly associated with the process
+of synaptic plasticity. In response to coordinated patterns of pre-
+and post-synaptic spiking, synapses adapt their efficacy, which
+manifests as changes in the amplitude of PSP's. This synaptic
+plasticity leads to changes in the dynamics of neural circuits.  In
+some cases, this plasticity leads to the creation of new associations
+that support generalization from noisy or partial sensory input.
+Thus, a third challenge of deciphering neural computation is
+understanding the processes of learning that cause neural dynamics to
+evolve in an activity-dependent manner.
+
+Our goal is to address these three challenges --- encoding,
+dynamics, and learning --- by searching for patterns in large-scale
+recordings of neural spike trains, simultaneously recorded time series
+of spiking activity in populations of neurons. While this type of data is
+very hard to collect in humans, it is widely collected in worms, fish,
+flies, mice, rats, monkeys, and a host of other model organisms.
+This thesis does not focus on the unique aspects of any single organism
+or brain region, but rather on the general challenges associated
+with modeling structure in time series of discrete events that are
+common to all neural spike trains. 
+
+
+\section{Discovering Structure: Types, Features, Dynamics, and States}
+% Identifying levels of abstraction
+% - Marr levels of analysis
+Structure is primarily about abstractions.  While neurons, spikes, and
+synapses are the elementary building blocks of many models of neural
+computation, our goal is to connect this level of detail to more
+abstract descriptions of computation.  Just as our knowledge of
+\emph{in silico} computation is partitioned into a hierarchy of
+concepts --- from transistors, logic gates, pipelines and processors,
+to assembly code, operating systems, algorithms and programs --- our
+knowledge of neural computation must also include a hierarchy of
+concepts and descriptions.  \citet{marr1982vision} proposed three
+levels of abstraction: the computational level, which concerns the inputs
+and outputs of a system; the algorithmic level, which specifies the
+transformations between inputs and outputs; and the implementation
+level, which focuses on how these transformations are realized in
+neural substrates.  From this perspective, our goal is to interpolate
+between neural spike trains, typically associated with implementation
+level descriptions, and higher level abstractions, like those
+hypothesized by algorithmic and computational theories. To do so,
+we compose our spike train models out of a set of fundamental
+building blocks that appear over and over again in models of
+neural computation. 
+
+\subsection{Low Dimensional Types and Features}
+
+\subsection{Networks and Dynamics}
 Networks play a central role in modern neuroscience: they distill
 complex systems into concise representations.  The goal of
 connectomics \cite{sporns2005human} is to build a wiring diagram, or
@@ -103,109 +230,11 @@ The goal of Chapters~\ref{chap:three},~\ref{chap:four},
 and~\ref{chap:five} is to 
 
 
-\section{Low Dimensional States of Neural Activity}
+\subsection{Latent States of Neural Activity}
 
 
-% Problem: translating neural activity into understanding
-\section{Four Challenges in Deciphering Neural Computation}
-The origins of human intelligence have puzzled scientists and
-philosophers since the days of ancient Greece, and they remain largely
-a mystery to this day. Through centuries of painstaking
-experimentation, the brain and its network of neurons have been
-identified as the seat of intelligence, and their physiology has been
-carefully catalogued. The human brain has on the order
-of~$\text{10}^{\text{10}}$ neurons, which are considered to be the
-fundamental units of computation. Neurons are electrically excitable
-cells with time-varying membrane potentials. When the membrane
-potential is excited above a certain threshold, a cascade of ion
-channels opens and closes, causing the membrane potential to undergo a
-characteristic action potential, or ``spike.''
 
-% Spike hypothesis: at the heart of this computation is the action potential,
-% or ``spike.'' These spikes are 
-These spikes encode information about the state of the outside world
-as conveyed by our sensory organs. Moreover, they represent internal
-states about plans, goals, desires, and thoughts. The spikes of our
-motor neurons travel down our spinal cord, innervating our muscles and
-giving rise to our overt behavior. To first approximation, spikes are
-fundamentally discrete events in time.  That is, in a short enough
-window of time, a neuron either does or does not fire an action
-potential.  The first challenge of deciphering neural computation is
-understanding how information about external and internal states is
-encoded in discrete patterns of coordinated spiking activity across
-neural circuits.
-
-The second is understanding how this information is transformed over
-time. The neurons in our brain are connected by
-about~$\text{10}^{\text{14}}$ synapses. When a pre-synaptic neuron
-fires an action potential, neurotransmitters are released that then
-bind with receptors on the post-synaptic neuron, causing its ion
-channels to open, and current to flow into or out of the post-synaptic
-cell. These currents induce brief changes in the membrane potential of
-the downstream cell called post-synaptic potentials (PSP's). Depending
-on the direction of current, the PSP will be either excitatory, making
-the downstream neuron more likely to spike, or inhibitory, suppressing
-post-synaptic spiking.
-
-% The dynamics of neural activity, which arise from a network of synaptic
-% connections, are the basis of computation: the transformation of inputs
-% to outputs. These dynamics enable the state of the brain to change
-% as sensory inputs are processed, thoughts are pondered, and decisions
-% are made. The challenge of deciphering neural computation is that of
-% understanding how information is encoded in neural activity, and how
-% the dynamics of neural activity transform this information into new
-% forms. 
-
-The web of synaptic connections endows neural circuits with complex
-dynamics that govern how patterns of neural activity evolve over time,
-along with the states they encode. It is these dynamics that actually
-perform computation --- the transformation of one state into another.
-While these dynamics have been very well studied at the level of
-single connections between pairs of neurons, the dynamics of large
-networks of interconnected neurons is at the frontier of research.
-
-% Learning and plasticity
-Perhaps the most fundamental aspect of intelligence is our ability to
-learn, to store memories, and to generalize from past experience.  In
-neural circuits, learning is most directly associated with the process
-of synaptic plasticity. As a result of coordinated patterns of pre-
-and post-synaptic spiking, synapses adapt their efficacy, which
-manifests as changes in the amplitude of PSP's. This synaptic
-  plasticity leads to changes in the dynamics of neural circuits.
-In some cases, this plasticity leads to the creation of new associations
-that support generalization from noisy or partial sensory input. 
-A third challenge of deciphering neural computation is understanding
-the processes of learning that cause neural dynamics to evolve in
-an activity-dependent manner.
-
-\TODO{new section?}
-% Identifying levels of abstraction
-% - Marr levels of analysis
-While neurons, spikes, and synapses are the elementary building blocks
-of many models of neural computation, our fourth challenge is to
-interpolate between this level of abstraction and higher order
-descriptions of cognition, behavior, and computation.  Just as our
-knowledge of \emph{in silico} computation is partitioned into a
-hierarchy of concepts --- from transistors, logic gates, pipelines and
-processors, to assembly code, operating systems, algorithms and
-programs --- our knowledge of neural computation must admit a hierarchy
-of concepts and descriptions.  Marr proposed three levels of analysis:
-the computational level, which concerns the inputs and outputs of a
-system; the algorithmic level, which specifies the transformations
-between inputs and outputs; and the implementation level, which
-focuses on how these transformations are realized in neural
-substrates. In practice, each of these may be further subdivided. 
-%These levels may be studied independently -- we can
-%understand properties of algorithms without reference to their
-%implementation, and we can understand properties of single neurons
-%without knowledge of their broader role -- but theories about one
-%level certainly inform and constrain our theories of the others.
-With the boom in neural recording capabilities, we must focus our efforts
-on interpolating between levels by developing tools that connect
-computational and algorithmic theories to patterns of neural activity.
-
-
-\section{A Probabilistic Approach} 
+\section{A Probabilistic Bayesian Approach} 
 % Solution: a probabilistic approach
 % Theories as probabilistic models, generative stories about the data
 % While not explicitly true, these models capture important features 
