@@ -104,14 +104,6 @@ the direction of current, the PSP will be either excitatory, making
 the downstream neuron more likely to spike, or inhibitory, suppressing
 post-synaptic spiking.
 
-% The dynamics of neural activity, which arise from a network of synaptic
-% connections, are the basis of computation: the transformation of inputs
-% to outputs. These dynamics enable the state of the brain to change
-% as sensory inputs are processed, thoughts are pondered, and decisions
-% are made. The challenge of deciphering neural computation is that of
-% understanding how information is encoded in neural activity, and how
-% the dynamics of neural activity transform this information into new
-% forms. 
 
 This web of synaptic connections imbues neural circuits with complex
 dynamics that govern how patterns of neural activity evolve over time,
@@ -150,7 +142,8 @@ common to all neural spike trains.
 \section{Discovering Structure: Types, Features, Dynamics, and States}
 % Identifying levels of abstraction
 % - Marr levels of analysis
-Structure is primarily about abstractions.  While neurons, spikes, and
+Discovering structure is primarily about finding meaningful abstractions.  
+While neurons, spikes, and
 synapses are the elementary building blocks of many models of neural
 computation, our goal is to connect this level of detail to more
 abstract descriptions of computation.  Just as our knowledge of
@@ -167,114 +160,146 @@ neural substrates.  From this perspective, our goal is to interpolate
 between neural spike trains, typically associated with implementation
 level descriptions, and higher level abstractions, like those
 hypothesized by algorithmic and computational theories. To do so,
-we compose our spike train models out of a set of fundamental
+we compose our spike train models out of a set of simple
 building blocks that appear over and over again in models of
 neural computation. 
 
 \subsection{Low Dimensional Types and Features}
+Many successes of neuroscience have come from careful cataloging 
+of neural response properties. \citet{kuffler1953discharge} initially characterized 
+the response properties of ``on'' and ``off'' ganglion cells in the 
+retina, work which was carried on by \citet{hubel1962receptive}, 
+who characterized simple and complex cells in visual cortex. 
+These are pioneering examples of a common theme in neuroscience: 
+clustering cells into discrete types that facilitate our understanding 
+of neural computation. Indeed, the clustering of cells in the 
+early visual pathway continues to this day \cite{macosko2015highly, sanes2015types}. 
+
+Complementing these classic examples of discrete subtypes of neurons 
+are similarly compelling examples of neurons characterized by 
+continuous features. Most prominent among these are the place cells 
+of the hippocampus \cite{OKeefe78}. These cells fire selectively 
+when an animal is in a particular location in its environment. Thus,
+each cell is naturally associated with a continuous position in 
+space. As we seek to make sense of spike trains from other complex neural circuits, 
+discrete latent types and continuous latent features form one of the
+core building blocks in our probabilistic modeling toolkit. 
+
 
 \subsection{Networks and Dynamics}
 Networks play a central role in modern neuroscience: they distill
-complex systems into concise representations.  The goal of
-connectomics \cite{sporns2005human} is to build a wiring diagram, or
-``connectome,'' of the brain. Each neuron in the brain is a node in
-this network, and the edges correspond to individual connections
-between from one neuron to another. These connections are called
-\emph{synapses}, and they are how spikes on one neuron influence the
-subsequent activity of another.  Once we have extracted this massive
-network of synaptic connections, we can perform subsequent analyses,
-searching for recurring patterns that will illuminate underlying
-design principles and, hopefully, provide insight into neural
-computation \cite{bullmore2009complex}.
+complex systems into concise representations. Whether the
+nodes of the network represent individual neurons in a ``connectome''
+\cite[e.g.]{sporns2005human}, populations of cells in a neural circuit
+\cite[e.g.]{felleman1991distributed}, voxels in an fMRI recording
+\cite[e.g.]{friston1994functional}, or idealized neurons in a
+theoretical model \cite[e.g.]{hopfield1982neural}, networks tell us
+about the relationship between populations of nodes.  Once we have 
+extracted such a network, a great deal of intuition can be gleaned 
+from its aggregate properties \cite{bullmore2009complex, newman2003structure}.
+Moreover, the network itself can often be summarized in terms of 
+latent types and features of nodes that govern how likely any 
+pair of nodes is to be connected \cite{Goldenberg-2010}.
 
-%Building this wiring diagram, or ``connectome'', is a painfully
-%tedious process that involves slicing sections of brain tissue
-%nanometers thin, scanning them with an electron microscope, segmenting
-%the resulting images to identify cell bodies and synapses, and then
-%reconstructing the three dimensional volume of tissue
-%\cite{white1986structure, lichtman2008technicolour,
-%  helmstaedter2013connectomic, oh2014mesoscale} .  Needless to say,
-%this process is both computationally demanding and prone to errors.
-
-Networks need not be so fine grained, however.  Systems neuroscientists
-often describe intricate circuits with simplified networks whose nodes
-correspond to populations of cells, and whose edges denote the an
-abundance connections from one population to another
-\cite[e.g.]{felleman1991distributed, scannell1999connectional}.  Since
-neurons in a particular brain region often have highly stereotyped
-patterns of connectivity, it is convenient to describe neural circuits
-in terms of block diagrams.  These abstract networks do not capture
-the nuances of synaptic connections, but they do provide concise
-representations of neural computation.
-
-Even in functional magnetic resonance imaging (fMRI) studies, where the
-recorded voxels correspond to hundreds of thousands of neurons, networks
-are used to describe \emph{functional connectivity} between brain regions
-\cite{friston1994functional}. While these networks are far removed from
-the underlying synaptic connectivity, they exhibit telling differences
-in healthy and diseased patients \cite{bassett2008hierarchical}
-and show complex structure that is far from random \cite{bassett2006small}.
-
-In fact, network models need not be derived from data at all.  Many
-theoretical models of neural computation use networks to describe
-idealized interactions between neurons. These interactions are only
-loosely based on the known properties of neurons and
-synapses. Nevertheless, these theoretical network models provide
-invaluable insight into the properties of complex systems
-\cite{hopfield1982neural, amit1992modeling, van1996chaos, DayanAbbott,
-  sussillo2009generating}.
+We often use networks to represent the dynamics of complex systems.
+For example, a directed edge may represent the influence that activity
+on one node exerts on the subsequent activity of another. In this way,
+networks provide a simple summary of complex dynamics. Much of this 
+thesis is devoted to learning network representations from neural 
+spike trains. In these models, nodes correspond to the individual 
+neurons in our dataset, and the edges represent a probabilistic 
+relationship between the spiking activity of one neuron and the 
+future firing rate of its downstream neighbors.  By combining 
+latent variable models for the nodes and dynamics models for its edges, 
+we can construct sophisticated models for dynamical spike trains.
 
 
+% Networks play a central role in modern neuroscience: they distill
+% complex systems into concise representations.  The goal of
+% connectomics \cite{sporns2005human} is to build a wiring diagram, or
+% ``connectome,'' of the brain. Each neuron in the brain is a node in
+% this network, and the edges correspond to individual synapses
+%  from one neuron to another.   Once we have extracted this massive
+% network of synaptic connections, we can perform subsequent analyses,
+% searching for recurring patterns that will illuminate underlying
+% design principles and, hopefully, provide insight into neural
+% computation \cite{bullmore2009complex}.
 
-The goal of Chapters~\ref{chap:three},~\ref{chap:four},
-and~\ref{chap:five} is to 
+% Networks need not be so fine grained, however.  Systems neuroscientists
+% often describe intricate circuits with simplified networks whose nodes
+% correspond to populations of cells, and whose edges denote the an
+% abundance connections from one population to another
+% \cite[e.g.]{felleman1991distributed, scannell1999connectional}.  Since
+% neurons in a particular brain region often have highly stereotyped
+% patterns of connectivity, it is convenient to describe neural circuits
+% in terms of block diagrams.  These abstract networks do not capture
+% the nuances of synaptic connections, but they do provide concise
+% representations of neural computation.
+
+% Even in functional magnetic resonance imaging (fMRI) studies, where the
+% recorded voxels correspond to hundreds of thousands of neurons, networks
+% are used to describe \emph{functional connectivity} between brain regions
+% \cite{friston1994functional}. While these networks are far removed from
+% the underlying synaptic connectivity, they exhibit telling differences
+% in healthy and diseased patients \cite{bassett2008hierarchical}
+% and show complex structure that is far from random \cite{bassett2006small}.
+
+% % In fact, network models need not be derived from data at all.  Many
+% % theoretical models of neural computation use networks to describe
+% % idealized interactions between neurons. These interactions are only
+% % loosely based on the known properties of neurons and
+% % synapses. Nevertheless, these theoretical network models provide
+% % invaluable insight into the properties of complex systems
+% % \cite{hopfield1982neural, amit1992modeling, van1996chaos, DayanAbbott,
+% %   sussillo2009generating}.
+
+\subsection{Latent States of Neural Populations}
+Networks model dynamic data in terms of relationships between nodes,
+which we typically associate with individual neurons. In some cases,
+however, it is more natural to think about neural dynamics in terms of 
+a latent state that evolves over time. For example, population activity 
+might reflect a low-dimensional, continuous latent state with smooth \cite{Yu09} 
+or linear \cite{Smith-2003, paninski2010new} dynamics, or a discrete latent 
+state with Markovian dynamics \cite[e.g.]{jones2007natural, latimer2015single}. 
+In these models, the firing rates of individual neurons are a function
+of the underlying latent state. 
+
+By combining these simple building blocks --- latent types and features, 
+networks, and dynamic latent states --- we can express sophisticated 
+hypotheses about structure underlying observed neural spike trains. 
+In order to actually find this structure, we need to instantiate these 
+hypotheses in the form of a model that we can actually fit and evaluate.
+Bayesian probabilistic models and inference algorithms provide a principled 
+means of tackling this problem.
 
 
-\subsection{Latent States of Neural Activity}
+\section{A Bayesian Approach} 
+Structural hypotheses specify how a set of parameters and latent
+variables give rise to patterns of neural activity.  These
+hypothesized are naturally formalized in terms of probabilistic
+models, which provide an intuitive way of expressing the joint
+probability of parameters, latent variables, and observed data.  Once
+formalized, we can use the tools of Bayesian inference to compute the
+posterior distribution over parameters and latent variables implied by
+a given spike train, and use this posterior to gain insight into the
+structure of the data and the shortcomings of our theories.
 
+Recent decades have witnessed an explosion of interest in Bayesian
+methods, and the development of both theoretical and analytical tools
+have led to the widespread adoption of these techniques
+\cite{bishop2006pattern, murphy2012probabilistic}. Nevertheless,
+``black box'' methods for performing Bayesian inference are still a
+very active area of research \cite{ranganath2013black,
+  goodman2008church}, and efficient inference algorithms for complex
+models can still benefit greatly by leveraging model-specific
+structure. Hence, probabilistic modeling is still somewhat of an art
+form, requiring a balance between capturing the details of our
+hypotheses about generative processes underlying our data while
+simultaneously respecting the computational challenges of inference.
+This thesis is largely dedicated to developing algorithms that
+capitalize on the properties of models in order to efficiently scale
+to large scale recordings.
 
-
-\section{A Probabilistic Bayesian Approach} 
-% Solution: a probabilistic approach
-% Theories as probabilistic models, generative stories about the data
-% While not explicitly true, these models capture important features 
-% of the data and suggest interpretations that may lead to new knowledge
-% Science as an iterative process of hypothesis formulation, data-driven
-% testing, and model refinement. 
-This thesis advances a Bayesian, probabilistic approach to connecting
-theory and data. Specifically, we argue that theories of neural
-coding, dynamics, and learning should be thought of as stories of how
-neural activity is generated, and formalized with the language of
-probabilistic graphical models.  Theories define parameters, like the
-time constants that govern neural dynamics, and latent variables, like
-discrete population states at each point in time or the cluster to
-which a neuron belongs. The distinction between parameters and latent
-variables is that there are a fixed number of parameters whereas the
-number of latent variables grows with the data.  Moreover, theories
-specify how parameters and latent variables govern the
-observed patterns of neural activity.  The variables and dependencies
-are naturally formalized in terms of a probabilistic graphical model.
-Once formalized, we can use the tools of Bayesian inference to compute
-the posterior distribution over parameters and latent variables, and
-use this posterior to gain insight into the structure of the data, as
-well as the shortcomings of our theories.
-
-Probabilistic models provide an intuitive way of expressing the
-joint probability of parameters, latent variables, and observed 
-data, along with a clear strategy for making statistical inferences 
-about the parameters and latent variables given the data. Bayesian
-inference provides a posterior distribution
- over parameters and latent variables given the observed data. 
-Recent decades have witnessed the development of suite of computational 
-and algorithmic tools and an established theoretical foundation 
-that have led to the mainstream adoption of probabilistic Bayesian 
-methods \cite{bishop2006pattern, murphy2012probabilistic}. Together with these
-metholodogical advances, the theory of Bayesian data analysis 
-has been firmly established \cite{gelman2014bayesian}, along with its role 
-in the broader context of scientific endeavors \cite{gelman2013philosophy, blei2014build}
-
-% Bayesian inference as a computation that facilitates exploration and 
-% model checking
 
 \begin{figure}[t]
   \centering%
@@ -284,7 +309,7 @@ Adapted from~\citet{blei2014build}.}
 \label{fig:boxloop}
 \end{figure}
 
-
+Putting this all together, 
 Figure~\ref{fig:boxloop} shows how crafting a probabilistic model and
 performing Bayesian inference fit, conceptually, within the iterative
 process of scientific study. \citet{blei2014build}, from whom this
