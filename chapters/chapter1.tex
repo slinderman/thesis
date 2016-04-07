@@ -194,7 +194,7 @@ nodes of the network represent individual neurons in a ``connectome''
 \cite[e.g.]{felleman1991distributed}, voxels in an fMRI recording
 \cite[e.g.]{friston1994functional}, or idealized neurons in a
 theoretical model \cite[e.g.]{hopfield1982neural}, networks tell us
-about the relationship between populations of nodes.  Once we have 
+about the pairwise relationships in large populations of nodes.  Once we have 
 extracted such a network, a great deal of intuition can be gleaned 
 from its aggregate properties \cite{bullmore2009complex, newman2003structure}.
 Moreover, the network itself can often be summarized in terms of 
@@ -287,15 +287,20 @@ structure of the data and the shortcomings of our theories.
 Recent decades have witnessed an explosion of interest in Bayesian
 methods, and the development of both theoretical and analytical tools
 have led to the widespread adoption of these techniques
-\cite{bishop2006pattern, murphy2012probabilistic}. Nevertheless,
-``black box'' methods for performing Bayesian inference are still a
-very active area of research \cite{ranganath2013black,
-  goodman2008church}, and efficient inference algorithms for complex
-models can still benefit greatly by leveraging model-specific
-structure. Hence, probabilistic modeling is still somewhat of an art
+\cite{bishop2006pattern, murphy2012probabilistic}. 
+% Nevertheless,
+% ``black box'' methods for performing Bayesian inference are still a
+% very active area of research \cite{ranganath2013black,
+%   goodman2008church}, and efficient inference algorithms for complex
+% models can still benefit greatly by leveraging model-specific
+% structure. 
+Nevertheless, performing Bayesian inference in sophisticated models 
+is still a challenge, and we can benefit greatly from leveraging 
+model-specific structure. 
+Hence, probabilistic modeling is still somewhat of an art
 form, requiring a balance between capturing the details of our
 hypotheses about generative processes underlying our data while
-simultaneously respecting the computational challenges of inference.
+simultaneously designing models that admit efficient inference algorithms.
 This thesis is largely dedicated to developing algorithms that
 capitalize on the properties of models in order to efficiently scale
 to large scale recordings.
@@ -310,46 +315,100 @@ Adapted from~\citet{blei2014build}.}
 \end{figure}
 
 Putting this all together, 
-Figure~\ref{fig:boxloop} shows how crafting a probabilistic model and
-performing Bayesian inference fit, conceptually, within the iterative
-process of scientific study. \citet{blei2014build}, from whom this
-figure has been adapted, calls this ``Box's loop'' in deference to the
-foundational work of \citet{box1980sampling}. Each iteration is an 
-experiment, and each experiment begins with a hypotbhesis, in the 
-form of a model, and a computation, in the form of Bayesian inference.
-Inferred posterior distributions over variables and parameters may 
-lead to new insights about the data via exploratory analyses, and 
-they may lead to further refinements of the theory via model criticism.
+Figure~\ref{fig:boxloop} outlines the iterative process of model building.
+We begin by collecting data, in this case, large-scale recordings of neural
+spike trains, and building a probabilistic model that captures our 
+intuitions and hypotheses about structure in that data. Given these two 
+ingredients, we perform Bayesian inference to compute the posterior 
+distribution over structural variables and parameters. Visualizing, analyzing, and 
+exploring this posterior often lead to new insights and ways to think 
+about generative processes that can explain the data. We can also 
+criticize the model, formally, by assessing goodness-of-fit, evaluating 
+predictive likelihoods, and performing posterior predictive checks 
+\cite{Gelman13}. This too leads to new hypotheses, which in turn lead to 
+new models and another iteration of this process.
+\citet{blei2014build}, from whom this
+figure has been adapted, calls this ``Box's loop,'' a reference to the 
+foundational work of~\citet{box1980sampling}. 
 
 
-% Compositionality, scientific method and iterative experimental design
-% exploratory analysis: summarize, visualize, hypothesize
 
-% Model criticism, active learning, revision
-
-% Not the first...
-% cf Sahani 1999
-
-\TODO{We are certainly not the first to advocate a Bayesian approach...
-  but previous approaches were stifled by the challenges inherent in performing
-  Bayesian inference in sophisticated models. We extend previous
-  work by developing a host of new models that combine structured
-  prior distributions, motivated by theoretical models of neural
-  computation, with dynamic models of neural spike trains. We develop
-  corresponding inference algorithms that enable efficient Bayesian
-  inference in these hierarchical models.}
+We are certainly not the first to adopt a Bayesian approach to modeling 
+of neural data. Indeed, probabilistic methods \cite[e.g.]{brillinger1976identification,
+Brillinger-1988, Paninski-2004, Truccolo-2005, Pillow-2008}, 
+particularly Bayesian methods \cite[e.g.]{sahani1999latent, rieke1999spikes, Yu09,
+park2011bayesian, macke2011empirical}, 
+have played a major role in advancing our understanding of spike trains. 
+We build on this foundation and specifically focus on expanding the 
+set of models, combining standard point process and spike count models with 
+hierarchical prior distributions that capture latent structure. To go 
+along with these more sophisticated models, we also derive efficient 
+Bayesian inference algorithms that take advantage of clever data augmentation 
+strategies. Together, these expand the repertoire of probabilistic models 
+that we can leverage when looking for structure in neural data.
 
 
 \section{Summary of Contributions}
 
-\paragraph{Chapter 1} First we provide the necessary background on point processes and probabilistic modeling.
+Chapter \ref{chap:two} provides a brief overview of point processes, 
+probabilistic modeling, and Bayesian inference that lays the foundation for the 
+methodological contributions in the remainder of the thesis. We also introduce 
+common notation for spike trains, firing rates, and latent variables of the model. 
+Readers who are well versed in probabilistic modeling may skip this chapter without 
+much harm. 
 
-\paragraph{Chapters 2 and 3}
+Chapter \ref{chap:three} introduces our first probabilistic model for neural 
+spike trains --- a combination of continuous time Hawkes processes and probabilistic network 
+models. This is based on \citet{linderman2014discovering}. However, since this 
+is the first model of the chapter, we provide a 
+more thorough discussion of network models, Hawkes processes, and the steps 
+in deriving an efficient Markov Chain Monte Carlo (MCMC) inference algorithm.
+This is also the only chapter that will apply these techniques to spike trains 
+from other domains, specifically, from social network analysis and criminology.
 
-\paragraph{Chapter 4}
+Chapter \ref{chap:four} continues to focus on Hawkes processes and networks, 
+but here we break from the continuous time models of Chapter~\ref{chap:three} and 
+begin working in discrete time. The remainder of the thesis will do the same. 
+We also introduce a scalable variational inference algorithm that leverages 
+the discrete model structure. This is based on \citet{linderman2015scalable}. 
 
-\paragraph{Chapter 5}
+Chapter~\ref{chap:five} reconsiders the linear interactions of Hawkes processes 
+and develops a nonlinear autoregressive model for neural spike trains. Again, 
+we use probabilistic network models as prior distributions over the pattern of 
+functional interaction, and in doing so, we show that interesting representations 
+of neural populations can be learned directly from the data. A preliminary version 
+of this work was presented by \citet{linderman2015cosyne}.
 
-\paragraph{Chapter 6}
+Chapter~\ref{chap:six} continues on the network theme, but here we begin to 
+transition from static models to ones with dynamic latent states. Specifically, 
+we adopt a mechanistic view of the network and treat its connections as actual
+synapses. From this perspective, it is natural to consider dynamic learning rules 
+that govern how synaptic weights evolve over time. We derive a framework for 
+modeling arbitrary synaptic plasticity rules and fitting them with particle MCMC.
+This chapter is based on \citet{linderman2014framework}.
 
-\paragraph{Chapter 7}
+Chapter~\ref{chap:seven} departs from network models and instead considers 
+dynamical state space models, specifically Hidden Markov Models (HMM), for 
+neural data. We address a major challenge in applying these well-known models ---
+deciding the number of latent states. We develop a Bayesian nonparametric model 
+by introducing a hierarchical Dirichlet process (HDP) prior and both an MCMC 
+and a variational inference algorithm. While this 
+combination is relatively well studied, these models are notoriously 
+sensitive to hyperparameter settings. We introduce a variety of methods for 
+selecting hyperparameters and perform a thorough comparison on real and synthetic 
+data. This is based on \citet{linderman2016nonparametric}.
+
+Chapter~\ref{chap:nine} is a first step in a very novel direction. We build on 
+the probabilistic models of the preceding chapters, but here we combine these 
+models with a top-down theory of neural computation. Specifically, we consider 
+the repercussions of the ``Bayesian brain'' hypothesis, namely, that neural 
+circuits are performing approximate Bayesian inference in a probabilistic model
+of the world. We make predictions about the patterns of neural
+spike trains would be expected from such a circuit, and we show how the methods 
+of previous chapters can be leveraged to reverse engineer probabilistic models 
+from observations of neural spike trains. This work is necessarily speculative, 
+but we believe it suggests a promising path forward as we seek to reconcile 
+computational and algorithmic theories of neural computation with large scale 
+recordings. 
+
+
