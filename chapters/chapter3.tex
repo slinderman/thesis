@@ -61,7 +61,7 @@ tackle these implicit network problems.
 
 In this chapter, we consider the case where our observations come in
 the form of neural spike trains, and our intuition is that a spike on
-one neuron will induce activity in downstream neurons.  e formalize
+one neuron will induce activity in downstream neurons.  We formalize
 this with a probabilistic model based on mutually-interacting point
 processes.  Specifically, we combine the Hawkes process
 \cite{Hawkes-1971} with hierarchical prior distributions on the network.  This
@@ -859,11 +859,11 @@ In Section~\ref{sec:graph_models} we introduced weight models that
 output a
 
 The resulting conditional distribution is,
-\begin{multline*}
+\begin{align*}
   p(w_{n \to n'}\given \{s_m,c_m,\omega_m\}_{m=1}^M, a_{n\to n'}=1, \kappa, \nu)
-  = 
+  &= 
   \distGamma(w_{n \to n'} \given \widetilde{\kappa}_{n \to n'}, \widetilde{\nu}_{n \to n'}),
-\end{multline*}
+\end{align*}
 where
 \begin{align*}
   \widetilde{\kappa}_{n \to n'} &= \kappa + M_{n \to n'}, \\

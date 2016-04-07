@@ -959,9 +959,9 @@ locations of the rat when neuron~$n$ fired shown by black dots.
 
 \section{Extensions}
 
-\subsection{Hidden Semi-Markovian Models}
+\paragraph{Hidden Semi-Markovian Models}
 A striking feature of the inferred state transition matrix in
-Fig.~\ref{fig6}E is that the first 40 states exhibit strong
+Fig.~\ref{fig6}E is that the first $40$ states exhibit strong
 self-transitions. This is a common feature of time series and has been
 addressed by a number of augmented Markovian models. In particular,
 hidden semi-Markovian models (HSMMs) explicitly model the duration of
@@ -973,42 +973,65 @@ similar. Alternatively, ``sticky'' HMMs and HDP-HMMs accomplish a
 similar effect \citep{Fox08}.
 
 
-\subsection{Input-Output HMM's}
-\TODO{Write about it...}
+\paragraph{Dependent Observation Models}
+The HMMs in this chapter used conditionally independent Poisson 
+observations. Given the latent state, each neuron fires independently 
+of the others, and also independently of its previous spike counts.
+One way to extend these models is by introducing dependencies in 
+the observation models. For example, we can combine the autoregressive
+models of previous chapters with the discrete latent states of an 
+HMM with a model of the form,
+\begin{align*}
+  p(\bs_t \given z_t) &= \prod_{n=1}^N \distPoisson(s_{t,n} \given \lambda_{t,n}), \\
+  \lambda_{t,n} &= g \left(\psi_n^{(z_t)} + \bw_n^{(z_t)} \bs_{t-1} \right).
+\end{align*}
+As in previous chapters, this can easily be extended to higher-order 
+autoregressive models. 
+Expectation-maximization algorithms for this type of model were developed 
+by \citet{escola2011hidden}.
+Alternatively, we can use the \polyagamma
+augmentation schemes of Chapter~\ref{chap:five}, and we have presented
+a preliminary versions of this approach in \citet{johnson2015cosyne}.
+
+
+
+\paragraph{Input-Output HMMs}
+Hidden Markov Models are ``open loop'' systems: the next state 
+depends only on the previous state.  In practice, it is natural to 
+expect that transitions are not only state-dependent but also a 
+function of some external variables. For example, in the hippocampus 
+where states correspond to actual locations, whether or not the 
+rat transitions into a state may depend on instantaneous properties 
+of that location. If more complex experimental setups there may 
+be food or obstacles in the environment that affect where the rat 
+goes next. 
+
+These types of external variables can be modeled with an input-output 
+HMM (IOHMM) \cite{bengio1995input}. Suppose we have an external input,
+~$\bu_t \in \reals^D$. We can model the transition probability as,
+\begin{align*}
+\bpi^{(k)} &\propto \exp\{\bpsi^{(k)} + \bW \bu_t\}, \\
+\end{align*}
+that is, as a ``soft-max'' function of a baseline probability plus a 
+weighted combination of input covariates.  Performing inference in this 
+type of model is not much more challenging than in the standard HMM.
+When sampling the latent states, we simply compute the instantaneous
+transition probabilities for each time step. In order to update the 
+transition weights,~$\bW$, and the baseline probabilities,~$\bpsi^{(k)}$,
+we can either use HMC or our recently developed \polyagamma augmentation scheme for multinomial
+models \cite{linderman2015dependent}.
 
 
 \section{Conclusion}
-
-% In this paper, we have explored the use of HDP-HMMs with Poisson
-% likelihoods to analyze rat hippocampal ensemble spike data during
-% spatial navigation. Compared to the parametric finite-state HMM, the
-% HDP-HMM allows more flexibility to model the experimental data
-% (without relying on time-consuming cross-validation in model
-% selection). We evaluate two nonparametric Bayesian inference
-% algorithms for HDP-HMM, one based on VB and the other based on
-% MCMC. Furthermore, we consider two approaches for hyperparameter
-% selection, an issue that is particularly important for the real-life
-% application.  It is found that the MCMC algorithm with HMC updates for
-% the hyperparameters is robust and achieves the best performance in all
-% simulated and experimental data. Our investigation shows a promising
-% direction in applying nonparametric Bayesian methods for ensemble
-% neuronal spike data analysis.
-
-% The unsupervised Bayesian inference approach allows us (or hippocampus
-% downstream structures) to read out spatial information from
-% hippocampal ensemble spike activity without {\em a priori} receptive
-% field measurement.  One important future research direction is to
-% apply this method to investigate sleep-associated hippocampal ensemble
-% spike activity during either slow wave sleep (SWS) or rapid eye
-% movement (REM) sleep \citep{Louie01,Lee02}. Traditionally, one would
-% rely on the place receptive field information estimated from pre-sleep
-% behavior to infer the content of population spike activity in sleep,
-% but this approach is accompanied with many well-known statistical
-% challenges, such as non-stationarity, firing rate remapping, and
-% timescale warping. Our approach proposed here can provide an effective
-% and complementary paradigm to investigate the representation of
-% hippocampal population codes without direct measurement of spatial
-% correlate \citep{Chen15}. The same principle can also be applied to
-% neocortical data \citep{Ji07,Peyrache09,Gulati14}.
-
+This chapter explored the idea of dynamic latent states underlying 
+neural activity. Specifically, we developed Bayesian nonparametric 
+hidden Markov models (HDP-HMMs) and corresponding MCMC and variational 
+inference algorithms. Since these models are notoriously sensitive 
+to hyperparameter settings, we performed a thorough assessment of 
+inference results on both synthetic data and real recordings from 
+rat hippocampal place cells. 
+\TODO{In the next chapter, we will build on these ideas, developing 
+more sophisticated latent state space models with a mix of discrete 
+and continuous latent states. As we will see, HMMs are only one in 
+a hierarchy of state space models.} 
 
