@@ -1,0 +1,29 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+from hips.plotting.colormaps import harvard_colors
+colors = harvard_colors()
+
+#def make_figure_1():
+if __name__ == "__main__":
+    """
+    Simple mixture model example
+    """
+    T = 250
+    D = 50
+    n = T // D
+    lmbda = np.array([5, .5])
+
+    # Simulate latent states
+    z = np.random.rand(n) < 0.5
+    
+    # Simulate real valued spike times
+    Ss = []
+    Ns = np.zeros(n)
+    for i in np.arange(n):
+        rate = lmbda[z[i]]
+        Ns[i] = np.random.poisson(rate)
+        Ss = i * D + np.random.rand(Ns[i]) * D
+
+
+        
