@@ -8,14 +8,15 @@
 
 Networks are fundamental models for complex systems, enabling us to
 reason about systems by studying the relationships between their
-parts. We have already discussed, in Section~\ref{sec:intro_networks},
-the myriad ways in which networks are employed throughout
+parts.
+As we discussed in Chapter~\ref{chap:one}, networks are employed in a myriad of ways throughout
 neuroscience.  Whether they represent synapses in the human
 connectome, systems-level interactions in brain circuits, pairwise
 correlations in fMRI recordings, or coupling in theoretical models,
 networks abstract away the messy details of systems.  A network consists of nodes, which
-may represent neurons, populations, voxels, etc., and edges, 
-which connect pairs of nodes and represent interactions, like the effect
+may represent neurons, populations, voxels, etc., depending on the application.
+Connecting these nodes is a set of edges, 
+which represent interactions between  pairs of nodes, like the effect
 of one neuron's spikes on the subsequent activity of its downstream
 neighbors.  By reducing a system to a network of nodes and edges,
 we create a simplified object for analysis.
@@ -23,20 +24,22 @@ we create a simplified object for analysis.
 %Representing these systems as networks facilitates a number of
 %analyses. 
 A great deal can be learned by considering simple network properties
-like the average number of connections per node, or more sophisticated
+like the average number of connections per node, or higher order
 statistics like ``betweenness'' and the number of connected triangles
 \cite{bullmore2009complex}.  Some network analyses involve
 probabilistic modeling.  For example, we may look for clusters or
 features of nodes that have similar patterns of connectivity.  Other
-analyses are more supervised in nature; in a ``link
-prediction'' task we want to predict whether or not a pair of nodes is
-connected, given partial observations of the network. In some cases,
- we wish to classify networks recorded from healthy and diseased patients. 
- Traditionally, network analysis has focused on \emph{explicit network} problems in
-which the network itself is considered to be the observed data.  That
-is, the nodes are and edges are considered known. A rich literature has arisen in recent
-years for applying statistical machine learning models to this type of
-problem, e.g., \citet{Liben-2007,Hoff-2008,Goldenberg-2010}.
+analyses are more supervised in nature; in a ``link prediction'' task
+we want to predict whether or not a pair of nodes is connected, given
+partial observations of the network.
+%In some cases,
+% we wish to classify networks recorded from healthy and diseased patients. 
+ Traditionally, network analysis has focused on \emph{explicit
+   network} problems in which the network itself is considered to be
+ the observed data.  That is, the nodes are and edges are considered
+ known. A rich literature has arisen in recent years for applying
+ statistical machine learning models to this type of problem, e.g.,
+ \citet{Liben-2007,Hoff-2008,Goldenberg-2010}.
 
 In practice, however, we are often confronted with \emph{implicit
   networks} that cannot be observed directly, but about which we wish
@@ -47,7 +50,7 @@ assumed to have been generated according to an underlying model that
 respects the latent network structure.
 
 For example, in connectomics problems the network must be inferred
-from noisy electron microscopy images; in systems neuroscience the
+from noisy electron microscopy images; in spike train modeling the
 network must be inferred from weak anatomical evidence and noisy
 measurements of population activity; and in fMRI experiments, the
 network is derived from noisy BOLD responses.  In both cases, if we
@@ -61,14 +64,15 @@ tackle these implicit network problems.
 
 In this chapter, we consider the case where our observations come in
 the form of neural spike trains, and our intuition is that a spike on
-one neuron will induce activity in downstream neurons.  We formalize
-this with a probabilistic model based on mutually-interacting point
+one neuron will influence the activity of downstream neurons.  We formalize
+this with a probabilistic model based on mutually interacting point
 processes.  Specifically, we combine the Hawkes process
 \cite{Hawkes-1971} with hierarchical prior distributions on the network.  This
-combination allows us to reason about latent networks in terms of the
-way that they regulate interaction in the Hawkes process.  Inference
-in the resulting model can be done with Markov chain Monte Carlo, and
-an elegant data augmentation scheme results in efficient parallelism.
+combination allows us to reason about properties of neurons that govern
+network structure, which in turn governs the dynamics of activity via
+a Hawkes process. Inference
+in the resulting model is done with Markov chain Monte Carlo by leveraging
+an elegant data augmentation scheme that allows efficient parallelism.
 
 Figure~\ref{fig:network_hawkes} illustrates the components of the
 probabilistic model. At the highest level, we have a network of
@@ -128,7 +132,7 @@ modeled with Hawkes processes.
 
 The rest of the chapter is organized as follows. In
 Section~\ref{sec:graph_models} we introduce a compositional
-probabilistic model for random networks, and in
+probabilistic model for networks, and in
 Section~\ref{sec:hawkes_processes} we introduce Hawkes processes.
 Section~\ref{sec:network_hawkes_model} stitches these two components
 together into a joint model for implicit networks.  Before diving into
@@ -139,51 +143,34 @@ asymptotic behavior of the system.  Then, in
 Section~\ref{sec:hawkes_inference}, we derive a Gibbs sampling
 algorithm with an elegant auxiliary variable formulation.  Finally,
 the remaining sections consider applications, first to synthetic data,
-and then to biological recordings. \todo{apply this to hippocampal
-  data}.  While the primary emphasis is on modeling neural data, we
-also explore some applications in areas of finance and criminology.
+and then to biological recordings.  While the primary emphasis is on
+modeling neural data, we also explore some applications in areas of
+finance and criminology.
 
 \section{Probabilistic Network Models}
 \label{sec:graph_models}
 Networks of~$N$ nodes can be represented by~${N\times N}$
-matrices. Unweighted networks correspond to binary adjacency matrices~$\bA$
-where~${a_{m,n}=a_{m \to n}=1}$ indicates a directed edge from
-node~$m$ to node~$n$. We use the arrow notation ($\to$) to remind the
-reader of the directionality of the connection. When these edges have
-weights associated with them, we can encode them in a second matrix,~${\bW \in
-  \reals^{N \times N}}$.  The complete network is then defined by the
-elementwise product,~${\bA \odot \bW}$. The binary adjacency matrix
-captures the sparsity pattern, and the real-valued wieght matrix
-captures the strength of the connections. From a modeling perspective,
-separating these two matrices allows us to separate our prior
-intuitions about sparsity and strength. This is known as a
-spike-and-slab model~\cite{Mitchell1988, Mohamed-2012}.
+matrices. Unweighted networks correspond to binary adjacency
+matrices~$\bA$ where~${a_{m,n}=a_{m \to n}=1}$ indicates a directed
+edge from node~$m$ to node~$n$. We use the arrow notation ($\to$) to
+remind the reader of the directionality of the connection. When these
+edges have scalar weights associated with them, we can encode the
+weights in a second matrix,~${\bW \in \reals^{N \times N}}$.  The
+complete network is then defined by the elementwise product,~${\bA
+  \odot \bW}$. The binary adjacency matrix captures the sparsity
+pattern, and the real-valued wieght matrix captures the strength of
+the connections. From a modeling perspective, separating these two
+matrices allows us to separate our prior intuitions about sparsity and
+strength. This is known as a spike-and-slab model~\cite{Mitchell1988}.
 
 
-Arbitrarily complex models can be constructed by incorporating latent
+Hierarchical models can be constructed by incorporating latent
 variables into the prior distributions over~$\bA$ and~$\bW$.
 Unsurprisingly, the same types of motifs that recur throughout
-probabilistic modeling --- discrete mixture models and low-dimensional
-factor models --- also form the building blocks of
+probabilistic modeling --- discrete latent types and continuous
+latent features--- also form the building blocks of
 standard network models.  We briefly outline a few simple models that
 are used in this and following chapters.
-
-
-\begin{table}
-\begin{center}
-\begin{tabular}{c|c|c|c}
-Name & $\bvartheta$ & $\mathrm{dom}(\bz_n)$ & $\rho_{n \to n'}$ \\
-\hline
-Empty Model & --- &  --- & $0$ \\
-Dense Model & --- & --- & $1$ \\
-Bernoulli Model & $\rho$ & --- & $\rho$ \\
-Stochastic Block Model & $\{\{\rho_{k \to k'}\}\}$ & $\{1, \ldots, K\}$ & $\rho_{z_n \to z_{n'}}$ \\
-Latent Distance Model & $\gamma_0$ & $\reals^K$ & $\sigma(-||\bz_n - \bz_{n'}||_2^2 + \gamma_0)$
-\end{tabular}
-\end{center}
-\caption{Binary Adjacency Matrix Models}
-\label{tab:A_models}
-\end{table}
 
 Table~\ref{tab:A_models} summarizes a few models for binary adjacency
 matrices. In all cases, the distribution over~$\bA$ factorizes into a
@@ -235,6 +222,23 @@ below:
   standard normal prior,~$\gamma_0 \sim \distNormal(0, 1)$.
 
 \end{itemize}
+\begin{table}
+\begin{center}
+\begin{tabular}{c|c|c|c}
+Name & $\bvartheta$ & $\mathrm{dom}(\bz_n)$ & $\rho_{n \to n'}$ \\
+\hline
+Empty Model & --- &  --- & $0$ \\
+Dense Model & --- & --- & $1$ \\
+Bernoulli Model & $\rho$ & --- & $\rho$ \\
+Stochastic Block Model & $\{\{\rho_{k \to k'}\}\}$ & $\{1, \ldots, K\}$ & $\rho_{z_n \to z_{n'}}$ \\
+Latent Distance Model & $\gamma_0$ & $\reals^K$ & $\sigma(-||\bz_n - \bz_{n'}||_2^2 + \gamma_0)$
+\end{tabular}
+\end{center}
+\caption{Binary adjacency matrix models.}
+\label{tab:A_models}
+\end{table}
+
+
 
 % Weight models
 \begin{table}
@@ -247,11 +251,11 @@ Stochastic Block Model & $\{\{ \mu_{k \to k'} \}\}$ & $\{1, \ldots, K\}$ & $\mu_
 Latent Distance Model & $\mu_0$ & $\reals^K$ & $-||\bz_n - \bz_{n'}||_2^2 + \mu_0$ 
 \end{tabular}
 \end{center}
-\caption{Weight Models}
+\caption{General weight models.}
 \label{tab:W_models}
 \end{table}
 
-The same ideas can be applied to models for the weight matrix,~$\bW$,
+The same ideas can be applied to models for the scalar weight matrix,~$\bW$,
 but rather than modeling the connection probability, we now model the
 mean weight,~$\mu_{n \to n'}$. The resulting distribution is of the form,
 \begin{align*}
@@ -261,17 +265,16 @@ mean weight,~$\mu_{n \to n'}$. The resulting distribution is of the form,
 \end{align*}
 
 We do not specify the exact functional form of the distribution since
-this will depend on the model for neural activity. Linear
-autoregressive models with non-negative weights might use a gamma
-prior, whereas nonlinear autoregressive models may use a Gaussian
+this will depend on the model for neural activity. The linear
+models with non-negative weights in this chapter will use a gamma
+prior, whereas the nonlinear autoregressive models in Chapter~\ref{chap:five} will use a Gaussian
 distribution. Table~\ref{tab:W_models} lists some examples of weight
-models that are analogous to the adjacency matrix models above.
+models analogous to the adjacency matrix models above.
 While we have only shown models for the mean weight,
 the same latent variables may
 also parameterize the variance of the weight distribution. For example
 in a Gaussian SBM, each directed pair of classes may have an
 associated variance,~$\sigma^2_{k \to k'}$.
-
 
 Probabilistic network models like these are unified under an elegant
 theoretical framework due to Aldous and Hoover
@@ -379,6 +382,15 @@ probabilistic machine learning.
   \label{fig:network_models}
 \end{figure}
 
+Note that we have associated each neuron with a single latent variable,~$\bz_n$.
+This suggests that both the adjacency matrix and the weight matrix are
+governed by the same latent variable, but in general they can have separate
+variables. Whether or not they are shared is a modeling decision. We will
+collectively refer to all latent variables of the network as~$\bz_n$ and
+whether they govern the adjacency model or the weight model will be clear
+from context.
+
+
 Figure~\ref{fig:network_models} shows how a variety of networks can be
 constructed by combining different priors on the weights (rows) with
 priors on the pattern of connectivity (columns). Each row corresponds
@@ -389,7 +401,8 @@ model-specific mean. Each column corresponds to a fixed adjacency
 matrix drawn from either a dense model, an independent
 Bernoulli model, an SBM, or a latent distance model. The matrices show
 the element-wise product, which encodes a weighted, directed
-network. 
+network. Next, we introduce a model for spike trains that leverages
+an underlying network.
 
 
 \section{Hawkes Processes}
@@ -401,29 +414,29 @@ details, a brief primer on Poisson processes is in order.
 
 \subsection{Poisson Processes}
 \sloppy Point processes are fundamental statistical objects that yield
-random finite sets of events~${\{s_m\}_{m=1}^M \subset \mcV}$,
+random finite sets of spikes~${\{s_m\}_{m=1}^M \subset \mcV}$,
 where~$\mcV$ is a compact subset of~${\reals^D}$.  When modeling
-neural spike trains, we typically let~${\mcV}$ equal the
+neural spike trains, we typically let~${\mcV}$ be the
 interval~${[0,T]}$. The Poisson process is the canonical example. It
 is governed by a nonnegative firing rate or intensity
 function,~${\lambda(t): \mcV \rightarrow\reals_+}$. The number of
-events in a subset~${\mcV'\subset\mcV}$ follows a Poisson distribution
-with mean~${\int_{\mcV'}\lambda(t)\mathrm{d}t}$. Moreover, the number
-of events in disjoint subsets are independent.
+spikes in a subset~${\mcV'\subset\mcV}$ follows a Poisson distribution
+with mean~${\int_{\mcV'}\lambda(t) \, \mathrm{d}t}$. Moreover, the number
+of spikes in disjoint subsets are independent.
 
 We use the notation~${\{s_m\}_{m=1}^M\sim\PP(\lambda(t))}$ to indicate
-that a set of events~$\{s_m\}_{m=1}^M$ is drawn from a Poisson process
+that a set of spikes~$\{s_m\}_{m=1}^M$ is drawn from a Poisson process
 with rate~$\lambda(t)$. There are many ways to sample a Poisson
-process; one way is to first sample a Poisson number of events with
+process; one way is to sample a Poisson number of spikes with
 mean~${\int_{\mcV} \lambda(t) \mathrm{d}t}$ and then sample the individual
-event times,~$s_m$, independently from the density,
+spike times,~$s_m$, independently from the density,
 %\begin{align*}
 ${
-  p(t) = \frac{\lambda(t)}{\int_{\mcV} \lambda(t) \, \mathrm{d}t}.
+  p(s) = \frac{\lambda(s)}{\int_{\mcV} \lambda(t) \, \mathrm{d}t}.
 }$
 %\end{align*}
 Thus, after accounting for the~$M!$ permutations,
-the likelihood of a set of events is given by,
+the likelihood of a set of spikes is given by,
 \begin{align}
   \nonumber
   p(\{s_m\}_{m=1}^M \given \lambda(t))
@@ -488,7 +501,7 @@ given by the relative rate at the time of the spike. This is known as
 
 \subsection{Including Spike History with Hawkes Processes}
 Though Poisson processes have many nice properties, they cannot
-capture interactions between events. For this we turn to a more
+capture interactions between spikes. For this we turn to a more
 general model known as Hawkes processes \cite{Hawkes-1971}. 
 First, consider the spike train of a single neuron,~$\{s_m\}_{m=1}^M \subset [0,T]$.
 In a Hawkes process, the firing rate at time,~$\lambda(t \given \mcH_t)$, is a function of 
@@ -510,19 +523,19 @@ reduces to a standard Poisson process with rate~$\lambda^{(0)}$.
 
 By the superposition theorem for Poisson processes, these additive
 components can be considered independent processes, each giving rise
-to their own events.  This suggests a convenient latent variable
-representation in which each event is attributed to either the
-background rate or the impulse response of a preceding event.  We
+to their own spikes.  This suggests a convenient latent variable
+representation in which each spike is attributed to either the
+background rate or the impulse response of a preceding spike.  We
 augment our data with a latent random
 variable~${\omega_m \in\{0,\ldots, m-1\}}$ to indicate the \emph{origin} of
-the~$n$-th event ($0$ if the event is due to the background rate and
-${1\ldots m-1}$ if it was spawned by a preceding event). 
+the~$m$-th spike ($0$ if the spike is due to the background rate and
+${1\ldots m-1}$ if it was spawned by a preceding spike). 
 
 This is easily extended to a population of~$N$ neurons by considering a Hawkes
 process that gives rise to sets of
-\emph{marked} events $\{s_m,c_m\}_{m=1}^M$,
+\emph{marked} spikes $\{s_m,c_m\}_{m=1}^M$,
 where~${c_m\in\{1,\ldots,N\}}$ specifies the neuron on which
-the~$m$-th event occurred.  As in the single neuron case, 
+the~$m$-th spike occurred.  As in the single neuron case, 
 the rate of the~$n$-th neuron,~${\lambda_n(t\given
   \mcH_t)}$,  depends on the spike history, but here the spike history 
 contains the spikes of all neurons through time~$t$. 
@@ -530,7 +543,7 @@ The multineuronal generalization also allows for different background rates
 for each neuron,~$\lambda^{(0)}_{n}$, and  different impulse 
 responses for each pair of neurons. For example, the impulse 
 response from neuron~$n$ to neuron~$n'$, which we now call~$h_{n \to n'}$, 
-may be much stronger than the reverse connection. As before, we
+may differ from that of the reverse connection. As before, we
 do require that the impulse responses be causal and have bounded support.
 Putting it all together, the rate of the~$n$-th neuron is,
 \begin{align}
@@ -544,8 +557,8 @@ Putting it all together, the rate of the~$n$-th neuron is,
 \includegraphics[width=4in]{figures/ch2/Hawkes-wide} 
 \vspace{-0.25cm}
 \caption[Illustration of a Hawkes process]{Illustration of a Hawkes
-  process. Events induce impulse responses on connected processes and
-  spawn ``child'' events. See the main text for a complete
+  process. Spikes induce impulse responses on connected processes and
+  spawn ``child'' spikes. See the main text for a complete
   description.}
 \label{fig:hawkes}
 \end{figure}
@@ -578,15 +591,14 @@ The second line corresponds to the likelihood of the background
 processes; the third and fourth correspond to the likelihood of the
 induced processes triggered by each spike.
 
-Figure~\ref{fig:hawkes} illustrates a causal cascades of events for a
-simple network of three processes (I-III).  The first event is caused
+Figure~\ref{fig:hawkes} illustrates a causal cascades of spikes for a
+simple network of three processes (I-III).  The first spike is caused
 by the background rate~(${\omega_1=0}$), and it induces impulse responses
-on processes II and III. Event~2 is spawned by the impulse on the
+on processes II and III. Spike~2 is spawned by the impulse on the
 third process~(${\omega_2=1}$), and feeds back onto processes I and II. In
-some cases a single parent event induces multiple children, e.g.,
-event~4 spawns events~{5a-c}. In this simple example, processes excite
-one another, but do not excite themselves. Next we will introduce more
-sophisticated models for such interaction networks.
+some cases a single parent spike induces multiple children, e.g.,
+spike~4 spawns spikes~{5a-c}. In this simple example, processes excite
+one another, but do not excite themselves.
 
 \section{The Network Hawkes Model}
 \label{sec:network_hawkes_model}
@@ -617,19 +629,15 @@ on~$\bA$ and~$\bW$.  The empty graph model recovers independent
 background processes, and the complete graph recovers the standard
 Hawkes process introduced by \citet{Hawkes-1971}.  Making~$\hbar$ a
 probability density endows~$\bW$ with units of ``expected number of
-events'' and allows us to compare the relative strength of
+spikes'' and allows us to compare the relative strength of
 interactions. The form suggests an intuitive generative model: for
 each impulse response draw~${k \sim \text{Poisson}(w_{n \to n'})}$
-number of induced events and draw the~$k$ child event times
+number of induced spikes and draw the~$k$ child spike times
 i.i.d.\ from~$\hbar$.  
 As we will see, this enables computationally
 tractable conjugate priors.
 
-We can now write down the joint probability of the probabilistic model.
-Let~$\theta$ denote the parameters of the network model, like the connection
-probabilities under the Bernoulli model or the class-specific mean and variance
-under a stochastic block model for the weights. 
-The joint probability is,
+We can now write down the joint probability of the probabilistic model,
 \begin{multline}
 \label{eq:hawkes_complete_model}
 p(\{s_m, c_m, \omega_m\}, \bA, \bW, \{\{\theta_{n \to n'}\}\}, \{\lambda^{(0)}_{n}\}, \{\bz_n\}, \bvartheta \given \boldeta) 
@@ -645,8 +653,8 @@ Before deriving inference algorithms for this model, however, we pause
 to consider some of its theoretical properties.
 
 
-% Intuitively, the background rates,~$\lambda^{(0)}_{n}(t)$, explain events
-% that cannot be attributed to preceding events. In the simplest case
+% Intuitively, the background rates,~$\lambda^{(0)}_{n}(t)$, explain spikes
+% that cannot be attributed to preceding spikes. In the simplest case
 % the background rate is constant. However, there are often fluctuations
 % in overall intensity that are shared among the processes, and not
 % reflective of process-to-process interaction, as we will see in the
@@ -802,7 +810,7 @@ parameters,~$\bA$,~$\bW$, $\{\lambda^{(0)}_{n}\}$, $\{\theta_{n \to n'}\}$,
 and the paremeters of the network,~$\{\bz_n\}$ and~$\bvartheta$.
 In order to simplify our Gibbs updates, we
 will also sample a set of parent assignments for each
-event~$\{\omega_m\}$. Incorporating these parent variables enables
+spike~$\{\omega_m\}$. Incorporating these parent variables enables
 conjugate prior distributions and simple and efficient Gibbs sampling
 algorithm.
 
@@ -852,22 +860,27 @@ These sufficient statistics count the number of spikes caused
 by an connection~${n \to n'}$ and the total unweighted rate induced by
 spikes on neuron~$n$.
 
-Now that we have simplified the augmented log likelihood, we see that it is
-conjugate with a gamma prior on the weights,
-${w_{n \to n'} \sim \distGamma(\kappa, \nu})$.
-In Section~\ref{sec:graph_models} we introduced weight models that 
-output a
+Now that we have simplified the augmented log likelihood, we see that
+it is conjugate with a gamma prior on the weights, ${w_{n \to n'} \sim
+  \distGamma(\kappa_{n \to n'}, \nu_{n \to n'}})$.  In
+Section~\ref{sec:graph_models} the weight models specified the
+mean,~$\mu_{n \to n'}$.  For a gamma distribution,~${\mu_{n \to n'} =
+  \frac{\kappa_{n \to n'}}{\nu_{n \to n'}}}$. The simplest way to
+reconcile these is to fix the shape parameter~${\kappa_{n \to n'}
+  \equiv \kappa}$, then we can compute the rate,~$\nu_{n \to n'}$
+for any given mean. 
 
-The resulting conditional distribution is,
+Assuming~$\kappa$ and~$\nu_{n \to n'}$ are given,
+the conditional distribution of the weights is,
 \begin{align*}
-  p(w_{n \to n'}\given \{s_m,c_m,\omega_m\}_{m=1}^M, a_{n\to n'}=1, \kappa, \nu)
+  p(w_{n \to n'}\given \{s_m,c_m,\omega_m\}_{m=1}^M, a_{n\to n'}=1, \kappa, \nu_{n \to n'})
   &= 
   \distGamma(w_{n \to n'} \given \widetilde{\kappa}_{n \to n'}, \widetilde{\nu}_{n \to n'}),
 \end{align*}
 where
 \begin{align*}
   \widetilde{\kappa}_{n \to n'} &= \kappa + M_{n \to n'}, \\
-  \widetilde{\nu}_{n \to n'} &= \nu + M_n.
+  \widetilde{\nu}_{n \to n'} &= \nu_{n \to n'} + M_n.
 \end{align*}
 
 
@@ -887,7 +900,7 @@ distribution is,
 
 % This conjugacy no longeu r holds for log Gaussian Cox process background
 % rates, but conditioned upon the parent variables, we must simply fit a
-% log Gaussian Cox process for those events for which~${\omega_m=0}$. We use
+% log Gaussian Cox process for those spikes for which~${\omega_m=0}$. We use
 % elliptical slice sampling \cite{Murray-2010} for this purpose.
 
 \paragraph{Sampling impulse response parameters $\theta_{n \to n'}$.}
@@ -913,7 +926,7 @@ x_{m \to m'} &\triangleq \ln(s_{m'}-s_m)-\ln(t_{\sf{max}}-(s_{m'}-s_m)), \\
 \bar{x}_{n \to n'} &= \frac{1}{M_{n \to n'}} \sum_{m=1}^M \sum_{m'=1}^M \bbI[c_m=n] \, \bbI[c_{m'}=n'] \, \bbI[\omega_{m'}=m] \,x_{m \to m'}, \\
 v_{n \to n'} &= \sum_{m=1}^M \sum_{m'=1}^M \bbI[c_m=n] \, \bbI[c_{m'}=n'] \, \bbI[\omega_{m'}=m] \, (x_{m \to m'} - \bar{x})^2.
 \end{align*}
-Intuitively, these correspond to the number of events caused by an
+Intuitively, these correspond to the number of spikes caused by an
 interaction and the mean and variance of their (transformed) delays.
 %The conditional distribution is,
 %\begin{align*}
@@ -978,7 +991,7 @@ columns and achieve an~$\mcO(N)$ speedup.
 
 Once the adjacency matrix has been resampled, the parent variables
 are updated by Poisson thinning --- that is, by sampling from their
-discrete conditional distribution. Again, these are all conditionally
+categorical conditional distribution. Again, these are all conditionally
 independent, so the~$M$ auxiliary variables can be sampled in parallel.
 We have implemented our inference algorithm on GPUs to capitalize
 on this parallelism.
@@ -1023,30 +1036,31 @@ are easy by design.
     closed form.
     
     The remaining parameters include the log-odds,~$\gamma_0$, if the
-    distance model applies to the adjacency matrix. This can be
-    sampled alongside the locations with HMC.  For a latent distance
-    model of weights, the baseline mean and
-    variance,~$(\mu_0,\sigma^2)$, are conjugate with a normal
-    inverse-gamma prior.
+    distance model applies to the adjacency matrix, and the baseline
+    mean,~$\mu_0$, if it applies to the weight matrix. These can be
+    sampled alongside the locations with HMC.  
 \end{itemize}
 
 \paragraph{Computational concerns.}
-\todo{discuss complexity on a serial machine}
-Compact impulse responses limit the number of potential event parents
+The complexity of
+inference is primarily driven by the number of spikes,~$M$. We must
+update the auxiliary variable of each spike, and in the worst case
+there are~$m$ potential parents for the~$m$-th spike. Hence, this
+operation can be at worst~$\mcO(M^2)$ complexity.  In practice,
+fompact impulse responses limit the number of potential spike parents
 and significantly reduce the memory requirements and running time of
-our algorithm. If the average firing rate is constant, the expected
-number of potential parents per event will be linear in $N$. Summing
-the per-event contributions to the log likelihood can be done
-in~${\mathrm{O}(\log M)}$ time using standard parallel
-reductions. Hence, after parallelizing over the columns of $\bA$ and
-the parents~$\omega_m$, one step of our sampling algorithm
-takes~${\mathrm{O}(N(N+\log M))}$ time
-%when process identities are known
-%, and~${\mathrm{O}((N+M)(N+\log M))}$ time otherwise.
-On the datasets used in the following experiments, our GPU
-implementation
-%\footnote{\url{https://github.com/slinderman}}
-achieves 5-50 iterations per second.
+our algorithm. If we could bound the maximum firing rate at~$\lambda_{\mathsf{max}}$,
+the complexity of resampling parent variables would be ${\sim M \, N \, \lambda_{\mathsf{max}} \, \Delta t_{\mathsf{max}}}$. However, these auxiliary
+variables are conditionally independent so we can save a factor of~$M$
+by parallelizing their updates, as we do in our GPU implementation.
+
+The second most computationally expensive operation is updating the
+adjacency matrix and the weights. Note, however, that the columns of
+the weighted adjacency matrix are conditionally independent. Thus,
+we can save a factor of~$N$ by using block parallel Gibbs sampling.
+In order to perform these updates, we must compute sufficient statistics
+that involve sums over~$M$ spikes. Our GPU implementation uses
+standard reductions to perform this sum in~$\mcO(\log M)$ time.
 
 
 \section{Synthetic Results}
@@ -1054,12 +1068,12 @@ achieves 5-50 iterations per second.
 Our inference algorithm is first tested on synthetic data generated
 from the network Hawkes model. We perform two tests: a) a link
 prediction task where the process identities are given and the goal is
-to simply infer whether or not an interaction exists, and b) an event
-prediction task where we measure the probability of held-out event
+to simply infer whether or not an interaction exists, and b) a spike
+prediction task where we measure the probability of held-out spike
 sequences.
 
 The network Hawkes model can be used for link prediction by
-considering the posterior probability of interactions~$P(a_{n \to
+considering the posterior probability of interactions~$\Pr(a_{n \to
   n'}\given \{s_m,c_m\})$. By thresholding at varying probabilities we
 compute a ROC curve. A standard Hawkes process assumes a complete set
 of interactions~($a_{n \to n'}\equiv 1$), but we can similarly threshold
@@ -1075,8 +1089,8 @@ interaction. By summing the cross-correlation over offsets~${\Delta
   and both excitatory and inhibitory interactions. Impulse responses
   are modeled with linear basis functions. Area under the impulse
   response provides a measure of directed excitatory interaction that
-  we use to compute a ROC curve. See the supplementary material for a
-  detailed description of this model.
+  we use to compute a ROC curve. In Chapter~\ref{chap:five}, we will
+  discuss generalized linear models for spike trains in great detail.
 \begin{figure}[t]
   \begin{center}
   \begin{subfigure}[T]{.4\textwidth}
@@ -1101,14 +1115,14 @@ interaction. By summing the cross-correlation over offsets~${\Delta
     \textbf{(b)} Comparison of predictive log likelihoods, compared to
     a baseline of a Poisson process with constant rate. Improvement in
     predictive likelihood over baseline is normalized by the number of
-    events in the test data to obtain units of ``bits per spike.'' The
+    spikes in the test data to obtain units of ``bits per spike.'' The
     network Hawkes model outperforms the competitors in all sample
     networks.}
 \end{figure}
 
 We sampled ten network Hawkes processes of~$30$ nodes each with
 Erd\H{o}s-Renyi graph models, constant background rates, and the
-priors described in Section~\ref{sec:basic_model}. The Hawkes
+conjugate priors described above. The Hawkes
 processes were simulated for~${T=1000}$ seconds. We used the models
 above to predict the presence or absence of interactions. The results
 of this experiment are shown in the ROC curves of
@@ -1124,38 +1138,118 @@ standard Hawkes and the GLM provide only 60\% and 72\%, respectively,
 of this predictive power. See the supplementary material for further
 analysis.
 
+\section{Modeling Hippocampal Place Cells}
+
+\begin{figure}[t]
+  \begin{center}
+  \begin{subfigure}[T]{1.4in}
+    \includegraphics[width=\textwidth]{figures/ch2/locations_0} 
+    \label{fig:hipp_locations_0}
+  \end{subfigure}
+  \begin{subfigure}[T]{1.4in}
+    \includegraphics[width=\textwidth]{figures/ch2/locations_3} 
+    \label{fig:hipp_locations_2}
+  \end{subfigure}
+  \begin{subfigure}[T]{1.4in}
+    \includegraphics[width=\textwidth]{figures/ch2/locations_7} 
+    \label{fig:hipp_locations_7}
+  \end{subfigure}
+  \begin{subfigure}[T]{1.4in}
+    \includegraphics[width=\textwidth]{figures/ch2/locations_11} 
+    \label{fig:hipp_locations_8}
+  \end{subfigure}
+  \vspace{-3em}
+  \end{center}
+  \caption[Inferred locations of hippocampal place cells]{ Inferred
+    locations of hippocampal place cells using a latent distance model
+    as a prior distribution over the adjacency matrix. For
+    visualization, we show the posterior distribution over locations
+    for four cells at a time.  \textbf{Top:} true place field
+    centers. Marker size is proportional to the size of the place
+    field. Larger dots imply less precise place fields, which should
+    roughly translate to larger posterior variance over
+    locations. \textbf{Bottom:} 250 samples from the posterior
+    distribution over neuron locations for the four colored cells in
+    the plot above. Each sample of locations (a~${49\times 2}$ matrix) is
+    rotated to best match the true locations. Limits are the same in all plots.}
+  \label{fig:hawkes_hipp}
+\end{figure}
+
+Our first real dataset consists of a simultaneously recorded
+population of~$49$ hippocampal place cells from a rat freely foraging
+in a circular arena roughly $120$cm in diameter. The data is courtesy
+of the lab of Prof. Matthew Wilson at MIT. The recording duration was
+roughly~$25$ minutes. The first~$20$ minutes were used for model fitting 
+and the last~$5$ were reserved for predictive tests. Over the entire
+$25$ minute recording, each neuron fired on average~$1979\pm4117$ spikes (min:~$48$,
+max:~$27572$). This corresponds to a firing rate of~$1.35 \pm 2.82$Hz
+(min:~$0.32$Hz, max:~$18.88$Hz). The rat's location,~$\bx(t)$, was recorded
+along with the corresponding spike times. From this, the place field
+of the~$n$-th neuron is computed as,
+\begin{align*}
+  \bar{\bx}_n &= \frac{1}{M_n} \sum_{m=1}^M \bx(s_m) \cdot \bbI[c_m=n],
+\end{align*}
+where, again,~$M_n$ is the number of spikes fired by neuron~$n$. Likewise,
+the covariance of the place field is given by,
+\begin{align*}
+  \bV_n &= \left[ \frac{1}{M_n} \sum_{m=1}^M  \bx(s_m) \bx(s_m)^\trans  \cdot \bbI[c_m = n] \right] - \bar{\bx}_n \bar{\bx}_n^\trans.
+\end{align*}
+This gives us an estimate of the size of the place field. Let~${\bX= \{\bx_n\}}$
+denote the~${49\times 2}$ matrix of place fields.
+
+We compare a few different models for this data. Our baseline is a set
+of independent Poisson processes with constant firing rates set by
+maximum likelihood. Next, we consider a standard, densely connected
+Hawkes process.  Third, we fit a network Hawkes process with an
+independent Bernoulli prior on the adjacency matrix and an independent
+gamma prior on the weight matrix. This induces sparsity in the
+connectivity. Finally, we fit a network Hawkes model with a latent
+distance prior on the adjacency matrix and an independent gamma prior
+on the weights. In fitting this last model, we infer a distribution
+over sets of locations,~${\bZ = \{\bz_n\}}$, for the population.
+
+
+Intuitively, we expect these locations to mirror the true place fields
+since nearby cells are likely to have correlated firing rates, which
+should be captured by excitatory impulse responses between nearby
+cells.  Figure~\ref{fig:hawkes_hipp} shows that this is indeed the
+case.  In the top row, we plot the true place fields of the $49$
+neurons.  The marker size is proportional to the size of the place
+field, as measured by the largest eigenvalue of~$\bV_n$. Larger place
+fields actually imply \emph{less} precise encodings of location, so we
+expect these cells to be correlated with many others and hence also
+more variability in the inferred neuron location.  Since the posterior
+distribution over~$\bZ$ is difficult to visualize, we only show the
+marginal distribution over four cell locations at a time.
+
+The bottom row shows distributions for four sets of four cells each.
+The colors match the corresponding neuron in the plot above. Since the
+latent distance model is invariant to rotation, for each
+sample~$\bZ^{(\ell)}$, we find the orthogonal matrix,~$\bR^{(\ell)}$,
+that minimizes~${||\bX - \bR^{(\ell)} \bZ^{(\ell)}||_F}$ and apply it
+to obtain a rotated set of locations,~${\widetilde{\bZ}^{(\ell)} =
+  \bR^{(\ell)} \bZ^{(\ell)}}$.  Doing this for each sample yields a
+set of locations~$\{\widetilde{\bZ}^{(\ell)}\}_{\ell=1}^L$. These
+rotated sample are used to generate the scatter plots in the bottom
+panels of Figure~\ref{fig:hawkes_hipp}.
+
+Overall, the posterior distribution over locations is in close
+correspondence with the true place fields. In some cases, neurons with
+larger place fields (e.g. yellow neuron in left-most panels) have
+considerably larger posterior variance than cells with smaller place
+fields. With the exception of the gree and yellow neurons in the
+second panel, the arrangement of the four cells also matches the
+relative arrangement of the true place fields. This illustrates how
+Hawkes processes combined with latent variable models can provide
+interpretable portraits of complex datasets and find low-dimensional
+embeddings that recover known structure.
+
+\TODO{Table of predictive log likelihoods}
+
+
+
 \section{Trades on the S\&P 100}
 \label{sec:financial}
-As an example of how Hawkes processes may discover interpretable
-latent structure in real-world data, we study the trades on the
-S\&P~100 index collected at 1s intervals during the week of Sep.~28
-through Oct.~2,~2009. Every time a stock price changes by~${\pm0.1\%}$
-of its current price an event is logged on the stock's process,
-yielding a total of~${N=100}$ processes and~${M=182,037}$ events.
-
-Trading volume varies substantially over the course of the day, with
-peaks at the opening and closing of the market. This daily variation
-is incorporated into the background rate via a log Gaussian Cox
-process (LGCP) with a periodic kernel (see supplementary material). We
-look for short-term interactions on top of this background rate with
-time scales of~${\Delta t_{\textsf{max}}=60\mathrm{s}}$.
-
-% Table of financial results
-\begin{table}
-  \begin{center}
-    \begin{tabular}{l|c}
-      \textbf{Financial Model} & \textbf{Pred. log lkhd. (bits/spike)} \\
-      \hline
-      Indep. LGCP & $0.594$ \\
-      Std. Hawkes & $0.912$ \\
-      Net. Hawkes (Erd\H{o}s-Renyi) & $0.903$ \\
-      Net. Hawkes (Latent Distance) & $0.888$ \\
-      %Net. Hawkes (SBM) & $0.894$ \\
-    \end{tabular}
-  \end{center}
-    \caption{Comparison of financial models on a event prediction task, relative to a homogeneous Poisson process baseline.}
-    \label{tab:financial_pred_ll}
-\end{table}
 
 % Financial embedding
 \begin{figure}[t]
@@ -1192,6 +1286,22 @@ time scales of~${\Delta t_{\textsf{max}}=60\mathrm{s}}$.
   \label{fig:financial_embedding}
 \end{figure}
 
+While the focus of this thesis is on modeling \emph{neural}
+spike trains, these models have broad applicability outside neuroscience
+as well. Here we present one example in which we study the trades on the
+S\&P~100 index collected at 1s intervals during the week of Sep.~28
+through Oct.~2,~2009. Every time a stock price changes by~${\pm0.1\%}$
+of its current price a spike is logged on the stock's process,
+yielding a total of~${N=100}$ processes and~${M=182,037}$ spikes.
+
+Trading volume varies substantially over the course of the day, with
+peaks at the opening and closing of the market. Rather than attempting
+to model this background fluctuation with a constant background rate,
+here we use a log Gaussian Cox process (LGCP) with a periodic kernel
+instead. Complete details of inference are given in
+\citet{linderman2014discovering}. We look for short-term interactions
+on top of this background rate with time scales of~${\Delta
+  t_{\textsf{max}}=60\mathrm{s}}$.
 
 In Figure~\ref{tab:financial_pred_ll} we compare the
 predictive performance of independent LGCPs, a standard Hawkes process
@@ -1217,9 +1327,28 @@ distributed, suggesting that these stocks are less influenced by
 others in their sector. For the consumer industry, which is driven by
 slowly varying factors like inventory, this may not be surprising.
 
+
+% Table of financial results
+\begin{table}
+  \begin{center}
+    \begin{tabular}{l|c}
+      \textbf{Financial Model} & \textbf{Pred. log lkhd. (bits/spike)} \\
+      \hline
+      Independent LGCP & $0.594$ \\
+      Standard Hawkes & $0.912$ \\
+      Net. Hawkes ($\bA \sim $ Erd\H{o}s-Renyi Model) & $0.903$ \\
+      Net. Hawkes ($\bA \sim $ Latent Distance Model) & $0.888$ \\
+      %Net. Hawkes (SBM) & $0.894$ \\
+    \end{tabular}
+  \end{center}
+    \caption{Comparison of financial models on a spike prediction task, relative to a homogeneous Poisson process baseline.}
+    \label{tab:financial_pred_ll}
+\end{table}
+
+
 The Hinton diagram in the bottom panel of
-Figure~\ref{fig:financial_embedding} shows the top 4 eigenvectors of
-the interaction network. All eigenvalues are less than 1, indicating
+Figure~\ref{fig:financial_embedding} shows the top $4$ eigenvectors of
+the interaction network. All eigenvalues are less than $1$, indicating
 that the system is stable. The top row corresponds to first
 eigenvector~(${\lambda_{\mathsf{max}}=0.74}$). Apple~(\texttt{AAPL}),
 J.P. Morgan~(\texttt{JPM}), and Exxon Mobil~(\texttt{XOM}) have
@@ -1231,7 +1360,8 @@ activity will spawn cascades of self-excitation.
 
 \section{Gangs of Chicago}
 \label{sec:chicago}
-In our final example, we study spatiotemporal patterns of gang-related
+As a second example of applications outside neuroscience,
+we study spatiotemporal patterns of gang-related
 homicide in Chicago. Sociologists have suggested that gang-related
 homicide is mediated by underlying social networks and occurs in
 mutually-exciting, retaliatory patterns \cite{Papachristos-2009}. This
@@ -1292,15 +1422,14 @@ homicides in the~${77}$ communities of Chicago.
 \end{figure}
 
 
-We evaluate our model with an event-prediction task, training on
+We evaluate our model with a spike-prediction task, training on
 1980-1993 and testing on 1994-1995. We use a LGCP temporal background
 rate in all model variations. Our baseline is a single process with a
-uniform spatial rate for the city.  We test two process identity
-models: a)~the ``community'' model, which considers each community a
-separate process, and b)~the ``cluster'' model, which groups
+uniform spatial rate for the city. Here, however, the analogous ``neurons''
+are not so clear. We consider two models:  a)~the ``community'' model, which considers each community a separate ``neuron,'' or process, and b)~the ``cluster'' model, which groups
 communities into processes. The number of clusters is chosen by
-cross-validation (see supplementary material). For each process
-identity model, we compare four graph models: a)~independent LGCPs
+cross-validation (again, see \citet{linderman2014discovering}).
+For each process identity model, we compare four graph models: a)~independent LGCPs
 (\emph{empty}), b)~a standard Hawkes process with all possible
 interactions (\emph{complete}), c)~a network Hawkes model with a
 sparsity-inducing Erd\H{o}s-Renyi graph prior, and d)~a network Hawkes
@@ -1345,24 +1474,21 @@ peaking in the summer and tapering in the winter. A LGCP with a
 quadratic kernel point-wise added to a periodic kernel captures both
 effects.
 
-\section{Related Work}
+\section{Discussion}
+Hawkes processes and latent network discovery have been a subject
+of recent interest in the machine learning community. Much of this
+interest stems from the growth of social networking applications
+which produce massive amounts of spiking data. 
 \citet{Gomez-2010} introduced one of the earliest algorithms for
-discovering latent networks from cascades of events. They developed a
+discovering latent networks from cascades of spikes in social network
+data. They developed a
 highly scalable approximate inference algorithm, but they did not
 explore the potential of random network models or emphasize the point
 process nature of the data.
-%Coupling their approach with the random network models studied here
-%could lead to scalable and insightful models.  Multivariate point
-%processes are of great interest to the machine learning community as
-%they are intuitive models for a variety of natural phenomena. We have
-%leveraged previous work on Poisson processes with Gaussian process
-%intensities in our background rate models \cite{Cunningham-2008}.
 \citet{Simma-2010} studied this problem from the context of Hawkes
 processes and developed an expectation-maximization inference
-algorithm.
-%An expectation-maximization inference algorithm for Hawkes processes
-%was put forth by \citet{Simma-2010} and applied to very large social
-%network datasets.
+algorithm that could scale to massive datasets, like the interactions
+between authors on Wikipedia.
 We have adapted their latent variable formulation in our
 fully-Bayesian inference algorithm and introduced a framework for
 prior distributions over the latent network.
@@ -1371,12 +1497,11 @@ Others have considered special cases of the model we have
 proposed. \citet{Blundell-2012} combine Hawkes processes and the
 Infinite Relational Model (a specific exchangeable graph model with an
 Aldous-Hoover representation) to cluster processes and discover
-interactions. \citet{Cho-2013} applied Hawkes processes to gang
+interactions in email networks. \citet{Cho-2013} applied Hawkes processes to gang
 incidents in Los Angeles. They developed a spatial Gaussian mixture
 model (GMM) for process identities, but did not explore structured
 network priors. We experimented with this process identity model but
-found that it suffers in predictive log likelihood tests (see
-supplementary material).
+found that it suffers in predictive log likelihood tests.
 
 Recently, \citet{Iwata-2013} developed a stochastic EM algorithm for
 Hawkes processes, leveraging similar conjugacy properties, but without
@@ -1388,51 +1513,35 @@ processes, similar to some of the network models we explored.
 for Hawkes processes with a similar emphasis on structural patterns in
 the network of interactions. They provide an estimator capable of
 discovering homophily
-%(the tendency for similar processes to interact) 
 and other network effects. Our fully-Bayesian approach generalizes
 this method to capitalize on recent developments in random network
 models \cite{Lloyd-2012}.
-% and allows for nonparametric background rates.
 
 Finally, generalized linear models (GLMs) are widely used in
 computational neuroscience \cite{Paninski-2004}. GLMs allow for both
 excitatory and inhibitory interactions, but, as we have shown, when
 the data consists of purely excitatory interactions, Hawkes processes
-outperform GLMs in link- and event-prediction tests.
+outperform GLMs in link- and spike-prediction tests. We will discuss
+these models in Chapter~\ref{chap:five}
 
-\section{Conclusion}\label{discussion}
-%We developed a framework for discovering directed network structure
-%in spiking datasets. We introduced an auxiliary variable formulation
-%of the multivariate Hawkes process which supports arbitrary
-%Aldous-Hoover graph priors, Gaussian process background rates, and
-%models of unobserved process identities. Our Markov chain Monte Carlo
-%algorithm leverages conjugate priors and several opportunities for
-%parallelism. Additionally, we leveraged results from random matrix
-%theory to analyze the conditions under which some random network
-%models will be stable. Our applications uncovered interpretable
-%latent networks in a variety of synthetic and real-world problems.
-
-%Networks are powerful tools for describing the interactions we
-%observe in nearly all areas of science. However, these networks are
-%not always explicitly observable. Our fully-Bayesian approach allows
-%us to reason about uncertainty in the latent network structure,
-%taking into account noisy observations and prior beliefs. This work
-%unites implicit network models and Hawkes process
-%observations. Generalizing this framework to other observation models
-%is a promising future direction.
-
-We developed a framework for discovering latent network structure from
-spiking data. Our auxiliary variable formulation of the multivariate
-Hawkes process supported arbitrary Aldous-Hoover graph priors, log
-Gaussian Cox process background rates, and models of unobserved
-process identities.
-%With parallel MCMC, we reasoned about uncertainty in the latent network in a fully-Bayesian manner. 
+This chapter developed a framework for discovering latent network
+structure from spiking data with mutually excitatory interactions. Our
+auxiliary variable formulation of the multivariate Hawkes process
+supports a broad class of prior distributions on latent network
+structure. This allows us to connect interpretable latent variables,
+like neuron types and features, to a dynamic model for spike trains.
 Our parallel MCMC algorithm allowed us to reason about uncertainty in
 the latent network in a fully-Bayesian manner.  We leveraged results
 from random matrix theory to analyze the conditions under which random
 network models will be stable, and our applications uncovered
 interpretable latent networks in a variety of synthetic and real-world
 problems.
-%Generalizing beyond the Hawkes observation model is a promising avenue for future work.
+
+Hawkes processes are the point process analogue of linear autoregressive
+models. The firing rate is a sum of non-negative impulse responses induced
+by preceding spikes. As we generalize these models in the following
+chapters, we will exploit this relationship and consider natural extensions
+like discrete time, nonlinear, and nonstationary versions of the model.
+
 
 
