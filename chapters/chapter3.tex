@@ -26,7 +26,7 @@ we create a simplified object for analysis.
 A great deal can be learned by considering simple network properties
 like the average number of connections per node, or higher order
 statistics like ``betweenness'' and the number of connected triangles
-\cite{bullmore2009complex}.  Some network analyses involve
+\citep{bullmore2009complex}.  Some network analyses involve
 probabilistic modeling.  For example, we may look for clusters or
 features of nodes that have similar patterns of connectivity.  Other
 analyses are more supervised in nature; in a ``link prediction'' task
@@ -67,7 +67,7 @@ the form of neural spike trains, and our intuition is that a spike on
 one neuron will influence the activity of downstream neurons.  We formalize
 this with a probabilistic model based on mutually interacting point
 processes.  Specifically, we combine the Hawkes process
-\cite{Hawkes-1971} with hierarchical prior distributions on the network.  This
+\citep{Hawkes-1971} with hierarchical prior distributions on the network.  This
 combination allows us to reason about properties of neurons that govern
 network structure, which in turn governs the dynamics of activity via
 a Hawkes process. Inference
@@ -161,7 +161,7 @@ complete network is then defined by the elementwise product,~${\bA
 pattern, and the real-valued weight matrix captures the strength of
 the connections. From a modeling perspective, separating these two
 matrices allows us to separate our prior intuitions about sparsity and
-strength. This is known as a spike-and-slab model~\cite{Mitchell1988}.
+strength. This is known as a spike-and-slab model~\citep{Mitchell1988}.
 
 
 Hierarchical models can be constructed by incorporating latent
@@ -203,7 +203,7 @@ below:
   probability~$\rho$. This is also known as an Erd\H{o}s-R\'enyi model.
   
 \item \textit{Stochastic Block Model (SBM): } In the stochastic block
-  model (SBM) \cite{Nowicki-2001}, each neuron has an associated
+  model (SBM) \citep{Nowicki-2001}, each neuron has an associated
   class,~$z_n$.  The probability of connection depends on the class of
   the two neurons.  This is the network equivalent of a mixture model.
   In a Bayesian framework, we assume the class assignments are drawn
@@ -214,7 +214,7 @@ below:
     \sim \distBeta(\alpha, \beta)}$.
   
 \item \textit{Latent Distance Model: } The latent distance model
-  \cite{Hoff-2008} encodes the belief that connection probability
+  \citep{Hoff-2008} encodes the belief that connection probability
   should decrease with distance between latent locations. The
   locations are given spherical Gaussian priors,~$\bz_n \sim
   \distNormal(0, \tau \bI)$, and the scale is drawn from an inverse
@@ -278,7 +278,7 @@ associated variance,~$\sigma^2_{k \to k'}$.
 
 Probabilistic network models like these are unified under an elegant
 theoretical framework due to Aldous and Hoover
-\cite{Aldous-1981,Hoover-1979}. Conceptually, the Aldous-Hoover
+\citep{Aldous-1981,Hoover-1979}. Conceptually, the Aldous-Hoover
 representation characterizes the class of \textit{exchangeable} random
 graphs, that is, graph models for which the joint probability is
 invariant under permutations of the node labels. Just as de Finetti's
@@ -407,7 +407,7 @@ an underlying network.
 
 \section{Hawkes Processes}
 \label{sec:hawkes_processes}
-Hawkes processes \cite{Hawkes-1971} are a special type of point process
+Hawkes processes \citep{Hawkes-1971} are a special type of point process
 that allow spikes to influence the future firing rate. This is achieved
 via a linear superposition of Poisson processes. Before jumping into the
 details, a brief primer on Poisson processes is in order.
@@ -502,7 +502,7 @@ given by the relative rate at the time of the spike. This is known as
 \subsection{Including Spike History with Hawkes Processes}
 Though Poisson processes have many nice properties, they cannot
 capture interactions between spikes. For this we turn to a more
-general model known as Hawkes processes \cite{Hawkes-1971}. 
+general model known as Hawkes processes \citep{Hawkes-1971}. 
 First, consider the spike train of a single neuron,~$\{s_m\}_{m=1}^M \subset [0,T]$.
 In a Hawkes process, the firing rate at time,~$\lambda(t \given \mcH_t)$, is a function of 
 the spike history,~${\mcH_t = \{s_m: s_m < t\}}$.  The neuron has a 
@@ -660,7 +660,7 @@ to consider some of its theoretical properties.
 % reflective of process-to-process interaction, as we will see in the
 % daily variations in trading volume on the S\&P100 and the seasonal
 % trends in homicide. To capture these shared background fluctuations,
-% we use a sparse log Gaussian Cox process \cite{Moller-1998} to model
+% we use a sparse log Gaussian Cox process \citep{Moller-1998} to model
 % the background rate:
 % \begin{align*}
 %   \lambda^{(0)}_{n}(t)
@@ -901,7 +901,7 @@ distribution is,
 % This conjugacy no longer holds for log Gaussian Cox process background
 % rates, but conditioned upon the parent variables, we must simply fit a
 % log Gaussian Cox process for those spikes for which~${\omega_m=0}$. We use
-% elliptical slice sampling \cite{Murray-2010} for this purpose.
+% elliptical slice sampling \citep{Murray-2010} for this purpose.
 
 \paragraph{Sampling impulse response parameters $\theta_{n \to n'}$.}
 The logistic-normal density with parameters~${\theta_{n \to
@@ -1026,7 +1026,7 @@ are easy by design.
     conjugate.
     
   \item \textit{Latent location updates}:
-    We resample the locations using hybrid Monte Carlo (HMC) \cite{Neal10}.
+    We resample the locations using hybrid Monte Carlo (HMC) \citep{Neal10}.
     Since the latent variables are continuous and unconstrained,
     this method is quite effective.
 
@@ -1085,7 +1085,7 @@ interaction. By summing the cross-correlation over offsets~${\Delta
   interaction. A probabilistic alternative is offered by the
   generalized linear model for point processes (GLM), a popular model
   for spiking dynamics in computational neuroscience
-  \cite{Paninski-2004}. The GLM allows for constant background rates
+  \citep{Paninski-2004}. The GLM allows for constant background rates
   and both excitatory and inhibitory interactions. Impulse responses
   are modeled with linear basis functions. Area under the impulse
   response provides a measure of directed excitatory interaction that
@@ -1425,7 +1425,7 @@ notably large entries in the eigenvector, suggesting that their
 activity will spawn cascades of self-excitation.
 % Removing this since it is entirely speculative
 %The fourth eigenvector~(${\lambda_4=0.34}$) is dominated by Walgreens~(\texttt{WAG}) and CVS~(\texttt{CVS}), suggesting bursts of activity in these drug stores.
-%, perhaps due to encouraging quarterly reports during flu season \cite{Walgreens-NYT-2009}.
+%, perhaps due to encouraging quarterly reports during flu season \citep{Walgreens-NYT-2009}.
 
 \section{Gangs of Chicago}
 \label{sec:chicago}
@@ -1433,13 +1433,13 @@ As a second example of applications outside neuroscience,
 we study spatiotemporal patterns of gang-related
 homicide in Chicago. Sociologists have suggested that gang-related
 homicide is mediated by underlying social networks and occurs in
-mutually-exciting, retaliatory patterns \cite{Papachristos-2009}. This
+mutually-exciting, retaliatory patterns \citep{Papachristos-2009}. This
 is consistent with a spatiotemporal Hawkes process in which processes
 correspond to gang territories and homicides incite further homicides
 in rival territories.
 
 We study gang-related homicides between 1980 and 1995
-\cite{ICPSR}. Homicides are labeled by the community in which they
+\citep{ICPSR}. Homicides are labeled by the community in which they
 occurred. Over this time-frame there were~${M=1637}$ gang-related
 homicides in the~${77}$ communities of Chicago.
 
@@ -1533,11 +1533,11 @@ cluster (Figure~\ref{fig:chicago_interactions}) suggests that these
 regions are prone to bursts of activity, as one might expect during a
 turf-war. This interpretation is supported by reports of ``a burst of
 street-gang violence in 1990 and 1991'' in West Englewood
-(${41.77^\circ}$N, ${-87.67^\circ}$W) \cite{Block-1993}.
+(${41.77^\circ}$N, ${-87.67^\circ}$W) \citep{Block-1993}.
 
 Figure~\ref{fig:chicago_rates} also shows a significant increase in
 the homicide rate between 1989 and 1995, consistent with reports of
-escalating gang warfare \cite{Block-1993}. In addition to this
+escalating gang warfare \citep{Block-1993}. In addition to this
 long-term trend, homicide rates show a pronounced seasonal effect,
 peaking in the summer and tapering in the winter. A LGCP with a
 quadratic kernel point-wise added to a periodic kernel captures both
@@ -1590,10 +1590,10 @@ the network of interactions. They provide an estimator capable of
 discovering homophily
 and other network effects. Our fully-Bayesian approach generalizes
 this method to capitalize on recent developments in random network
-models \cite{Lloyd-2012}.
+models \citep{Lloyd-2012}.
 
 Finally, generalized linear models (GLMs) are widely used in
-computational neuroscience \cite{Paninski-2004}. GLMs allow for both
+computational neuroscience \citep{Paninski-2004}. GLMs allow for both
 excitatory and inhibitory interactions, but, as we have shown, when
 the data consists of purely excitatory interactions, Hawkes processes
 outperform GLMs in link- and spike-prediction tests. We will discuss

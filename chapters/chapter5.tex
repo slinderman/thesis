@@ -41,9 +41,9 @@ neuron-specific global parameters~$\nu_n$,
 
 This nonlinear autoregressive model is also known as a generalized
 linear model (GLM), and it is widely used in neuroscience
-\cite{Paninski-2004, Truccolo-2005, Pillow-2008}. When the spike
+\citep{Paninski-2004, Truccolo-2005, Pillow-2008}. When the spike
 counts are Poisson distributed, then under general
-conditions~\cite{Paninski-2004} the likelihood of the spike counts
+conditions~\citep{Paninski-2004} the likelihood of the spike counts
 will be log concave and amenable to efficient, exact
 optimization. Unfortunately, once we introduce nontrivial prior
 distributions, like the network models we considered here, the
@@ -400,7 +400,7 @@ When the observations are not Gaussian, the conditional distribution
 of~$\bw_n$ cannot be computed in closed form and the collapsed
 updates are intractable. To circumvent this problem, we leverage
 recently developed augmentation schemes for Gaussian models with
-discrete observations \cite{polson2013bayesian, Pillow2012}. The
+discrete observations \citep{polson2013bayesian, Pillow2012}. The
 idea is to augment the observations,~$s_{t,n}$, with auxiliary
 variables,~$\omega_{t,n}$, such that conditioned upon the
 auxiliary variables, the discrete likelihood appears Gaussian.
@@ -477,7 +477,7 @@ distribution,
 \end{align*}
 These auxiliary variables are conditionally independent and hence can
 be updated in parallel. Moreover, efficient algorithms are available
-to generate \polyagamma random variates~\cite{windle2014sampling}, and
+to generate \polyagamma random variates~\citep{windle2014sampling}, and
 we have ported these to Python\footnote{\url{https://github.com/slinderman/pypolyagamma}}.
 
 \subsection{Observation Parameter Updates}
@@ -488,7 +488,7 @@ Bernoulli observations have no parameters.
 In the binomial model,~$\nu_n$ corresponds to the maximum number of
 possible spikes --- this is best set a priori.
 For negative binomial spike counts, the shape parameter~$\nu_n$ can
-be resampled as in~\cite{Zhou2012}.
+be resampled as in~\citep{Zhou2012}.
 
 
 \subsection{Sampling Network Variables and Parameters}
@@ -496,7 +496,7 @@ As before, the latent variables and parameters of the network are relatively
 easy to resample for a given network. The stochastic block model priors are 
 conjugate with the Gaussian distributed weights. The locations of the latent 
 distance model are not conjugate, but we can update them with hybrid Monte Carlo
-\cite{Neal10}.
+\citep{Neal10}.
 
 \subsection{Model Selection}
 We have constructed a probabilistic model that supports a variety
@@ -645,7 +645,7 @@ of our algorithm with synthetic data.
 We applied our model to simultaneously recorded multi-neuronal spike
 trains from a population of 27 primate retinal ganglion cells
 (RGCs). This dataset was previously analyzed with a standard
-generalized linear model in \cite{Pillow-2008}.  In this dataset, the
+generalized linear model in \citep{Pillow-2008}.  In this dataset, the
 population is presented with a Gaussian white noise video with pixel
 sizes tuned to approximately the width of a receptive field. We
 trained our models on one minute of spiking activity, binned at one
@@ -663,7 +663,7 @@ visual stimuli. \textit{On} cells increase their firing when light is
 shone upon their receptive field; \textit{off} cells decrease their
 firing rate in response to light in their receptive field.  Cell types
 are identified by similarity in their response properties as well as
-morphological and physiological properties~\cite{sanes2015types}. With
+morphological and physiological properties~\citep{sanes2015types}. With
 knowledge of the stimulus, these cells can be clearly separated into
 their respective types by clustering the spike-triggered average
 stimulus.  This characterization in terms of latent locations and cell
@@ -837,7 +837,7 @@ distances between place field centers. The latent distance model's
 pairwise distances are highly correlated with the ground truth,
 whereas distances between PCA embeddings are very uncorrelated
 (Fig.~\ref{fig:hipp_distances}). For further comparison, we fit a
-Poisson linear dynamical system (PLDS) \cite{macke2011empirical} with
+Poisson linear dynamical system (PLDS) \citep{macke2011empirical} with
 a two dimensional latent state space, and used the rows of the
 ~$N \times 2$ emission matrix as the locations of the neurons. This
 sophisticated model, which captures temporal dynamics of the neural
@@ -1172,7 +1172,7 @@ can yield large improvements in the predictive likelihood of our
 model. These improvements come from pruning connections that are
 weakly supported by the data, but which are very unlikely under the
 prior. This improvement in predictive likelihood is consistent with
-existing literature on Bayesian spike-and-slab modeling \cite{Mohamed-2012}.
+existing literature on Bayesian spike-and-slab modeling \citep{Mohamed-2012}.
 
 \sloppy
 An alternative approach is to consider models that explicitly limit 
@@ -1182,7 +1182,7 @@ electrode number), we may rule out long-range connections.
 Alternatively, we may constrain the weighted adjacency matrix to be 
 low rank, that is ${\bW \odot \bA \equiv \bU \bV^\trans}$, where~$\bU$
 and~$\bV$ are rank~${K < N}$. The effect is similar to that of 
-a linear dynamical system model~\cite{paninski2010new, macke2011empirical}. 
+a linear dynamical system model~\citep{paninski2010new, macke2011empirical}. 
 Unfortunately, it is less clear how to incorporate interpretable 
 structure into this type of model, although see~\citet{buesing2014clustered}
 for some initial steps in this direction.
@@ -1193,18 +1193,18 @@ and while we have shown reasonable performance on recordings of
 hundreds of neurons over tens of thousands of time bins, as we scale 
 to larger recordings alternative algorithms may be preferable. 
 When the complexity is dominated by the number of time bins, 
-stochastic variational inference (SVI)~\cite{Hoffman13} provides 
+stochastic variational inference (SVI)~\citep{Hoffman13} provides 
 an attractive alternative. Since the time bins are conditionally 
 independent given the network, we can get unbiased estimates of 
 sufficient statistics from \textit{mini-batches} of time bins
 and use them to inform stochastic mean field updates. 
 While we have not derived this mean field algorithm here, it is 
 relatively straightforward to derive these algorithms for 
-\polyagamma augmented models~\cite{Pillow2012, Zhou2012}. 
+\polyagamma augmented models~\citep{Pillow2012, Zhou2012}. 
 Still, the limiting factor will often be the number of neurons, 
 in which case SVI is not immediately applicable. Developing 
 approximate inference algorithms that only consider subsets of neurons is 
-an active area of research~\cite{soudry2015efficient}. 
+an active area of research~\citep{soudry2015efficient}. 
 
 \subsection{Relating circuit structure to stimuli and behavior}
 So far we have reserved the externally measured covariates for

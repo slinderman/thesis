@@ -93,18 +93,24 @@
 \renewcommand{\setthesection}{\arabic{chapter}.A\arabic{section}}
 
 % References.
-\usepackage{xifthen}
+%\usepackage{ifthen}
+\usepackage{etoolbox}
 \renewcommand\bibname{References}
 %\RequirePackage[super,comma,numbers]{natbib}
 \RequirePackage{natbib}
 \setcitestyle{authoryear,round,citesep={;},aysep={,},yysep={;}}
 %\renewcommand{\cite}[1]{\citep{#1}}
-\renewcommand{\cite}[2][]{
-%  \citep[#2][#1]{#3}
-  \ifthenelse{\isempty{#1}}
-             {\citep{#2}}
-             {\citep[#1][]{#2}}
-}
+%\renewcommand{\cite}[2][]{
+%  \ifthenelse{\isempty{#1}}
+%             {\citep{#2}}
+%             {\citep[#1][]{#2}}
+%}
+%\renewcommand{\cite}[2][]{
+%  \ifboolexpr{test {\ifstrempty{#1}}}
+%             {\citep{#2}}
+%             {\citep[#1][]{#2}}
+%}
+
 %\renewcommand{\bibnumfmt}[1]{[#1]}
 
 % Chapter stuff

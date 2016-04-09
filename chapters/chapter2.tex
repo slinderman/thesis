@@ -70,7 +70,7 @@ spiking is adequately captured by firing rates, the notion that a
 neuron has only two firing rates and that it randomly switches between
 them is obviously a gross simplification. Nevertheless, this very
 simple model captures some patterns of spiking that have been observed
-in experiment \cite{cowan1994spontaneous, shu2003turning}. 
+in experiment \citep{cowan1994spontaneous, shu2003turning}. 
 
 \sloppy We can formalize this generative story with a probabilistic
 model that specifies a distribution over latent states and observed
@@ -251,9 +251,9 @@ represent our data. In this thesis we will focus solely on modeling
 spike trains, which are sequences of discrete events in time. These
 spike trains typically come from spike sorting algorithms applied to
 extracellular recordings from multi-electrode arrays
-\cite{lewicki1998review}, or from
+\citep{lewicki1998review}, or from
 deconvolution algorithms applied to optically recorded calcium
-fluorescence traces \cite{pnevmatikakis2016simultaneous,
+fluorescence traces \citep{pnevmatikakis2016simultaneous,
   vogelstein2010fast}. Reducing the data to a set of spike times often 
 results in an enormous compression. Rather than considering electrode 
 potentials, which may be sampled at upwards of 10kHz, or calcium 
@@ -265,7 +265,7 @@ only the times of action potentials.
 % work directly with the observed extracellular recordings or calcium
 % fluorescence and treat the spike train as a latent variable.  Then,
 % the spike train must be inferred along with the rest of the model's
-% latent variables and parameters, cf. \cite{pillow2013model}. As we just 
+% latent variables and parameters, cf. \citep{pillow2013model}. As we just 
 % mentioned, this will typically incur a substantial cost, but it may be 
 % worthwhile if there is considerable uncertainty in the spike timing 
 % and if precise timing is important to the overarching model.
@@ -300,7 +300,7 @@ real-valued number.
 % resolution than the raw data affords.
 
 We typically model sets of discrete events like these as realizations
-of a \emph{marked point process} \cite{daley2003introduction1}. Such a
+of a \emph{marked point process} \citep{daley2003introduction1}. Such a
 process is defined by its non-negative firing rates\footnote{In the
   point process literature, these firing rates are called
   \emph{conditional intensity functions}.},
@@ -557,7 +557,7 @@ This is naturally interpreted as a \emph{mixed membership model} in
 which the rates at each time bin derive from a mixture of discrete
 latent states with mixing weights~$\bpi_t$. In text modeling, this motif
 is the basis of the latent Dirichlet allocation (LDA)
-model~\cite{blei2003latent}
+model~\citep{blei2003latent}
 
 Alternatively, we may replace the discrete latent state with a continuous
 one,~$\bx_t \in \reals^K$. As in the nonlinear autoregressive model,
@@ -728,7 +728,7 @@ leaves the stationary distribution intact. While there are many ways
 of developing these transition operators, one of the most common 
 is to sample from the conditional distribution of one variable 
 while holding the rest fixed. This leads to an algorithm called 
-Gibbs sampling \cite{geman1984stochastic}.
+Gibbs sampling \citep{geman1984stochastic}.
 
 \subsubsection{Gibbs Sampling}
 Consider a transition operator,~$\mcT_{\bz}$, that only updates~$\bz$,
@@ -868,7 +868,7 @@ efficient types of Gibbs updates outlined below:
 
 
 \subsection{Mean Field Variational Inference}
-Variational inference methods \cite{jordan1999introduction,
+Variational inference methods \citep{jordan1999introduction,
   wainwright2008graphical} take a fundamentally different approach to
 approximating the posterior distribution. Rather than collecting a set
 of samples, variational methods attempt to find the distribution
@@ -1031,10 +1031,10 @@ in the absence of training data. Unfortunately, training data plays the crucial
 role of winnowing the posterior distribution over parameters. Without this constraint, simple Monte Carlo estimates
 like those used to approximate the predictive likelihood will suffer from
 extremely high variance. Instead, more sophisticated methods, like annealed
-importance sampling \cite{neal2001annealed} are typically employed. 
+importance sampling \citep{neal2001annealed} are typically employed. 
 
 Finally, another means of evaluating and criticizing models is via
-\emph{posterior predictive checks} (PPCs) \cite{box1980sampling,
+\emph{posterior predictive checks} (PPCs) \citep{box1980sampling,
   Gelman13, blei2014build}.  Though we do not make use of them in this
 thesis, we note that they provide a slightly different view on model
 performance. Rather than assessing how well the model predicts

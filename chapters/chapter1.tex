@@ -173,12 +173,12 @@ who characterized simple and complex cells in visual cortex.
 These are pioneering examples of a common theme in neuroscience: 
 clustering cells into discrete types that facilitate our understanding 
 of neural computation. Indeed, the clustering of cells in the 
-early visual pathway continues to this day \cite{macosko2015highly, sanes2015types}. 
+early visual pathway continues to this day \citep{macosko2015highly, sanes2015types}. 
 
 Complementing these classic examples of discrete subtypes of neurons 
 are similarly compelling examples of neurons characterized by 
 continuous features. Most prominent among these are the place cells 
-of the hippocampus \cite{OKeefe78}. These cells fire selectively 
+of the hippocampus \citep{OKeefe78}. These cells fire selectively 
 when an animal is in a particular location in its environment. Thus,
 each cell is naturally associated with a continuous position in 
 space. As we seek to make sense of spike trains from other complex neural circuits, 
@@ -190,16 +190,16 @@ core building blocks in our probabilistic modeling toolkit.
 Networks play a central role in modern neuroscience: they distill
 complex systems into concise representations. Whether the
 nodes of the network represent individual neurons in a ``connectome''
-\cite[e.g.]{sporns2005human}, populations of cells in a neural circuit
-\cite[e.g.]{felleman1991distributed}, voxels in an fMRI recording
-\cite[e.g.]{friston1994functional}, or idealized neurons in a
-theoretical model \cite[e.g.]{hopfield1982neural}, networks tell us
+\citep[e.g.]{sporns2005human}, populations of cells in a neural circuit
+\citep[e.g.]{felleman1991distributed}, voxels in an fMRI recording
+\citep[e.g.]{friston1994functional}, or idealized neurons in a
+theoretical model \citep[e.g.]{hopfield1982neural}, networks tell us
 about the pairwise relationships in large populations of nodes.  Once we have 
 extracted such a network, a great deal of intuition can be gleaned 
-from its aggregate properties \cite{bullmore2009complex, newman2003structure}.
+from its aggregate properties \citep{bullmore2009complex, newman2003structure}.
 Moreover, the network itself can often be summarized in terms of 
 latent types and features of nodes that govern how likely any 
-pair of nodes is to be connected \cite{Goldenberg-2010}.
+pair of nodes is to be connected \citep{Goldenberg-2010}.
 
 We often use networks to represent the dynamics of complex systems.
 For example, a directed edge may represent the influence that activity
@@ -216,20 +216,20 @@ we can construct sophisticated models for dynamical spike trains.
 
 % Networks play a central role in modern neuroscience: they distill
 % complex systems into concise representations.  The goal of
-% connectomics \cite{sporns2005human} is to build a wiring diagram, or
+% connectomics \citep{sporns2005human} is to build a wiring diagram, or
 % ``connectome,'' of the brain. Each neuron in the brain is a node in
 % this network, and the edges correspond to individual synapses
 %  from one neuron to another.   Once we have extracted this massive
 % network of synaptic connections, we can perform subsequent analyses,
 % searching for recurring patterns that will illuminate underlying
 % design principles and, hopefully, provide insight into neural
-% computation \cite{bullmore2009complex}.
+% computation \citep{bullmore2009complex}.
 
 % Networks need not be so fine grained, however.  Systems neuroscientists
 % often describe intricate circuits with simplified networks whose nodes
 % correspond to populations of cells, and whose edges denote the an
 % abundance connections from one population to another
-% \cite[e.g.]{felleman1991distributed, scannell1999connectional}.  Since
+% \citep[e.g.]{felleman1991distributed, scannell1999connectional}.  Since
 % neurons in a particular brain region often have highly stereotyped
 % patterns of connectivity, it is convenient to describe neural circuits
 % in terms of block diagrams.  These abstract networks do not capture
@@ -239,10 +239,10 @@ we can construct sophisticated models for dynamical spike trains.
 % Even in functional magnetic resonance imaging (fMRI) studies, where the
 % recorded voxels correspond to hundreds of thousands of neurons, networks
 % are used to describe \emph{functional connectivity} between brain regions
-% \cite{friston1994functional}. While these networks are far removed from
+% \citep{friston1994functional}. While these networks are far removed from
 % the underlying synaptic connectivity, they exhibit telling differences
-% in healthy and diseased patients \cite{bassett2008hierarchical}
-% and show complex structure that is far from random \cite{bassett2006small}.
+% in healthy and diseased patients \citep{bassett2008hierarchical}
+% and show complex structure that is far from random \citep{bassett2006small}.
 
 % % In fact, network models need not be derived from data at all.  Many
 % % theoretical models of neural computation use networks to describe
@@ -250,7 +250,7 @@ we can construct sophisticated models for dynamical spike trains.
 % % loosely based on the known properties of neurons and
 % % synapses. Nevertheless, these theoretical network models provide
 % % invaluable insight into the properties of complex systems
-% % \cite{hopfield1982neural, amit1992modeling, van1996chaos, DayanAbbott,
+% % \citep{hopfield1982neural, amit1992modeling, van1996chaos, DayanAbbott,
 % %   sussillo2009generating}.
 
 \subsection{Latent States of Neural Populations}
@@ -258,9 +258,9 @@ Networks model dynamic data in terms of relationships between nodes,
 which we typically associate with individual neurons. In some cases,
 however, it is more natural to think about neural dynamics in terms of 
 a latent state that evolves over time. For example, population activity 
-might reflect a low-dimensional, continuous latent state with smooth \cite{Yu09} 
-or linear \cite{Smith-2003, paninski2010new} dynamics, or a discrete latent 
-state with Markovian dynamics \cite[e.g.]{jones2007natural, latimer2015single}. 
+might reflect a low-dimensional, continuous latent state with smooth \citep{Yu09} 
+or linear \citep{Smith-2003, paninski2010new} dynamics, or a discrete latent 
+state with Markovian dynamics \citep[e.g.]{jones2007natural, latimer2015single}. 
 In these models, the firing rates of individual neurons are a function
 of the underlying latent state. 
 
@@ -287,10 +287,10 @@ structure of the data and the shortcomings of our theories.
 Recent decades have witnessed an explosion of interest in Bayesian
 methods, and the development of both theoretical and analytical tools
 have led to the widespread adoption of these techniques
-\cite{bishop2006pattern, murphy2012probabilistic}. 
+\citep{bishop2006pattern, murphy2012probabilistic}. 
 % Nevertheless,
 % ``black box'' methods for performing Bayesian inference are still a
-% very active area of research \cite{ranganath2013black,
+% very active area of research \citep{ranganath2013black,
 %   goodman2008church}, and efficient inference algorithms for complex
 % models can still benefit greatly by leveraging model-specific
 % structure. 
@@ -325,7 +325,7 @@ exploring this posterior often lead to new insights and ways to think
 about generative processes that can explain the data. We can also 
 criticize the model, formally, by assessing goodness-of-fit, evaluating 
 predictive likelihoods, and performing posterior predictive checks 
-\cite{Gelman13}. This too leads to new hypotheses, which in turn lead to 
+\citep{Gelman13}. This too leads to new hypotheses, which in turn lead to 
 new models and another iteration of this process.
 \citet{blei2014build}, from whom this
 figure has been adapted, calls this ``Box's loop,'' a reference to the 
@@ -334,9 +334,9 @@ foundational work of~\citet{box1980sampling}.
 
 
 We are certainly not the first to adopt a Bayesian approach to modeling 
-of neural data. Indeed, probabilistic methods \cite[e.g.]{brillinger1976identification,
+of neural data. Indeed, probabilistic methods \citep[e.g.]{brillinger1976identification,
 Brillinger-1988, Paninski-2004, Truccolo-2005, Pillow-2008}, 
-particularly Bayesian methods \cite[e.g.]{sahani1999latent, rieke1999spikes, Yu09,
+particularly Bayesian methods \citep[e.g.]{sahani1999latent, rieke1999spikes, Yu09,
 park2011bayesian, macke2011empirical}, 
 have played a major role in advancing our understanding of spike trains. 
 We build on this foundation and specifically focus on expanding the 

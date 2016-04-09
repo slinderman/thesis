@@ -1014,7 +1014,7 @@ be food or obstacles in the environment that affect where the rat
 goes next. 
 
 These types of external variables can be modeled with an input-output 
-HMM (IOHMM) \cite{bengio1995input}. Suppose we have an external input,
+HMM (IOHMM) \citep{bengio1995input}. Suppose we have an external input,
 ~$\bu_t \in \reals^D$. We can model the transition probability as,
 \begin{align*}
 \bpi^{(k)} &\propto \exp\{\bpsi^{(k)} + \bW \bu_t\}, \\
@@ -1026,7 +1026,7 @@ When sampling the latent states, we simply compute the instantaneous
 transition probabilities for each time step. In order to update the 
 transition weights,~$\bW$, and the baseline probabilities,~$\bpsi^{(k)}$,
 we can either use HMC or our recently developed \polyagamma augmentation scheme for multinomial
-models \cite{linderman2015dependent}.
+models \citep{linderman2015dependent}.
 
 
 \section{Conclusion}
