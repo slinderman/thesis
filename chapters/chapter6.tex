@@ -15,7 +15,7 @@ record from and stimulate large populations of synaptically connected
 neurons. Armed with statistical tools capable of inferring
 time-varying synaptic connectivity, neuroscientists could test
 competing models of synaptic plasticity, discover new learning rules
-at the monosynaptic and network level, investigate the effects of
+at the mono-synaptic and network level, investigate the effects of
 disease on synaptic plasticity, and potentially design stimuli to
 modify neural networks.
 
@@ -28,7 +28,7 @@ dynamical system governed by parametric synaptic plasticity rules.
 % nonlinear) dynamical system embedded in a nonlinear autoregressive model
 % of neural activity. 
 Building on the work of preceding chapters, 
-we we show how synaptic plasticity rules can be modeled as dynamics 
+we show how synaptic plasticity rules can be modeled as dynamics 
 rules that govern how weights evolve in an activity-dependent manner.
 In doing so, we imbue the weights with a biophysical interpretation 
 that we explicitly avoided in previous chapters. We discuss when this
@@ -36,12 +36,13 @@ interpretive leap is warranted.
 
 To perform inference in this model, we use particle Markov Chain Monte
 Carlo (pMCMC) \cite{Andrieu-2010}, a recently developed inference
-technique for complex time series.  We use this new modeling framework
-to examine the problem of using recorded data to distinguish between
-proposed variants of spike-timing-dependent plasticity (STDP) learning
-rules. On synthetic data generated from the biophy sical simulator
-NEURON, we show that we can recover the weight trajectories, the
-pattern of connectivity, and the underlying learning rules.
+technique for time series with nonlinear dynamics.  We use this new
+modeling framework to examine the problem of using recorded data to
+distinguish between proposed variants of spike-timing-dependent
+plasticity (STDP) learning rules. On synthetic data generated from the
+biophysical  simulator NEURON, we show that we can recover the weight
+trajectories, the pattern of connectivity, and the underlying learning
+rules.
 
 \section{A Biophysical Interpretation of the GLM}
 The nonlinear autoregressive models of the previous chapter 
@@ -49,7 +50,7 @@ treat the spike count,~$s_{t,n}$, as a random variable whose
 distribution depends on a non-negative firing rate,~$\lambda_{t,n}$.
 The firing rate is modeled as a nonlinear function of an activation,~$\psi_{t,n}$,
 which is taken to be a linear function of the spike history.
-This linear-nonlinear cascade is often called a generalized linear model 
+This linear-nonlinear cascade is often called a generalized linear model (GLM) 
 \cite{Paninski-2004, Truccolo-2005}.
 
 From a biophysical perspective, the activation can be thought of as 
@@ -59,7 +60,7 @@ threshold of the neuron.
  When the membrane potential exceeds the spiking threshold
 potential of the cell,~$\lambda_{t,n}$ rises to reflect the rate of the
 cell's spiking, and when the membrane potential decreases below the
-spiking threshold,~$\lambda(t)$ decays to zero. 
+spiking threshold,~$\lambda_{t,n}$ decays to zero. 
 
 As before, we model the activation, or membrane potential,
  as a linear function of the spike history,
@@ -67,8 +68,8 @@ As before, we model the activation, or membrane potential,
   \label{eqn:glm_rate}
   \psi_{t,n} &= \psi_n^{(0)} + \sum_{n=1}^N \sum_{d=1}^D h_{n' \to n}[d] \cdot s_{t-d, n'}.
 \end{align}
-where~$\psi_n^{(0)}$ is the baseline activation,  and~$h_{n'\to n}[d]$
-is an impulse response that preceding spikes on
+where~$\psi_n^{(0)}$ is now the resting potential and~$h_{n'\to n}[d]$
+is a post-synaptic potential that preceding spikes on
 neuron~$n'$ induce on the membrane potential of neuron~$n$ at lag~$d$. 
 
 \begin{figure}[t!]
@@ -90,16 +91,17 @@ neuron~$n'$ induce on the membrane potential of neuron~$n$ at lag~$d$.
 \end{figure}
 
 From this semi-biophysical perspective it is clear that one
-shortcoming of the standard GLM is that it does not account for
-time-varying connectivity, despite decades of research showing that
-changes in synaptic weight occur over a variety of time scales and are
-the basis of many fundamental cognitive processes. This absence is
-due, in part, to the fact that this direct biophysical interpretation
-is not warranted in most traditional experimental regimes, e.g., in
-multi-electrode array (MEA) recordings where electrodes are relatively
-far apart.  However, as high resolution optical recordings grow in
-popularity, this assumption must be revisited; this is a central
-motivation for the present model.
+shortcoming of the models developed thus far is that they do not
+account for time-varying connectivity, despite decades of research
+showing that changes in synaptic weight occur over a variety of time
+scales and are the basis of many fundamental cognitive processes. This
+absence is due, in part, to the fact that this direct biophysical
+interpretation is not warranted in most traditional experimental
+regimes, e.g., in multi-electrode array (MEA) recordings where
+electrodes are relatively far apart.  However, as high resolution
+optical recordings grow in popularity, this assumption must be
+revisited; this is a central motivation for the model developed
+in this chapter.
 
 There have been a few efforts to incorporate dynamics into the
 GLM. \citet{Stevenson-2011} extended the GLM to take inter-spike
@@ -122,8 +124,8 @@ especially in traditional MEA recordings where synaptic connections
 are less likely and nonlinear dynamics are not necessarily
 warranted. Outside the realm of computational neuroscience and spike
 train analysis, there exist a number of dynamic statistical models,
-such as \citet{West-1985}, which explored dynamic generalized linear
-models. However, the types of models we are interested in for studying
+such as the dynamic generalized linear models of \citet{West-1985}.
+However, the types of models we are interested in for studying
 synaptic plasticity are characterized by domain-specific transition
 models and sparsity structure, and until recently, the tools for
 effectively performing inference in these models have been limited.
@@ -151,7 +153,7 @@ not change over time, that is, only the amplitude and not the duration
 of the PSPs are time-varying. This restriction could be adapted in
 future work.
 
-As is often done in GLMs, we model the normalized impulse responses as
+As in previous chapters, we model the normalized impulse responses as
 a linear combination of basis functions. In order to enforce the
 normalization of~$\hbar[d]$, however, we use a \emph{convex}
 combination of normalized, nonnegative basis functions. That is,
@@ -170,12 +172,12 @@ weights. This factorization is often called a \emph{spike-and-slab}
 prior \cite{Mitchell1988}, and it allows us to separate our prior
 beliefs about the structure of the synaptic network from those about
 the evolution of synaptic weights. For example, in the most general
-case we might incorporate the probabilistic network models of previous chapters
- as prior distributions for~$\bA$, but here we limit
-ourselves to the simplest network model, the Erd\H{o}s-Renyi
-model. Under this model, each~$a_{n' \to n}$ is an independent
-identically distributed Bernoulli random variable with sparsity
-parameter~$\rho$.
+case we might incorporate the probabilistic network models of previous
+chapters as prior distributions for~$\bA$, but here we limit ourselves
+to the simplest network model, the independent Bernoulli, or
+Erd\H{o}s-R\'enyi model. Under this model, each~$a_{n' \to n}$ is an
+independent identically distributed Bernoulli random variable with
+sparsity parameter~$\rho$.
 
 Figure~\ref{fig:model_illustration} illustrates how the adjacency
 matrix and the time-varying weights are integrated into the GLM. Here,
@@ -183,7 +185,7 @@ a four-neuron network is connected via a chain of excitatory synapses,
 and the synapses strengthen over time due to an STDP rule. This is
 evidenced by the increasing amplitude of the impulse responses in the
 firing rates.  With larger synaptic weights comes an increased
-probability of postsynaptic spikes, shown as black dots in the
+probability of post-synaptic spikes, shown as black dots in the
 figure. In order to model the dynamics of the time-varying synaptic
 weights, we turn to a rich literature on synaptic plasticity and
 learning rules.
@@ -198,7 +200,7 @@ a dynamical system,
 \end{align*}
 where~$\ell$ is a potentially nonlinear \emph{learning rule} that
 determines how synaptic weights change as a function of previous
-spiking. This framework encompasses rate-based rules such as the Oja
+spiking,~$\bS_{\leq t}$. This framework encompasses rate-based rules such as the Oja
 rule \cite{Oja-1982} and timing-based rules such as STDP and its
 variants. The additive noise,~${\epsilon(\bW[t], \bvartheta)}$, need not be
 Gaussian, and many models require truncated noise distributions.
@@ -207,8 +209,8 @@ Following biological intuition, many common learning rules factor into
 a product of simpler functions. For example, STDP (defined below)
 updates each synapse independently such that the learning rule for 
 ~$w_{n' \to n}$ only
-depends on~${w_{n'\to n}[t]}$ and the pre- and post-synaptic spike
-history~${\bS_{\leq t}}$. Biologically speaking, this means that
+depends on the current weight,~${w_{n'\to n}[t]}$, and the pre- and post-synaptic spike
+history,~${\bS_{\leq t}}$. Biologically speaking, this means that
 plasticity is local to the synapse. More sophisticated rules allow
 dependencies among the columns of~$\bW$. For example, the incoming
 weights to neuron~$n$ may depend upon one another through
@@ -217,7 +219,7 @@ synapse strength according to the total strength of incoming synapses.
 
 \sloppy 
 Extensive research in the last fifteen years has identified the
-relative spike timing between the pre- and postsynaptic neurons as a
+relative spike timing between the pre- and post-synaptic neurons as a
 key component of synaptic plasticity, among other factors such as mean
 firing rate and dendritic depolarization \cite{Feldman-2012}. STDP is
 therefore one of the most prominent learning rules in the literature
@@ -241,12 +243,12 @@ where,
 \end{align*}
 This rule states that weight changes only occur at the time of pre- or
 post-synaptic spikes, and that the magnitude of the change is a
-nonlinear function of interspike intervals.
+nonlinear function of inter-spike intervals.
 %However, this model assumes that synaptic weights are unbounded from
 %above and may change sign, both of which are implausible assumptions
 %for a fixed excitatory or inhibitory neuron with saturating synaptic
 %weight.  This type of model may be captured with the generalized
-%bilinear model of \citet{Stevenson-2011} by treating the interspike
+%bilinear model of \citet{Stevenson-2011} by treating the inter-spike
 %intervals as covariates.
 
 A slightly more complicated model known as the multiplicative STDP
@@ -270,12 +272,11 @@ identical to the standard additive STDP model except that weights are
 thresholded at a minimum and maximum value. In this model, the weight
 never exceeds its set lower and upper bounds, but unlike the
 multiplicative STDP rule, the proposed weight update is independent of
-the current weight except at the boundaries. Likewise, whereas with
-the canonical STDP model it is sensible to use Gaussian noise
-for~$\epsilon(t)$ in the bounded multiplicative model we use truncated
-Gaussian noise to respect the hard upper and lower bounds on the
-weights.  Note that this noise is dependent upon the current
-weight,~$w_{n'\to n}[t]$.
+the current weight except at the boundaries. In the canonical STDP
+model it is sensible to use Gaussian noise, but in the bounded
+multiplicative model we use truncated Gaussian noise to respect the
+hard upper and lower bounds on the weights.  Note that this noise is
+dependent upon the current weight,~$w_{n'\to n}[t]$.
 
 The nonlinear nature of this rule, which arises from the
 multiplicative interactions among the parameters,~${\bvartheta =
@@ -286,15 +287,15 @@ of these detailed models is counterbalanced by dramatic expansions in
 the flexibility of the model and the incorporation of \emph{a priori}
 knowledge of synaptic plasticity. These learning models can be
 interpreted as strong regularizers of models that would otherwise be
-highly underdetermined, as there are~$N^2$ weight trajectories and
+highly under-determined, as there are~$N^2$ weight trajectories and
 only~$N$ spike trains. In the next section we will leverage powerful
 new techniques for Bayesian inference in order to capitalize on these
 expressive models of synaptic plasticity.
 
-\section{Inference via particle MCMC}
+\section{Inference via Particle MCMC}
 The traditional approach to inference in the standard GLM is penalized
-maximum likelihood estimation. For a typical model with Poisson observations 
-and an link function,~${g: \reals \to \reals_+}$, the 
+maximum likelihood estimation. For a model with Poisson observations 
+and a nonlinear link function,~${g: \reals \to \reals_+}$, the 
 log likelihood is,
 \begin{align}
 \label{eqn:glm_lkhd}
@@ -341,14 +342,15 @@ where~$\delta_{w*}(w)$ is the Dirac delta function located at~$w^*$.
 Particle filtering \cite{andrieu2003introduction} or \emph{sequential
   Monte Carlo} is a method of inferring a distribution over weight
 trajectories by iteratively propagating forward in time and
-reweighting according to how well the new samples explain the data.
+re-weighting according to how well the new samples explain the data.
 We build up the collection of weight trajectories iteratively, one
-time bin at a time. We start by sampling the initial synaptic weights
+bin at a time. We start by sampling the initial synaptic weights
 from the prior distribution,
 \begin{align*}
   \bW^{(p)}[1] &\sim p(\bW[1] \given \bvartheta),
 \end{align*}
-and initializing the particle weights to~${v_1^{(p)} = \frac{1}{P}}$.
+computing their likelihoods, ${\alpha_1^{(p)} = p(\bs_1 \given \bA, \bW^{(p)}[1], \{\btheta_{n \to n'}\}, \{\psi_n^{(0)}\} )}$,
+and initializing the particle weights to~${v_1^{(p)} = \alpha_1^{(p)}}$.
 Then, we iteratively proceed, updating the synaptic weights according to the 
 learning rule and updating the particle weights according to the likelihood 
 of the spikes. 
@@ -362,11 +364,11 @@ That is, for~${t=2, \ldots, T}$, we perform the following steps:
     \bW^{(p)}[t] &\sim p(\bW[t] \given \bW^{(p)}[t-1], \bS_{\leq t-1}, \bvartheta).
   \end{align*}
 
-\item Compute the likelhood of the current spikes,
+\item Compute the likelihood of the current spikes,
   \begin{align*}
-    \alpha_t^{(p)} &= p(\bs_t \given \bA, \bW^{(p)}[t], \{\btheta_{n \to n'}\}, \{\psi_n^{(0)}\}, \mcH_t )
+    \alpha_t^{(p)} &= p(\bs_t \given \bA, \bW^{(p)}[t], \{\btheta_{n \to n'}\}, \{\psi_n^{(0)}\}, \bS_{\leq t} )
   \end{align*}
-\item Update the particle weight according to the likelhood of the current spikes,
+\item Update the particle weight according to the likelihood of the current spikes,
   \begin{align*}
     v_t^{(p)} &\from v_{t-1}^{(p)} \cdot \alpha_t^{(p)}.
   \end{align*}
@@ -376,16 +378,16 @@ our synaptic weights are sampled from the model's learning rule.
 
 The problem with this simple algorithm is that the weights will rapidly 
 decay to zero as particles drift from the regions of high likelihood. 
-To counteract this effect, we often introduce a third step in which we 
+To counteract this effect, we often introduce a fourth step in which we 
 \emph{resample} the particles with replacement according to their weights. 
 \begin{enumerate}
 \item[4.] Sample new particle indices with replacement according to the current weights, 
   \begin{align*}
     p' &\sim \distCategorical \left(
-         \left[ \frac{v^{(1)}}{\sum_{p} v^{(p)}}, \ldots,
-         \frac{v^{(P)}}{\sum_{p} v^{(p)}} \right] \right),
+         \left[ \frac{v_t^{(1)}}{\sum_{p} v_t^{(p)}}, \ldots,
+         \frac{v_t^{(P)}}{\sum_{p} v_t^{(p)}} \right] \right),
   \end{align*}
-  and then replace the weights with the particle indices,
+  and then replace the weight trajectories with those of the new particle indices,
   \begin{align*}
     \bW^{(p)}[1,\ldots,t] &\from \bW^{(p')}[1,\ldots,t].
   \end{align*}
@@ -418,7 +420,7 @@ are able to explore the space of adjacency matrices more efficiently.
 
 \paragraph{Factored Learning Rules}
 If the learning rule factors into
-independent updates for each~$W_{n' \to n}[t]$, we can update
+independent updates for each~$w_{n' \to n}[t]$, we can update
 each synapse's weight trajectory separately and reduce the particles
 to one-dimensional trajectories. The STDP learning rules considered 
 in this chapter all factor in this way. 
@@ -426,7 +428,7 @@ in this chapter all factor in this way.
 
 \subsection{Particle MCMC}
 Particle filtering only yields a distribution over weight
-trajectories, and implicitly assumes that the other parameters have
+trajectories and implicitly assumes that the other parameters have
 been specified. Particle MCMC provides a broader inference algorithm
 for both weights and static parameters. The idea is to interleave
 \emph{conditional} particle filtering steps that sample the weight
@@ -521,7 +523,7 @@ compares to a standard GLM with a group LASSO prior on the impulse
 response coefficients for which we can perform efficient MAP
 estimation.
 
-\subsection{GLM-based simulations}
+\subsection{GLM-based Simulations}
 As a proof of concept, we study a single synapse undergoing a variety
 of synaptic plasticity rules and generating spikes according to a
 GLM. The neurons also have inhibitory self-connections to mimic
@@ -529,8 +531,8 @@ refractory effects. We tested three synaptic plasticity mechanisms: a
 static synapse (i.e., no plasticity), the unbounded, additive STDP
 rule given by Equation~\ref{eqn:AddSTDP}, and the bounded,
 multiplicative STDP rule given by Equation~\ref{eqn:MultSTDP}. For
-each learning rule, we simulated 60 seconds of spiking activity at
-1kHz temporal resolution, updating the synaptic weights every 1s. The
+each learning rule, we simulated $60$ seconds of spiking activity at
+$1$kHz temporal resolution, updating the synaptic weights every $1$s. The
 baseline firing rates were normally distributed with mean~$20$Hz and
 standard deviation of~$5$Hz. Correlations in the spike timing led to
 changes in the synaptic weight trajectories that we could detect with
@@ -607,15 +609,15 @@ study of synaptic plasticity.
 \subsection{Biophysical simulations}
 Using the biophysical simulator NEURON, we performed two
 experiments. First, we considered a network of 10 sparsely
-interconnected neurons (28 excitatory synapses) undergoing synaptic
+interconnected neurons ($28$ excitatory synapses) undergoing synaptic
 plasticity according to an additive STDP rule. Each neuron was driven
-independently by a hidden population of 13 excitatory neurons and 5
+independently by a hidden population of $13$ excitatory neurons and $5$
 inhibitory neurons connected to the visible neuron with probability
-0.8 and fixed synaptic weights averaging 3.0 mV. The visible synapses
-were initialized close to 6.0 mV and allowed to vary between 0.0 and
-10.5 mV. The synaptic delay was fixed at 1.0 ms for all synapses. This
-yielded a mean firing rate of 10 Hz among visible neurons. Synaptic
-weights were recorded every 1.0 ms.  These parameters were chosen to
+$0.8$ and fixed synaptic weights averaging $3.0$ mV. The visible synapses
+were initialized close to $6.0$ mV and allowed to vary between $0.0$ and
+$10.5$ mV. The synaptic delay was fixed at $1.0$ ms for all synapses. This
+yielded a mean firing rate of $10$ Hz among visible neurons. Synaptic
+weights were recorded every $1.0$ ms.  These parameters were chosen to
 demonstrate interesting variations in synaptic strength, and as we
 transition to biological applications it will be necessary to evaluate
 the sensitivity of the model to these parameters and the appropriate
@@ -624,7 +626,7 @@ regimes for the circuits under study.
 We began by investigating whether the model is able to accurately
 identify synapses from spikes, or whether it is confounded by spurious
 correlations.  Figure~\ref{fig:pynn_roc} shows that our approach
-identifies the 28 excitatory synapses in our network, as measured by
+identifies the $28$ excitatory synapses in our network, as measured by
 ROC curve (Add. STDP AUC=${0.99}$), and
 %Furthermore, our sparse, time-varying GLM with STDP models outperform
 %static models and simple cross-correlation in a synapse detection
@@ -640,16 +642,16 @@ and missed by the static model, we find an interesting pattern. The
 improved performance comes from synapses that decay in strength over
 the recording period. Three examples of these synaptic weight
 trajectories are shown in the right panel of
-Figure~\ref{fig:pynn_roc}. The time-varying model assigns over 90\%
+Figure~\ref{fig:pynn_roc}. The time-varying model assigns over $90\%$
 probability to each of the three synapses, whereas the static model
-infers less than a 40\% probability for each synapse.
+infers less than a $40\%$ probability for each synapse.
 
 Finally, we investigated our model's ability to distinguish various
 learning rules by looking at a single synapse, analogous to the
 experiment performed on data from the
 GLM. Figure~\ref{fig:pynn_pairs_inference} shows the results of a
 weight trajectory for a synapse under additive STDP with a strict
-threshold on the excitatory postsynaptic current. The time-varying GLM
+threshold on the excitatory post-synaptic current. The time-varying GLM
 with an additive model captures the same trajectory, as shown in the
 left panel. The GLM weights have been linearly rescaled to align with
 the true weights, which are measured in millivolts. Furthermore, the
@@ -663,7 +665,7 @@ distinguish additive and multiplicative STDP rules.
 %We believe this arises from comparing models on the basis of spike
 %times alone, using only spontaneous data.
 By the end of the training period, the weights have saturated at a
-level that almost surely induces postsynaptic spikes. At this point,
+level that almost surely induces post-synaptic spikes. At this point,
 we cannot distinguish two learning rules which have both reached
 saturation.  This motivates further studies that leverage this
 probabilistic model in an optimal experimental design framework,
@@ -735,7 +737,7 @@ conclusively test hypotheses about synaptic plasticity.
     time-varying GLM can capture the weight trajectories and learning
     rules from spike trains simulated by NEURON. Here an excitatory
     synapse undergoes additive STDP with a hard upper bound on the
-    excitatory postsynaptic current. The weight trajectory inferred by
+    excitatory post-synaptic current. The weight trajectory inferred by
     our model with the same parametric form of the learning rule
     matches almost exactly, whereas the static models must compromise
     in order to capture early and late stages of the data, and the
