@@ -15,45 +15,53 @@ inhibitory interactions with simple linear dynamics because this could
 yield negative firing rates. Instead, we need to revisit the
 assumption of linear dynamics.
 
-Chapter~\ref{chap:two} introduced a simple way to generalize the 
-linear autoregressive dynamics of the Hawkes process. We retain the 
-linear combination of impulse responses from preceding events, but then 
-we apply a rectifying nonlinear function to obtain a firing rate. 
-Formally, we assume the following model: let,
+Chapter~\ref{chap:two} introduced a simple way to generalize the
+linear autoregressive dynamics. We retain the linear combination of
+impulse responses from preceding events, but then we apply a
+rectifying nonlinear function to obtain a firing rate.  Formally, we
+assume the following model:
 \begin{align*}
-\psi_{t,n} &= \psi_{0,n} + \sum_{n'=1}^N \sum_{d=1}^{D} s_{t-d, n'} \cdot h_{n' \to n}[d], \\
-\lambda_{t,n} &= g(\psi_{t,n}), \\
-s_{t,n} &\sim p(s_{t,n} \given \lambda_{t,n}, \nu_n)
+  \psi_{t,n}
+  &= \psi_{0,n} + \sum_{n'=1}^N \sum_{d=1}^{D} s_{t-d, n'} \cdot h_{n' \to n}[d], \\
+  \lambda_{t,n} &= g(\psi_{t,n}),
 \end{align*}
 where~$\psi_{t,n}$ is a real-valued signal called the
-\emph{activation}, ${g: \reals \to \reals_+}$ is a rectifying
-nonlinear function that converts the activation into a firing rate,
-and the spike count is randomly drawn from a discrete distribution parameterized 
-by~$\lambda_{t,n}$ and, potentially, neuron-specific global parameters~$\nu_n$.
+\emph{activation}, and ${g: \reals \to \reals_+}$ is a rectifying
+nonlinear function that converts the activation into a firing rate.
 Once this nonlinearity has been introduced, the impulse response
 functions~$h_{n' \to n}[d]$ are free to be both positive and negative.
 
-This is known as a generalized 
-linear model (GLM), and it is widely used in computational neuroscience 
-\cite{Paninski-2004, Truccolo-2005, Pillow-2008}. When the spike counts 
-are Poisson distributed, then under general conditions~\cite{Paninski-2004} 
-the likelihood of the spike counts will be log concave and amenable to 
-efficient, exact optimization. Unfortunately, once we introduce nontrivial
-prior distributions, like the network models we are considering, 
-the posterior becomes multimodal and Bayesian inference becomes more 
-challenging. 
+As before, we assume the spike count is randomly drawn from a discrete
+distribution parameterized by~$\lambda_{t,n}$. In this chapter, however,
+we consider a more general class of observation distributions with
+neuron-specific global parameters~$\nu_n$,
+\begin{align*}
+  s_{t,n} &\sim p(s_{t,n} \given \lambda_{t,n}, \nu_n).
+\end{align*}
 
-This chapter develops efficient MCMC algorithms for approximating the 
-posterior distribution of weights in a GLM with prior distributions on the 
-impulse responses that are derived from probabilistic network models.
-Unfortunately, the augmentation scheme developed for linear Hawkes 
-processes is no longer viable due to the nonlinear interactions. Instead,
-we develop an inference algorithm based on a recently developed scheme 
-known as \polyagamma augmentation. The basic idea behind this scheme is 
-to introduce a set of auxiliary variables conditioned upon which the 
-discrete spike counts actually ``look'' like Gaussian observations.
-Once we have reduced the problem to inference in a linear Gaussian model,
-a host of efficient inference algorithms are at our disposal. 
+This nonlinear autoregressive model is also known as a generalized
+linear model (GLM), and it is widely used in neuroscience
+\cite{Paninski-2004, Truccolo-2005, Pillow-2008}. When the spike
+counts are Poisson distributed, then under general
+conditions~\cite{Paninski-2004} the likelihood of the spike counts
+will be log concave and amenable to efficient, exact
+optimization. Unfortunately, once we introduce nontrivial prior
+distributions, like the network models we considered here, the
+posterior becomes multimodal and Bayesian inference becomes more
+challenging.
+
+This chapter develops efficient MCMC algorithms for approximating the
+posterior distribution of weights in a GLM with prior distributions on
+the impulse responses that are derived from probabilistic network
+models.  Unfortunately, the augmentation scheme developed for linear
+Hawkes processes is no longer viable due to the nonlinear
+interactions. Instead, we develop an inference algorithm based on a
+recently developed scheme known as \polyagamma augmentation. The basic
+idea behind this scheme is to introduce a set of auxiliary variables
+conditioned upon which the discrete spike counts actually ``look''
+like Gaussian observations.  Once we have reduced the problem to
+inference in a linear Gaussian model, a host of efficient inference
+algorithms are at our disposal.
 
 
 \section{Probabilistic Model}
@@ -117,22 +125,24 @@ reduce the other models to a Gaussian. Table~\ref{tab:obs_models}
 lists the basic properties of these observation distributions.
 
 The Bernoulli distribution is appropriate for binary spike counts,
-whereas the binomial and negative binomial have support
-for integer~$s\in \{0, \ldots, \nu\}$ and~$s \in \{0, 1, \ldots \}$, respectively.
-Notably missing from this list is the Poisson distribution,
-which does not seem to be amenable to the augmentation schemes
-we will derive below. Nevertheless, both the binomial and negative
+whereas the binomial and negative binomial have support for
+integer~$s\in \{0, \ldots, \nu\}$ and~$s \in \{0, 1, \ldots \}$,
+respectively.  Notably missing from this list is the Poisson
+distribution, which is not amenable to the augmentation schemes we
+will derive below. Nevertheless, both the binomial and negative
 binomial distributions converge to the Poisson under certain
-limits, and they afford the added flexibility of modeling under- and
-over-dispersed spike counts. Specifically, while the Poisson has unit 
-dispersion (its mean is equal to its variance), the binomial distribution 
-is always under-dispersed, since its mean always exceeds its variance, 
-and the negative binomial is always over-dispersed, with variance greater 
-than its mean.
+limits. For example, $\lim_{r \to \infty} \distNegBinomial(r,
+\sigma(\psi - \log r)) = \distPoisson(e^\psi)$. Moreover, the binomial
+and negative binomial distributions afford the added flexibility of
+modeling under- and over-dispersed spike counts. Specifically, while
+the Poisson has unit dispersion (its mean is equal to its variance),
+the binomial distribution is always under-dispersed, since its mean
+always exceeds its variance, and the negative binomial is always
+over-dispersed, with variance greater than its mean.
 
 \subsection{Linear Gaussian Activation Model}
-As in the previous chapter, we model the impulse response as a weighted 
-sum of basis functions,
+As in the Chapters~\ref{chap:three} and~\ref{chap:four}, we model the
+impulse response as a weighted sum of basis functions,
 \begin{align}
 \label{eq:glm_impulse}
 h_{n' \to n}[d] &= a_{n' \to n} \sum_{b=1}^B w_{n' \to n}^{(b)} \cdot \phi_b[d].
@@ -229,7 +239,7 @@ multivariate Gaussian prior is a natural choice. We consider
 weight models of the form,
 \begin{align*}
   p(\bw_n \given \{\bz_n\}, \bvartheta) 
-  &= \distNormal(w_n^{(0)} \given \mu_0, \sigma^2_0 ) \prod_{m=1}^N 
+  &= \distNormal(\psi_n^{(0)} \given \mu_0, \sigma^2_0 ) \prod_{m=1}^N 
      \distNormal(\bw_{n' \to n} \given \bmu_{n' \to n}, \, \bSigma_{n' \to n}), \\
   &= \distNormal(\bw_n \given \bmu_n, \bSigma_n),
 \end{align*}
@@ -254,7 +264,6 @@ with parameters,
                &                     &        & \bSigma_{N \to n} 
     \end{bmatrix}.
 \end{align}
-As previously mentioned, the parameters~$\rho_{n' \to n}$,~$\bmu_{n' \to n}$, and~$\bSigma_{n' \to n}$ 
 
 \begin{table}
 \begin{center}
@@ -272,12 +281,12 @@ Latent Distance Model (${B=1}$) & $\reals^K $ & $-||\bz_n - \bz_{n'}||_2^2 + \mu
 
 Table~\ref{tab:W_models} defines the three weight models considered in this chapter.  
 Each model defines the mean and variance of a multivariate
-normal distribution,~$\bw_{n' \to n} \sim \distNormal(\bmu_{n' \to
-  n}, \bSigma_{n' \to n})$.  In the Gaussian model, all weights are
+normal distribution,~${\bw_{n' \to n} \sim \distNormal(\bmu_{n' \to
+  n}, \bSigma_{n' \to n})}$.  In the Gaussian model, all weights are
 independent and identically distributed.  The stochastic block model,
 has parameters for each pair of classes, each drawn from a normal
-inverse-Wishart prior,~$(\bmu_{k' \to k}, \bSigma_{k' \to k}) \sim
-\distNormalInvWishart(\mu_0, \kappa_0, \Sigma_0, \nu_0)$. Finally, we
+inverse-Wishart prior,~${(\bmu_{k' \to k}, \bSigma_{k' \to k}) \sim
+\distNormalInvWishart(\mu_0, \kappa_0, \Sigma_0, \nu_0)}$. Finally, we
 consider a latent distance model, but only for the case where the
 weights are scalar, i.e.~$B=1$. In this case, the distance between
 points is inversely proportional to the mean weight.  For higher order
@@ -295,28 +304,34 @@ which are particularly interpretable and easily visualized.
 
 
 \section{Inference via Gibbs Sampling}
-Inference is the process of evaluating the posterior distribution over latent variables given the observed signal, which is related to the joint distribution by Bayes' rule:
-\begin{align}
+Inference is the process of evaluating the posterior distribution over
+latent variables given the observed signal, which is related to the
+joint distribution by Bayes' rule:
+\begin{align*}
 p(\{\nu_n, \ba_n, \bw_n, \bz_n\}_{n=1}^N, \bvartheta \given \bS)  
   &= \frac{p(\bS, \{\nu_n, \ba_n, \bw_n, \bz_n\}_{n=1}^N, \bvartheta) }{p(\bS)}.
-\end{align}
-It is computationally intractable to compute this posterior exactly and it has no simple closed form solution, so we must instead resort to approximate methods. 
-We use Markov chain Monte Carlo (MCMC) methods to collect samples from this posterior distribution.
-% With these samples, we can compute unbiased expectations with respect to the posterior distribution.
-% For example, we can compute the expected probability that two neurons belong to the same class, the expected weight of a functional connection between two neurons, or the expected predictive likelihood of heldout test data.
+\end{align*}
+It is computationally intractable to compute this posterior exactly
+and it has no simple closed form solution, so we must instead resort
+to approximate methods.  We use Markov chain Monte Carlo (MCMC)
+methods to collect samples from this posterior distribution.
+% With these samples, we can compute unbiased expectations with
+% respect to the posterior distribution.  For example, we can compute
+% the expected probability that two neurons belong to the same class,
+% the expected weight of a functional connection between two neurons,
+% or the expected predictive likelihood of heldout test data.
 
 \subsection{Collapsed Gibbs Network Updates}
-The most challenging aspect of inference is sampling the
-posterior distribution over connections,~$\bA$. In the
-dense model, where~$a_{n' \to n} \equiv 1$, the posterior
-distribution over weights is often log concave, which
-makes it easy to find the MAP estimate and characterize
-the local uncertainty around the most likely weights.
-When the connectivity matrix is sparse, there are instead
-many modes corresponding to different patterns of
-connectivity. While this makes inference more challenging,
-sparse connectivity is an important feature that
-contributes to the interpretability of the model.
+The most challenging aspect of inference is sampling the posterior
+distribution over connections,~$\bA$. In the dense model, where~$a_{n'
+  \to n} \equiv 1$, the posterior distribution over weights is often
+log concave, which makes it easy to find the \emph{maximum a
+  posteriori} (MAP) estimate and characterize the local uncertainty
+around the most likely weights.  When the connectivity matrix is
+sparse, there are instead many modes corresponding to different
+patterns of connectivity. While this makes inference more challenging,
+sparse connectivity is an important feature that contributes to the
+interpretability of the model.
 
 Fortunately, we can make posterior inference of the
 network considerably more efficient by integrating over
@@ -364,18 +379,21 @@ Thus, we can efficiently sample from the conditional
 distribution of~$\ba_n$ and~$\bw_n$ by first iterating
 over each neuron~${n' \in \{1, \ldots, N\}}$ and sampling
 a new value of~$a_{n' \to n}$, fixing the values of~$a_{n'' \to n}$
-for~$n'' \neq n$ and integrating out the value of~$\bw_n$.
+for~$n'' \neq n'$ and integrating out the value of~$\bw_n$.
 To do so, we simply evaluate the marginal probability in Eq.~\ref{eq:a_conditional}
 for both values of~$a_{n' \to n}$ and resample accordingly.
 %This is a valid Gibbs step.
-Moreover, note that if~$a_{n' \to n}$, the log determinant and the quadratic
-form in the numerator of Eq.~\ref{eq:a_conditional} will cancel with the
-corresponding term in the denominator. Thus, if~$\bA$ is $d$-sparse (i.e. 
-each neuron  has at most~$p$ incoming edges) evaluating
-the marginal probability of~$\ba_n$ has complexity an~$O(p^3)$.
-Once~$\ba_n$ has been completely
-resampled, we can sample a new value of~$\bw_n$ from its multivariate
-Gaussian conditional distribution, given by~Eq.~\ref{eq:w_conditional}.
+Moreover, note that~$\widetilde{\bSigma}_n$ reduces to the prior
+where~${a_{n' \to n}=0}$. This will lead to~${B \times B}$ diagonal blocks
+that are equal in both the numerator and the denominator. Thus,
+the terms for which~${a_{n' \to n}=0}$ will cancel in the log
+determinant and quadratic form of~\ref{eq:a_conditional}.
+As a result, if~$\bA$ is $p$-sparse (i.e.  each neuron has
+at most~$p$ incoming edges) evaluating the marginal probability
+of~$\ba_n$ has complexity an~$O(p^3)$.  Once~$\ba_n$ has been
+completely resampled, we can sample a new value of~$\bw_n$ from its
+multivariate Gaussian conditional distribution, given
+by~Eq.~\ref{eq:w_conditional}.
 
 \subsection{\polyagamma augmentation for discrete observations}
 When the observations are not Gaussian, the conditional distribution
@@ -453,10 +471,10 @@ Markov transitions to update them as well. Fortunately, the
 \polyagamma distribution is designed such that the conditional
 distribution of the auxiliary variables is just a ``tilted'' \polyagamma
 distribution,
-\begin{align}
+\begin{align*}
   p(\omega_{t,n} \given s_{t,n}, \nu_n, \psi_{t,n})
   &= p_{\mathrm{PG}}(\omega_{t,n} \given b(s_{t,n}, \nu_n), \, \psi_{t,n}).
-\end{align}
+\end{align*}
 These auxiliary variables are conditionally independent and hence can
 be updated in parallel. Moreover, efficient algorithms are available
 to generate \polyagamma random variates~\cite{windle2014sampling}, and
@@ -503,26 +521,26 @@ observed spike train. To compute this, we must integrate
 over the latent variables and parameters underlying the
 observed spike train, as well as those underlying the
 new spike train. 
-Let~$\bV = \{\{\bw_n, \ba_n, \nu_n, \bz_n\}_{n=1}^N, \bvartheta\}$, and
-let~$\bv_{n^*} = \{\nu_{n^*}, \bw_{n^*}, \ba_{n^*}, \bz_{n^*}\}$.
+Let~$\bTheta = \{\{\bw_n, \ba_n, \nu_n, \bz_n\}_{n=1}^N, \bvartheta\}$, and
+let~$\btheta_{n^*} = \{\nu_{n^*}, \bw_{n^*}, \ba_{n^*}, \bz_{n^*}\}$.
 This objective can be written,
-\begin{align}
+\begin{align*}
   p(\bs_{n^*} \given \bS) &\approx
-  \int p(\bs_{n^*} \given \bv_{n^*}, \bS) \, p(\bv_{n^*} \given \bV) \, p(\bV \given \bS) \,
-  \mathrm{d} \bv_{n^*} \, \mathrm{d} \bZ \\
+  \int p(\bs_{n^*} \given \btheta_{n^*}, \bS) \, p(\btheta_{n^*} \given \bTheta) \, p(\bTheta \given \bS) \,
+  \mathrm{d} \btheta_{n^*} \, \mathrm{d} \bZ \\
   &\approx
-  \frac{1}{L} \sum_{\ell=1}^L p(\bs_{n^*} \given \bv_{n^*}^{(\ell)}, \bS),
-\end{align}
+  \frac{1}{L} \sum_{\ell=1}^L p(\bs_{n^*} \given \btheta_{n^*}^{(\ell)}, \bS),
+\end{align*}
 where
-\begin{align}
-  \bv_{n^*}^{(\ell)} &\sim p(\bv_{n^*} \given \bV^{(\ell)}),
+\begin{align*}
+  \btheta_{n^*}^{(\ell)} &\sim p(\btheta_{n^*} \given \bTheta^{(\ell)}),
   &\text{ and }& & 
-  \bV^{(\ell)} &\sim p(\bV \given \bS).
-\end{align}
-The samples~$\{\bV^{(\ell)}\}_{\ell=1}^L$ are the posterior samples generated
+  \bTheta^{(\ell)} &\sim p(\bTheta \given \bS).
+\end{align*}
+The samples~$\{\bTheta^{(\ell)}\}_{\ell=1}^L$ are the posterior samples generated
 by the MCMC algorithm presented above. For each sample, we
 sample a new set of latent variables and connections for neuron~$n^*$,
-given the parameters included in~$\bV^{(\ell)}$. These, combined with
+given the parameters included in~$\bTheta^{(\ell)}$. These, combined with
 the spike train, enable us to compute the likelihood of~$\bs_{n^*}$.
 
 This approach constitutes a minor approximation:
@@ -1047,11 +1065,11 @@ variables of the observation model and time spent updating the network.
 Resampling the latent variables is a negligible cost.
 
 The wall clock time scales linearly with~$T$, as shown in
-Figure~\ref{fig:runtime_vs_T}. As we will show in
-Section~\ref{sec:methods}, the observation model contains~${NT}$
-auxiliary variables, each of which must be resampled. Additionally,
-each neuron must compute its sufficient statistics, which involves a
-rectangular matrix multiplication costing~$O(TN^2)$ time.
+Figure~\ref{fig:runtime_vs_T}. Recall that the observation model
+contains~${NT}$ auxiliary variables, each of which must be
+resampled. Additionally, each neuron must compute its sufficient
+statistics, which involves a rectangular matrix multiplication
+costing~$O(TN^2)$ time.
 
 Since there are~$O(N^2)$ possible connections in a network of~$N$
 neurons, there is no way to circumvent at least a quadratic cost
@@ -1189,6 +1207,46 @@ approximate inference algorithms that only consider subsets of neurons is
 an active area of research~\cite{soudry2015efficient}. 
 
 \subsection{Relating circuit structure to stimuli and behavior}
-\TODO{Can we automate the task of relating the inferred latent structure to
-simultaneously recorded, but potentially high-dimensional, measurements of 
-the environment or the animal's behavior?}
+So far we have reserved the externally measured covariates for
+validation.  We used the white noise stimulus in the retinal ganglion
+cell experiment to determine the neurons' receptive fields, and we
+used the measured location in the hippocampal experiment to determine
+the place cell locations. We did not, however, attempt to jointly
+model the neural activity \emph{and} the external covariates, as is
+often done in GLM analyses. The simplest way to incorporate these exteral covariates,
+${\bY = \{\by_t\}}$, into the model is via a linear term in the
+activation. That is, let,
+\begin{align*}
+  \psi_{t,n} &\triangleq \psi_n^{(0)}  +
+  \bu^\trans \by_t + (\ba_{n} \odot \bw_n)^\trans \, \widehat{\bs}_t,
+\end{align*}
+where~$\bu_n$ is the ``stimulus filter.''
+Just as we modeled~$\ba_n$ and~$\bw_n$ with hierarchical network models,
+we may model~$\bu_n$ in terms of a set of neuron-specific latent variables.
+
+As we explore deeper brain circuits that are further removed from
+sensory inputs or motor outputs, the relationship between neural activity
+and external covariates becomes less clear. In these cases, the unsupervised
+methods for extracting structured representations can provide useful
+hints as to how neural activity may be understood. That the representations
+found in these well-studied circuits of the retina and the hippocampus
+match our expectations provides reason to believe that they can be
+fruitfully applied to more enigmatic circuits as well.
+
+\section{Conclusion}
+This chapter extended the linear autoregressive models of previous
+chapters to the setting where we have both excitatory and inhibitory
+interactions linked by a nonlinear function to the firing rate. We have
+shown how the \polyagamma augmentation makes it possible to perform
+efficient, fully-conjugate Gibbs sampling, integrating out the weights
+in order to sample sparsity patterns. This leads to dramatic improvements
+in performance and allows us to discover interesting structure in a
+variety of real and synthetic datasets.
+
+Nevertheless, these methods are still limited in that they are
+parameterized in terms of stationary network. There is no aspect of
+the model that captures time-varying properties of the neural circuit under
+study. In the next chapter, we consider extensions of this model that
+capture dynamics in the network itself. This provides a step toward
+dynamical systems models that attempt to explain data in terms of a
+latent state that evolves over time.

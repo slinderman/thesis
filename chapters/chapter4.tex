@@ -13,7 +13,7 @@ probabilistic matrix decomposition models. However, the discrete
 nature of spike counts still poses some serious inferential hurdles,
 which this thesis aims to overcome.
 
-In addition to briding from continuous to discrete, this chapter also
+In addition to bridging from continuous to discrete, this chapter also
 addresses issues of computational complexity. The complexity of our Hawkes process
 inference algorithm scaled, in the worst case, quadratically with the
 number of spikes, since we had to sample a ``parent'' for each spike.
@@ -27,7 +27,7 @@ algorithms that work with subsets of time bins in each iteration
 and thereby scale to massive datasets.
 
 
-\section{Discrete Time Linear Autoregressive Poisson Models}
+\section{Probabilistic Model}
 
 The fundamental limitation of the previously developed continuous time
 models is that the number of values that the auxiliary
@@ -232,7 +232,7 @@ estimates of the gradient of the variational objective using
 mini-batches of data.
 
 The primary impediment to deriving a variational approximation is the
-nonconjugacy of the spike-and-slab prior on the weights.  To overcome
+non-conjugacy of the spike-and-slab prior on the weights.  To overcome
 this, we approximate the spike-and-slab prior with a mixture of gamma
 distributions, as has previously explored by~\citet{Grabska-2013}:
 \begin{align*}
