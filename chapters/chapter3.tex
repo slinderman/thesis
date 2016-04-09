@@ -158,7 +158,7 @@ edges have scalar weights associated with them, we can encode the
 weights in a second matrix,~${\bW \in \reals^{N \times N}}$.  The
 complete network is then defined by the elementwise product,~${\bA
   \odot \bW}$. The binary adjacency matrix captures the sparsity
-pattern, and the real-valued wieght matrix captures the strength of
+pattern, and the real-valued weight matrix captures the strength of
 the connections. From a modeling perspective, separating these two
 matrices allows us to separate our prior intuitions about sparsity and
 strength. This is known as a spike-and-slab model~\cite{Mitchell1988}.
@@ -200,7 +200,7 @@ below:
 \item \textit{Bernoulli Model: } The Bernoulli model is a
   spike-and-slab model in which each connection is an independent and
   identically distributed Bernoulli random variable with
-  probability~$\rho$. This is also known as an Erd\"os-R\'enyi model.
+  probability~$\rho$. This is also known as an Erd\H{o}s-R\'enyi model.
   
 \item \textit{Stochastic Block Model (SBM): } In the stochastic block
   model (SBM) \cite{Nowicki-2001}, each neuron has an associated
@@ -376,7 +376,7 @@ probabilistic machine learning.
     different weight models, and each column corresponds to a fixed
     adjacency matrix,~$\bA$, for four different adjacency models. The
     panels show the elementwise product of the two. Color denotes the
-    weight (blue is negative, red is postiive).  In the SBM, the rows
+    weight (blue is negative, red is positive).  In the SBM, the rows
     and columns are sorted by type, and in the distance model, they
     are sorted by location. }
   \label{fig:network_models}
@@ -539,7 +539,7 @@ the~$m$-th spike occurred.  As in the single neuron case,
 the rate of the~$n$-th neuron,~${\lambda_n(t\given
   \mcH_t)}$,  depends on the spike history, but here the spike history 
 contains the spikes of all neurons through time~$t$. 
-The multineuronal generalization also allows for different background rates 
+The multi-neuronal generalization also allows for different background rates 
 for each neuron,~$\lambda^{(0)}_{n}$, and  different impulse 
 responses for each pair of neurons. For example, the impulse 
 response from neuron~$n$ to neuron~$n'$, which we now call~$h_{n \to n'}$, 
@@ -564,7 +564,7 @@ Putting it all together, the rate of the~$n$-th neuron is,
 \end{figure}
 
 After augmenting the data with auxiliary variables denoting the origin
-of each spike, the multineuronal Hawkes process likelihood reduces to 
+of each spike, the multi-neuronal Hawkes process likelihood reduces to 
 a product of Poisson process likelihoods for each background rate and 
 each impulse response:
 \begin{multline*}
@@ -711,7 +711,7 @@ uniformly distributed over a disk in the complex plane centered at the
 origin and with radius~$\sigma\sqrt{N}$. In our case, however, the
 mean of the entries,~${\mu=\mathbb{E}[a_{n \to n'} \cdot w_{n \to
       n'}]}$, is not zero. \citet{Silverstein-1994} has analyzed such
-``noncentral'' random matrices and shown that the largest eigenvalue
+``non-central'' random matrices and shown that the largest eigenvalue
 is asymptotically distributed
 as~${\lambda_{\sf{max}} \sim \distNormal(\mu N,\, \sigma^2)}$.
 
@@ -767,9 +767,9 @@ or the variance will require a concomitant increase in sparsity.
 \end{subfigure}
 \end{center}
 \vspace{-1em}
-\caption[Distribution of the maximum eigenvalue for Erd\H{o}s-Renyi
+\caption[Distribution of the maximum eigenvalue for independent Bernoulli
   graphs with gamma weights]{Empirical and theoretical distribution of
-  the maximum eigenvalue for Erd\H{o}s-Renyi graphs with gamma
+  the maximum eigenvalue for independent Bernoulli graphs with gamma
   weights. (a) Four gamma weight distributions. The colors correspond
   to the curves in the remaining panels. (b) Sparsity that
   theoretically yields ${99\%}$ probability of stability as a function
@@ -807,7 +807,7 @@ feedback loops.
 \label{sec:hawkes_inference}
 We present a Gibbs sampling procedure for inferring the model
 parameters,~$\bA$,~$\bW$, $\{\lambda^{(0)}_{n}\}$, $\{\theta_{n \to n'}\}$,
-and the paremeters of the network,~$\{\bz_n\}$ and~$\bvartheta$.
+and the parameters of the network,~$\{\bz_n\}$ and~$\bvartheta$.
 In order to simplify our Gibbs updates, we
 will also sample a set of parent assignments for each
 spike~$\{\omega_m\}$. Incorporating these parent variables enables
@@ -818,7 +818,7 @@ algorithm.
 To derive the updates for weights, recall from
 Equation~\ref{eq:ir_decomp} that~${w_{n \to n'}}$ only
 appears in the impulse responses for which~${c_m=n}$
-and~${c_{m'}=n'}$, so the likelihood is propotional to,
+and~${c_{m'}=n'}$, so the likelihood is proportional to,
 \begin{align*}
   p(\{s_m, c_m, & \omega_m\}^M_{m=1} \given a_{n \to n'}, w_{n \to n'}, 
   \theta_{n \to n'}) \\
@@ -898,7 +898,7 @@ distribution is,
   \widetilde{\beta}_{0,n} &= \beta_\lambda + T
 \end{align*}
 
-% This conjugacy no longeu r holds for log Gaussian Cox process background
+% This conjugacy no longer holds for log Gaussian Cox process background
 % rates, but conditioned upon the parent variables, we must simply fit a
 % log Gaussian Cox process for those spikes for which~${\omega_m=0}$. We use
 % elliptical slice sampling \cite{Murray-2010} for this purpose.
@@ -1047,7 +1047,7 @@ inference is primarily driven by the number of spikes,~$M$. We must
 update the auxiliary variable of each spike, and in the worst case
 there are~$m$ potential parents for the~$m$-th spike. Hence, this
 operation can be at worst~$\mcO(M^2)$ complexity.  In practice,
-fompact impulse responses limit the number of potential spike parents
+compact impulse responses limit the number of potential spike parents
 and significantly reduce the memory requirements and running time of
 our algorithm. If we could bound the maximum firing rate at~$\lambda_{\mathsf{max}}$,
 the complexity of resampling parent variables would be ${\sim M \, N \, \lambda_{\mathsf{max}} \, \Delta t_{\mathsf{max}}}$. However, these auxiliary
@@ -1110,7 +1110,7 @@ interaction. By summing the cross-correlation over offsets~${\Delta
     \textbf{(a)} Comparison of models on a link prediction test
     averaged across ten randomly sampled synthetic networks of 30
     nodes each. The network Hawkes model with the correct
-    Erd\H{o}s-Renyi graph prior outperforms a standard Hawkes model,
+    independent Bernoulli graph prior outperforms a standard Hawkes model,
     GLM, and simple thresholding of the cross-correlation matrix.
     \textbf{(b)} Comparison of predictive log likelihoods, compared to
     a baseline of a Poisson process with constant rate. Improvement in
@@ -1121,7 +1121,7 @@ interaction. By summing the cross-correlation over offsets~${\Delta
 \end{figure}
 
 We sampled ten network Hawkes processes of~$30$ nodes each with
-Erd\H{o}s-Renyi graph models, constant background rates, and the
+independent Bernoulli graph models, constant background rates, and the
 conjugate priors described above. The Hawkes
 processes were simulated for~${T=1000}$ seconds. We used the models
 above to predict the presence or absence of interactions. The results
@@ -1139,27 +1139,6 @@ of this predictive power. See the supplementary material for further
 analysis.
 
 \section{Modeling Hippocampal Place Cells}
-\begin{comment}
-\begin{figure}[t]
-  \begin{center}
-  \begin{subfigure}[T]{1.8in}
-    \includegraphics[width=\textwidth]{figures/ch3/hipp_colored_locations} 
-    \label{fig:hipp_colored_locations}
-  \end{subfigure}
-  \begin{subfigure}[T]{1.8in}
-    \includegraphics[width=\textwidth]{figures/ch3/hipp_W} 
-    \label{fig:hipp_W}
-  \end{subfigure}
-  \begin{subfigure}[T]{1.8in}
-    \includegraphics[width=\textwidth]{figures/ch3/hipp_P} 
-    \label{fig:hipp_P}
-  \end{subfigure}
-  \end{center}
-  \vspace{-3em}
-  \caption[True locations and inferred network of hippocampal place cells]{True locations and inferred network of hippocampal place cells}
-  \label{fig:hawkes_hipp_data}
-\end{figure}
-\end{comment}
 
 \begin{figure}[t!]
   \begin{center}
@@ -1185,7 +1164,7 @@ analysis.
     \vspace{-1em}
     \begin{subfigure}[T]{1.4in}
       \caption{}
-      \vspace{-2.25em}
+      \vspace{-1em}
       \includegraphics[width=\textwidth]{figures/ch3/hipp_mean_pca_locations} 
       \label{fig:hipp_mean_and_pca_locations}
     \end{subfigure}
@@ -1197,19 +1176,19 @@ analysis.
 %    \end{subfigure}
     \begin{subfigure}[T]{1.4in}
       \caption{}
-      \vspace{-2.25em}
+      \vspace{-1em}
       \includegraphics[width=\textwidth]{figures/ch3/locations_0} 
       \label{fig:hipp_locations_0}
     \end{subfigure}
     \begin{subfigure}[T]{1.4in}
       \caption{}
-      \vspace{-2.25em}
+      \vspace{-1em}
       \includegraphics[width=\textwidth]{figures/ch3/locations_7} 
       \label{fig:hipp_locations_7}
     \end{subfigure}
     \begin{subfigure}[T]{1.4in}
       \caption{}
-      \vspace{-2.25em}
+      \vspace{-1em}
       \includegraphics[width=\textwidth]{figures/ch3/locations_11} 
       \label{fig:hipp_locations_11}
     \end{subfigure}
@@ -1224,9 +1203,9 @@ analysis.
     \textbf{(c):} Expected connection probability under posterior according to latent distance model.
     \textbf{(d):} Mean posterior locations under the latent distance model. For comparison, the embedding found by PCA is plotted below. 
     \textbf{(e-g): } Posterior distribution over locations shown four cells at a time.
-    \textbf{top:} True locations of the cells. Colors indicate the four neurons plotted below.
+    \textbf{top:} True locations of the cells. 
     \textbf{bottom:} 250 samples from the posterior
-    distribution over neuron locations for the four colored cells.
+    distribution over neuron locations for the four cells colored above.
   }
   \label{fig:hawkes_hipp}
 \end{figure}
@@ -1292,7 +1271,7 @@ posterior locations,~$\bbE[\widetilde{\bZ}]$, and we see that it
 is qualitatively very similar to the true locations. In contrast,
 the two dimensional PCA embedding is highly skewed.\footnote{First, we binned the
   spikes into $250$ms bins, and then we smoothed the spike counts
-  with a Guassian kernel of width $1$s to estimate the firing rate.
+  with a Gaussian kernel of width $1$s to estimate the firing rate.
   Finally, we applied PCA to the firing rate matrix and used the
   top two principal components as the embedding.}
 
@@ -1404,11 +1383,11 @@ interactions, and the inferred network parameters provide
 interpretable insight into the market structure.
 
 In the latent distance model for~$\bA$, each stock has a latent
-embedding~${\bx_k\in\reals^2}$ such that nearby stocks are more likely
+embedding~${\bz_n\in\reals^2}$ such that nearby stocks are more likely
 to interact, as described in
 Section~\ref{sec:graph_models}. Figure~\ref{fig:financial_embedding}
 shows a sample from the posterior distribution over embeddings
-in~$\reals^2$ for~${\rho=0.2}$ and~${\tau=1}$. We have plotted stocks
+in~$\reals^2$. We have plotted stocks
 in the six largest sectors, as listed on Bloomberg.com. Some sectors,
 notably energy and financials, tend to cluster together, indicating an
 increased probability of interaction between stocks in the same
@@ -1464,7 +1443,7 @@ We study gang-related homicides between 1980 and 1995
 occurred. Over this time-frame there were~${M=1637}$ gang-related
 homicides in the~${77}$ communities of Chicago.
 
-% Chicagoo results
+% Chicago results
 \begin{figure}[!t]
   \begin{center}
     \begin{subfigure}[T]{.32\textwidth}
@@ -1504,7 +1483,7 @@ homicides in the~${77}$ communities of Chicago.
   Inferred interactions among clusters of community areas in the city of Chicago.
   \textbf{(a)} Predictive log likelihood for ``communities'' and ``clusters''  process identity models and four graph models. 
 %Empty corresponds to independent LGCPs and Complete corresponds to the standard Hawkes process. 
-  Panels \textbf{(b-d)} present results for the model with the highest predictive log likelihood: an Erd\H{o}s-Renyi graph with~${N=4}$ clusters.
+  Panels \textbf{(b-d)} present results for the model with the highest predictive log likelihood: an independent Bernoulli graph with~${N=4}$ clusters.
   \textbf{(b)} The weighted interaction network in units of induced homicides over the training period (1980-1993).
   \textbf{(c)} Inferred clustering of the 77 community areas.
   \textbf{(d)} The intensity for each cluster, broken down into the offset, the shared background rate, and the interactions (units of~${10^{-3}}$ homicides per day per square kilometer).}
@@ -1522,7 +1501,7 @@ cross-validation (again, see \citet{linderman2014discovering}).
 For each process identity model, we compare four graph models: a)~independent LGCPs
 (\emph{empty}), b)~a standard Hawkes process with all possible
 interactions (\emph{complete}), c)~a network Hawkes model with a
-sparsity-inducing Erd\H{o}s-Renyi graph prior, and d)~a network Hawkes
+sparsity-inducing independent Bernoulli graph prior, and d)~a network Hawkes
 model with a latent distance model that prefers short-range
 interactions.
 
@@ -1539,7 +1518,7 @@ the communities improves predictive performance for all graph models,
 as seen in the ``clusters'' group. Moreover, the clustered models
 benefit from the inclusion of excitatory interactions, with the
 highest predictive log likelihoods coming from a four-cluster
-Erd\H{o}s-Renyi graph model with interactions shown in
+independent Bernoulli graph model with interactions shown in
 Figure~\ref{fig:chicago_interactions}. Distance-dependent graph priors
 do not improve predictive performance on this dataset, suggesting that
 either interactions do not occur over short distances, or that local
@@ -1598,6 +1577,12 @@ Hawkes processes, leveraging similar conjugacy properties, but without
 network priors. \citet{Zhou-2013} have developed a promising
 optimization-based approach to discovering low-rank networks in Hawkes
 processes, similar to some of the network models we explored.
+\citet{Guo-2014} have developed a similar model to ours. They focus on
+applying Hawkes processes to language modeling and incorporating
+features of the discrete events. \citet{Dubois-2013} also explored the
+use of infinite relational models as a prior in conjunction with a
+point process observation model build on a Gibbs sampling algorithm.
+
 
 \citet{Perry-2013} derived a partial likelihood inference algorithm
 for Hawkes processes with a similar emphasis on structural patterns in
