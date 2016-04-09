@@ -208,7 +208,7 @@ Here, we have,
     &\bigg]^\trans,
 \end{align*}
 \sloppy
-and~$\odot$ dentoes the elementwise product. Note that each~$a_{n' \to n}$ 
+and~$\odot$ denotes the elementwise product. Note that each~$a_{n' \to n}$ 
 is repeated~$B$ times in the vector~$\ba_{n}$. For convenience, we
 let~$\bA$ and~$\bW$ refer to the~${N \times NB+1}$ matrices obtained
 by stacking the vectors~$\ba_n^\trans$ and~$\bw_n^\trans$, and we
@@ -319,7 +319,7 @@ methods to collect samples from this posterior distribution.
 % respect to the posterior distribution.  For example, we can compute
 % the expected probability that two neurons belong to the same class,
 % the expected weight of a functional connection between two neurons,
-% or the expected predictive likelihood of heldout test data.
+% or the expected predictive likelihood of held-out test data.
 
 \subsection{Collapsed Gibbs Network Updates}
 The most challenging aspect of inference is sampling the posterior
@@ -634,7 +634,7 @@ of our algorithm with synthetic data.
     from spike trains alone.
     \textbf{(a)} The combined distance model and block model yields the highest predictive log likelihood (units: nats/spike), compared to other combinations of adjacency models (groups of bars) and weight models (\textit{blue}: latent distance weight model, \textit{yellow}: stochastic block model for weights, \textit{green}: Gaussian weights).
     \textbf{(b)} The inferred distances under the latent distance model are highly correlated with the true distances, as measured by stimulus sensitivity, whereas inferred embeddings under PCA are not.
-    \textbf{(c)} Moreover, the inferred locations (semitransparent markers) recover the true receptive field centers (solid markers with black outline). Shown here only for ON cells.
+    \textbf{(c)} Moreover, the inferred locations (semi-transparent markers) recover the true receptive field centers (solid markers with black outline). Shown here only for ON cells.
     \textbf{(d)} Inferred network,~${\bA \odot \bW}$, under a latent distance model of connection probability and a stochastic block model for connection weight, averaged over 500 posterior samples.
     \textbf{(e)} Expected probability of connection under the latent distance model.
     \textbf{(f)} Expected connection strength under the stochastic block model. The inferred cell classes perfectly match the true ON and OFF types, and reflect within-class excitation and between-class inhibition.
@@ -642,7 +642,7 @@ of our algorithm with synthetic data.
   \label{fig:rgc}
 \end{figure}
 
-We applied our model to simultaneously recorded multineuronal spike
+We applied our model to simultaneously recorded multi-neuronal spike
 trains from a population of 27 primate retinal ganglion cells
 (RGCs). This dataset was previously analyzed with a standard
 generalized linear model in \cite{Pillow-2008}.  In this dataset, the
@@ -666,7 +666,7 @@ are identified by similarity in their response properties as well as
 morphological and physiological properties~\cite{sanes2015types}. With
 knowledge of the stimulus, these cells can be clearly separated into
 their respective types by clustering the spike-triggered average
-simulus.  This characterization in terms of latent locations and cell
+stimulus.  This characterization in terms of latent locations and cell
 types has been validated through decades of experiments, and has been
 made possible by the relative ease with which relevant stimuli can be
 identified and controlled. To what extent can these latent
@@ -692,7 +692,7 @@ not change the pairwise distances and scaling simply changes the
 units. This matching is highly unlikely for randomly distributed
 locations.  In Fig.~\ref{fig:rgc_locs}, the true locations are shown
 as solid markers with black outlines, and the inferred locations
-sampled from the posterior distribution are shown as semitransparent
+sampled from the posterior distribution are shown as semi-transparent
 markers of the same color and shape.
 
 For the weight matrix, a latent distance model (Dist) and a stochastic
@@ -710,7 +710,7 @@ three bands in the matrix of connection
 probabilities~\ref{fig:rgc_rho}. Nearby cells have much higher
 probability of connection. The mean connection strength
 (Fig.~\ref{fig:rgc_mu}) shows the characteristic pattern of positive
-weights between cells of the same type and negative weights betewen
+weights between cells of the same type and negative weights between
 cells of opposite types. The diagonal of this matrix shows the weights
 of self-connections, which are typically negative due to refractory
 effects. 
@@ -810,7 +810,7 @@ foraging in an open field environment roughly 120cm in diameter.
 As in the retina, we have strong intuitions about the latent structure
 underlying hippocampal place cell activity, namely, we expect cells
 representing nearby locations to be correlated and cells with disjoint
-place fields to be anticorrelated. Can we extract the spatial layout
+place fields to be anti-correlated. Can we extract the spatial layout
 of place fields from spike trains alone?
 
 We apply our framework, fitting all twelve network models and
@@ -819,7 +819,7 @@ negative binomial observation model to allow multiple spikes per time
 bin. We find that the distance dependent weight models yield the
 highest predictive likelihood (Fig.~\ref{fig:hipp_pll}). The
 stochastic block model yields the highest predictive likelihood, but
-upon futher investigation we find that almost all neurons are
+upon further investigation we find that almost all neurons are
 connected in this model. There is one outlier, neuron \#$1$, which is
 only sparsely connected. The SBM assigns 24 neurons are assigned to
 one cluster, and assigns neuron \#$1$ to its own group.  Thus, the
@@ -858,7 +858,7 @@ are inhibitory in nature, such that active cells suppress the activity
 of cells with distal place fields. 
 
 These inferred representations again confirm our intuitive beliefs 
-about the structure of hippocamapl place cell responses. The 
+about the structure of hippocampal place cell responses. The 
 inferred latent variables recover meaningful structure in the
 neural activity, without any access to the location. Instead, 
 these representations arise from the neural activity alone.
@@ -924,7 +924,7 @@ retinal plane. Nearby cells are more likely to be functionally
 connected, and cells of the same type will have excitatory influence
 on one another while cells of different types will inhibit one
 another. Again, these functional connections reflect correlations and
-anticorrelations between cells that arise from common input. We
+anti-correlations between cells that arise from common input. We
 simulate 60,000 time bins and tune the network parameters such that if
 each time bin were one millisecond, the firing rates would range from 10Hz to
 70Hz with a mean of about 30Hz.  Rather than simulating an
@@ -941,7 +941,7 @@ training datasets, our Bayesian approach yields considerably higher
 predictive likelihood than the standard,~$L_1$-regularized GLM. As
 the length of the training data increases, both our method and
 the standard GLM improve, and ultimately approach the likelihood of
-thet true model that generated the data. With more data, the network
+the true model that generated the data. With more data, the network
 inference is driven less by the prior and more by the observations.
 Thus, in the limit of infinite data,the GLM will converge to the same
 network, and hence the same predictive likelihood, as our Bayesian method.
@@ -1213,7 +1213,7 @@ cell experiment to determine the neurons' receptive fields, and we
 used the measured location in the hippocampal experiment to determine
 the place cell locations. We did not, however, attempt to jointly
 model the neural activity \emph{and} the external covariates, as is
-often done in GLM analyses. The simplest way to incorporate these exteral covariates,
+often done in GLM analyses. The simplest way to incorporate these external covariates,
 ${\bY = \{\by_t\}}$, into the model is via a linear term in the
 activation. That is, let,
 \begin{align*}
