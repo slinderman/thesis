@@ -1139,39 +1139,95 @@ of this predictive power. See the supplementary material for further
 analysis.
 
 \section{Modeling Hippocampal Place Cells}
-
+\begin{comment}
 \begin{figure}[t]
   \begin{center}
-  \begin{subfigure}[T]{1.4in}
-    \includegraphics[width=\textwidth]{figures/ch3/locations_0} 
-    \label{fig:hipp_locations_0}
+  \begin{subfigure}[T]{1.8in}
+    \includegraphics[width=\textwidth]{figures/ch3/hipp_colored_locations} 
+    \label{fig:hipp_colored_locations}
   \end{subfigure}
-  \begin{subfigure}[T]{1.4in}
-    \includegraphics[width=\textwidth]{figures/ch3/locations_3} 
-    \label{fig:hipp_locations_2}
+  \begin{subfigure}[T]{1.8in}
+    \includegraphics[width=\textwidth]{figures/ch3/hipp_W} 
+    \label{fig:hipp_W}
   \end{subfigure}
-  \begin{subfigure}[T]{1.4in}
-    \includegraphics[width=\textwidth]{figures/ch3/locations_7} 
-    \label{fig:hipp_locations_7}
+  \begin{subfigure}[T]{1.8in}
+    \includegraphics[width=\textwidth]{figures/ch3/hipp_P} 
+    \label{fig:hipp_P}
   \end{subfigure}
-  \begin{subfigure}[T]{1.4in}
-    \includegraphics[width=\textwidth]{figures/ch3/locations_11} 
-    \label{fig:hipp_locations_8}
-  \end{subfigure}
-  \vspace{-3em}
   \end{center}
-  \caption[Inferred locations of hippocampal place cells]{ Inferred
-    locations of hippocampal place cells using a latent distance model
-    as a prior distribution over the adjacency matrix. For
-    visualization, we show the posterior distribution over locations
-    for four cells at a time.  \textbf{Top:} true place field
-    centers. Marker size is proportional to the size of the place
-    field. Larger dots imply less precise place fields, which should
-    roughly translate to larger posterior variance over
-    locations. \textbf{Bottom:} 250 samples from the posterior
-    distribution over neuron locations for the four colored cells in
-    the plot above. Each sample of locations (a~${49\times 2}$ matrix) is
-    rotated to best match the true locations. Limits are the same in all plots.}
+  \vspace{-3em}
+  \caption[True locations and inferred network of hippocampal place cells]{True locations and inferred network of hippocampal place cells}
+  \label{fig:hawkes_hipp_data}
+\end{figure}
+\end{comment}
+
+\begin{figure}[t!]
+  \begin{center}
+    \begin{subfigure}[T]{1.8in}
+      \caption{}
+      \vspace{-2em}
+      \includegraphics[width=\textwidth]{figures/ch3/hipp_colored_locations} 
+      \label{fig:hipp_colored_locations}
+    \end{subfigure}
+    \begin{subfigure}[T]{1.8in}
+      \caption{}
+      \vspace{-2em}
+      \includegraphics[width=\textwidth]{figures/ch3/hipp_W} 
+      \label{fig:hipp_W}
+    \end{subfigure}
+    \begin{subfigure}[T]{1.8in}
+      \caption{}
+      \vspace{-2em}
+      \includegraphics[width=\textwidth]{figures/ch3/hipp_P} 
+      \label{fig:hipp_P}
+    \end{subfigure}
+    \\
+    \vspace{-1em}
+    \begin{subfigure}[T]{1.4in}
+      \caption{}
+      \vspace{-2.25em}
+      \includegraphics[width=\textwidth]{figures/ch3/hipp_mean_pca_locations} 
+      \label{fig:hipp_mean_and_pca_locations}
+    \end{subfigure}
+%    \begin{subfigure}[T]{1.4in}
+%      \caption{}
+%      \vspace{-2.25em}
+%      \includegraphics[width=\textwidth]{figures/ch3/hipp_mean_locations} 
+%      \label{fig:hipp_mean_locations}
+%    \end{subfigure}
+    \begin{subfigure}[T]{1.4in}
+      \caption{}
+      \vspace{-2.25em}
+      \includegraphics[width=\textwidth]{figures/ch3/locations_0} 
+      \label{fig:hipp_locations_0}
+    \end{subfigure}
+    \begin{subfigure}[T]{1.4in}
+      \caption{}
+      \vspace{-2.25em}
+      \includegraphics[width=\textwidth]{figures/ch3/locations_7} 
+      \label{fig:hipp_locations_7}
+    \end{subfigure}
+    \begin{subfigure}[T]{1.4in}
+      \caption{}
+      \vspace{-2.25em}
+      \includegraphics[width=\textwidth]{figures/ch3/locations_11} 
+      \label{fig:hipp_locations_11}
+    \end{subfigure}
+
+    \vspace{-3em}
+  \end{center}
+  \caption[Inferred weights and locations of hippocampal place cells]{ Inferred
+    weights and locations of hippocampal place cells using a latent distance model
+    as a prior distribution over the adjacency matrix.
+    \textbf{(a):} True place field centers. Marker size is proportional to the size of the place field. Neurons are false colored for identification.
+    \textbf{(b):} Expected weights under posterior. Neurons are sorted by location, and colorbars on~$x$ and~$y$ axes map to colors in~\textbf{(a)}.
+    \textbf{(c):} Expected connection probability under posterior according to latent distance model.
+    \textbf{(d):} Mean posterior locations under the latent distance model. For comparison, the embedding found by PCA is plotted below. 
+    \textbf{(e-g): } Posterior distribution over locations shown four cells at a time.
+    \textbf{top:} True locations of the cells. Colors indicate the four neurons plotted below.
+    \textbf{bottom:} 250 samples from the posterior
+    distribution over neuron locations for the four colored cells.
+  }
   \label{fig:hawkes_hipp}
 \end{figure}
 
@@ -1179,13 +1235,14 @@ Our first real dataset consists of a simultaneously recorded
 population of~$49$ hippocampal place cells from a rat freely foraging
 in a circular arena roughly $120$cm in diameter. The data is courtesy
 of the lab of Prof. Matthew Wilson at MIT. The recording duration was
-roughly~$25$ minutes. The first~$20$ minutes were used for model fitting 
-and the last~$5$ were reserved for predictive tests. Over the entire
-$25$ minute recording, each neuron fired on average~$1979\pm4117$ spikes (min:~$48$,
-max:~$27572$). This corresponds to a firing rate of~$1.35 \pm 2.82$Hz
-(min:~$0.32$Hz, max:~$18.88$Hz). The rat's location,~$\bx(t)$, was recorded
-along with the corresponding spike times. From this, the place field
-of the~$n$-th neuron is computed as,
+roughly~$25$ minutes. The first~$20$ minutes were used for model
+fitting and the last~$5$ were reserved for predictive tests. Over the
+entire $25$ minute recording, each neuron fired on
+average~$1979\pm4117$ spikes (min:~$48$, max:~$27572$) for a total
+of~$97000$ spikes. This corresponds to a firing rate of~$1.35 \pm
+2.82$Hz (min:~$0.32$Hz, max:~$18.88$Hz). The rat's location,~$\bx(t)$,
+was recorded along with the corresponding spike times. From this, the
+place field of the~$n$-th neuron is computed as,
 \begin{align*}
   \bar{\bx}_n &= \frac{1}{M_n} \sum_{m=1}^M \bx(s_m) \cdot \bbI[c_m=n],
 \end{align*}
@@ -1207,45 +1264,78 @@ connectivity. Finally, we fit a network Hawkes model with a latent
 distance prior on the adjacency matrix and an independent gamma prior
 on the weights. In fitting this last model, we infer a distribution
 over sets of locations,~${\bZ = \{\bz_n\}}$, for the population.
-
-
 Intuitively, we expect these locations to mirror the true place fields
 since nearby cells are likely to have correlated firing rates, which
 should be captured by excitatory impulse responses between nearby
-cells.  Figure~\ref{fig:hawkes_hipp} shows that this is indeed the
-case.  In the top row, we plot the true place fields of the $49$
-neurons.  The marker size is proportional to the size of the place
-field, as measured by the largest eigenvalue of~$\bV_n$. Larger place
-fields actually imply \emph{less} precise encodings of location, so we
-expect these cells to be correlated with many others and hence also
-more variability in the inferred neuron location.  Since the posterior
-distribution over~$\bZ$ is difficult to visualize, we only show the
-marginal distribution over four cell locations at a time.
+cells.
 
-The bottom row shows distributions for four sets of four cells each.
-The colors match the corresponding neuron in the plot above. Since the
+Figure~\ref{fig:hawkes_hipp} shows the posterior distribution from the
+network Hawkes model with a latent distance model prior.
+Figure~\ref{fig:hipp_colored_locations} shows the true place fields of the $49$
+neurons.  The marker size is proportional to the size of the place
+field, as measured by the largest eigenvalue of~$\bV_n$. The neurons
+are false colored for identification.
+Figure~\ref{fig:hipp_W} and~\ref{fig:hipp_P} show the expected weights,~$\bbE[\bW]$,
+and the matrix of expected connection probabilities,~$\bbE[\rho_{n \to n'}]$,
+respectively. The colorbars on the axes map to colors in Figure~\ref{fig:hipp_colored_locations}. Nearby neurons have higher probability of connection, as expected.
+This is reflected in the inferred locations.
+
+Since the
 latent distance model is invariant to rotation, for each
 sample~$\bZ^{(\ell)}$, we find the orthogonal matrix,~$\bR^{(\ell)}$,
 that minimizes~${||\bX - \bR^{(\ell)} \bZ^{(\ell)}||_F}$ and apply it
 to obtain a rotated set of locations,~${\widetilde{\bZ}^{(\ell)} =
   \bR^{(\ell)} \bZ^{(\ell)}}$.  Doing this for each sample yields a
-set of locations~$\{\widetilde{\bZ}^{(\ell)}\}_{\ell=1}^L$. These
-rotated sample are used to generate the scatter plots in the bottom
-panels of Figure~\ref{fig:hawkes_hipp}.
+set of locations~$\{\widetilde{\bZ}^{(\ell)}\}_{\ell=1}^L$.
+Figure~\ref{fig:hipp_mean_and_pca_locations} (top) shows the mean
+posterior locations,~$\bbE[\widetilde{\bZ}]$, and we see that it
+is qualitatively very similar to the true locations. In contrast,
+the two dimensional PCA embedding is highly skewed.\footnote{First, we binned the
+  spikes into $250$ms bins, and then we smoothed the spike counts
+  with a Guassian kernel of width $1$s to estimate the firing rate.
+  Finally, we applied PCA to the firing rate matrix and used the
+  top two principal components as the embedding.}
 
-Overall, the posterior distribution over locations is in close
-correspondence with the true place fields. In some cases, neurons with
-larger place fields (e.g. yellow neuron in left-most panels) have
-considerably larger posterior variance than cells with smaller place
-fields. With the exception of the gree and yellow neurons in the
-second panel, the arrangement of the four cells also matches the
-relative arrangement of the true place fields. This illustrates how
-Hawkes processes combined with latent variable models can provide
-interpretable portraits of complex datasets and find low-dimensional
-embeddings that recover known structure.
+Finally, panels (e-g) show the samples from the posterior distribution
+of ~$\widetilde{\bZ}$. Since this is difficult to visualize, we show
+the marginal distribution of four neurons at a time. The true location
+of the four neurons is identified in the upper panel, and the sampled
+locations are scattered in the lower panel. Importantly, the relative
+arrangement of locations is well preserved in the inferred locations.
+Moreover, cells with larger place fields tend to have larger posterior
+variance in their locations. This is to be expected since large place
+fields imply imprecise coding of space and higher correlation with
+other cells.  This illustrates how Hawkes processes combined with
+latent variable models can provide interpretable portraits of complex
+datasets and find low-dimensional embeddings that recover known
+structure.
 
-\TODO{Table of predictive log likelihoods}
+% Table of hippocampal results
+\begin{table}
+  \begin{center}
+    \begin{tabular}{l|c}
+      \textbf{Hippocampal Model} & \textbf{Pred. log lkhd. (bits/spike)} \\
+      \hline
+      Standard Hawkes & $0.750 \pm 9.7 \times 10^{-5}$ \\
+      Net. Hawkes ($\bA \sim $ Bernoulli Model) & $0.768 \pm 9.2 \times 10^{-5}$ \\
+      Net. Hawkes ($\bA \sim $ Latent Distance Model) & $0.766 \pm 9.4\times 10^{-5}$ \\
+    \end{tabular}
+  \end{center}
+    \caption{Comparison of hippocampal models on a spike prediction task relative to a homogeneous Poisson process baseline.}
+    \label{tab:hipp_pred_ll}
+\end{table}
 
+Table~\ref{tab:hipp_pred_ll} lists the predictive likelihoods of the
+various models relative to a homogeneous Poisson process baseline in
+units of bits per spike. We see that the sparsity of the network Hawkes
+model leads to improved predictive performance. In this case, however,
+the simple independent Bernoulli model and the latent distance model
+both have similar predictive likelihoods. When the network is largely
+determined by the training data, the prior has little effect. Thus,
+the two sparse priors may yield similar predictive performance, even though
+the latent distance model identifies meaningful latent structure.
+We will consider additional ways of disambiguating different network
+models in Chapter~\ref{chap:five}.
 
 
 \section{Trades on the S\&P 100}
@@ -1289,7 +1379,7 @@ embeddings that recover known structure.
 While the focus of this thesis is on modeling \emph{neural}
 spike trains, these models have broad applicability outside neuroscience
 as well. Here we present one example in which we study the trades on the
-S\&P~100 index collected at 1s intervals during the week of Sep.~28
+S\&P~100 index collected at $1$s intervals during the week of Sep.~28
 through Oct.~2,~2009. Every time a stock price changes by~${\pm0.1\%}$
 of its current price a spike is logged on the stock's process,
 yielding a total of~${N=100}$ processes and~${M=182,037}$ spikes.
@@ -1336,7 +1426,7 @@ slowly varying factors like inventory, this may not be surprising.
       \hline
       Independent LGCP & $0.594$ \\
       Standard Hawkes & $0.912$ \\
-      Net. Hawkes ($\bA \sim $ Erd\H{o}s-Renyi Model) & $0.903$ \\
+      Net. Hawkes ($\bA \sim $ Bernoulli Model) & $0.903$ \\
       Net. Hawkes ($\bA \sim $ Latent Distance Model) & $0.888$ \\
       %Net. Hawkes (SBM) & $0.894$ \\
     \end{tabular}
