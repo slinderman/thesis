@@ -33,6 +33,10 @@
 \RequirePackage{amssymb}
 \RequirePackage{amsmath}
 
+\RequirePackage[chapter, boxed]{algorithm}
+\RequirePackage{algpseudocode}
+\RequirePackage{algorithmicx}
+\floatname{algorithm}{Program}
 
 % Theorems
 \RequirePackage{amsthm}
@@ -42,7 +46,6 @@
 \newtheorem{corollary}{Corollary}
 \newtheorem{definition}{Definition}
 \newtheorem{assumption}{Assumption}
-
 
 %\RequirePackage{gensymb}
 \RequirePackage{macros}
