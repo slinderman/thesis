@@ -1,0 +1,189 @@
+\chapter{Conclusion}
+\label{conclusion}
+
+% Preamble
+% - success depends on merging top-down and bottom-up approaches
+Recent advances in neural recording technologies have stirred great
+excitement. It seems that a more complete understanding of neural
+computation is within our grasp. Armed with these powerful tools, we
+can peer into the brain and observe the activity of most, if not all,
+of the neurons in a circuit. What a major advance over the handfuls
+of neurons we were limited to only a few years ago! All we must do
+is extract the underlying patterns and principles from these
+large scale recordings.
+
+While these advances present unprecedented opportunities, the task
+of translating data into understanding is far from trivial. The human
+genome has been known for a decade now, yet much of its structure remains
+enigmatic. The connectome of the nematode \textit{C. Elegans} has been
+known for three decades, yet our understanding of this simple organism
+with fewer than 400 neurons is still incomplete. At the heart of these
+endeavors the search for meaningful abstractions and structured
+representations given complex and noisy data. Our success in reverse
+engineering neural computation relies critically on our ability
+to discover such structure. This thesis has developed a number of methods
+for instantiating structural hypotheses in the form of probabilistic
+models and turning the crank of Bayesian inference in order to reason
+about them.
+
+Why should we expect to find such structure in the first place?  A
+priori, it is not clear that the brain should have a simple design. We
+have certainly not evolved under selective pressure for ease of
+decipherability, but there are still many reasons to remain
+hopeful. For one, we have already found many beautiful and
+surprisingly simple patterns. Hippocampal place cells and the response
+properties of the early visual system are classic examples, as is the
+coding of reward prediction error by dopamine neurons in the ventral
+tegmental area and substania
+nigra~\citep{schultz1997neural}. Similarly simple explanations have
+been found at the cognitive level, like the Bayesian theories of the
+last chapter.
+
+A second cause for hope is that the brain exhibits highly stereotyped and
+modular patterns of connectivity \citep{shepherd2003synaptic}.  That
+the underlying ``hardware'' is conserved across brain regions
+suggests that the algorithms that run on this hardware may also be shared
+by a diverse assortment of computations. Rather than searching for
+unique circuits and algorithms for each individual task, we can hope for
+a few general purpose algorithms that are broadly deployed.
+
+Finally, while the brain may not have evolved for ease of reverse
+engineering, we have evolved a general-purpose architecture that
+supports learning and reasoning.  While much of our mental faculty is
+inherited through our genetic code, a great deal is learned from
+experience. Moreover, our present day experiences differ tremendously
+from those of our not-so-distant ancestors, yet we continue to adapt
+and thrive in the face of evolutionarily unforseen
+circumstances. These all point to general purpose algorithms
+underlying human intelligence.
+
+I believe the path forward lies in the iterative refinement of
+theories guided by both top-down considerations of algorithmic goals
+and complexity-theoretic constraints, and bottom-up, data-driven
+analyses of neural data. The Bayesian methods presented in this thesis
+are designed to accelerate this process, providing ``data
+microscopes'' that allow us to visualize complex, high-dimensional
+data in new and interpretable ways. I will briefly discuss two
+directions in which these methods should continue to be developed.
+
+\section{Toward Programmatic Models of Neural Computation}
+% Programmatic models
+% - program induction
+% - reinforcement learning
+% - general purpose inference algorithms to go with
+%What type of abstraction or description should we seek?  There is no
+%right answer to this question: our understanding of neural computation
+%must admit descriptions at multiple levels of adstraction.
+As we have
+shown here, hierchical probabilistic models provide an intuitive
+language for capturing different types of abstraction, allowing us to
+formalize generative processes of how data comes to be. However, as
+these models grow in scope and scale, the language of probabilistic
+models becomes cumbersome. At the same time, as our models grow in
+complexity, they look more and more like \emph{probabilistic
+  programs} \citep{goodman2008church}.
+
+The probabilistic models developed in this thesis can all be written in
+this way. For example, the hidden Markov models of
+Chapter~\ref{chap:seven} are equivalent to the following program:
+
+\begin{center}
+  \begin{minipage}{.75\textwidth}
+    \vskip-2em
+    \singlespacing
+    \begin{algorithm}[H]
+      \sffamily
+      \begin{algorithmic}
+        \Require $\bpi^{(0)}$,~$\bP$,~$\bLambda$
+        \For {$t = 1, \ldots, T$}
+          \If {$t=1$}
+            \State $z_t \sim \distCategorical(\bpi^{(0)})$
+          \Else
+            \State $z_t \sim \distCategorical(\bpi^{(z_{t-1})})$
+          \EndIf
+          \For {$n = 1, \ldots, N$}
+            \State $s_{t,n} \sim \distPoisson(\lambda_{z_{t},n})$
+          \EndFor
+        \EndFor
+      \end{algorithmic}
+      \caption{Programmatic representation of a hidden Markov model.}
+      \label{prog:hmm}
+    \end{algorithm}
+  \end{minipage}
+\end{center}
+
+This representation is equivalent to the probabilistic model (it
+implies the same distribution over~$\bz$ and~$\bS$), but this
+description combines stochastic operations, like sampling,
+with basic control flow, like \textsf{\textbf{if}}
+statements and \textsf{\textbf{for}} loops.  This powerful combination
+not only enables rapid formulation of models for neural data, it also
+forms the basis for a ``probabilistic language of thought,'' an idea
+that is taking hold in cognitive science \citep{goodman2014concepts}.
+As we seek to bridge the gap between cognitive algorithms and neural
+implementations, it will help if we are speaking the same language.
+
+Of course, the ``no free lunch'' theorem applies here as well. While
+probabilistic programming languages make it easy to specify complex
+generative processes, they make it just as easy to specify models for
+which Bayesian inference is completely intractable. While much
+progress has been made in general purpose inference algorithms
+\citep{goodman2008church, ranganath2013black, mansinghka2014venture,
+  wood2015new, kucukelbir2015automatic}, these ``black box'' inference
+algorithms are, by design, not capitalizing on model-specific
+structure that the rather bespoke inference algorithms of this thesis
+have leveraged. This will certainly change as probabilistic program
+``compilers'' become more adept at recognizing model structure, but
+this is currently a major challenge.
+
+
+\section{Toward Joint Models of Neural Activity, Behavior, and Environment}
+% Joint models of behavior/stimuli and neural activity
+% - state space models of behavior
+This thesis has focused solely on modeling the dynamics and structure
+of neural spike trains, however, this data is often collected from
+organisms as they perform natural behaviors in complex behaviors. For
+example, massive recordings are now being collected from animals in
+decision making \citep[e.g.][]{briggman2005optical}, freely behaving
+\citep[e.g.][]{prevedel2014simultaneous}, and evoked response
+\citep[e.g.][]{portugues2014whole} tasks.  This type of data provides
+a tremendous opportunity to study the relationship between neural
+activity, natural behavior, and environment. But first, we must
+formulate and fit a model that captures both the complex dynamics of
+neural activity, the rich repertoire of behavior, and the
+environmental state. The models and inference algorithms designed in
+this thesis capture core notions of state and dynamics that can be
+extended, in an intuitive way, to these types of recordings. 
+
+For example, large-scale recordings have revealed that ensembles of
+neurons reliably participate together during natural or trained
+behavior, suggesting that task-related neural activity might be
+lower-dimensional than the number of recorded neurons, and that these
+neurons might evolve through different states over time in an
+environmentally dependent manner.  The dynamical system models
+developed in this thesis can naturally instantiate these
+hypotheses. Consider a model in which neural spike trains,~$\bs_t$,
+behavioral time series,~$\bb_t$, and environmental stimuli,~$\be_t$,
+are simultaneously measured. A simple hypothesis is that the neural
+spike trains and the behavior are conditionally independent given
+underlying states,~$\bx_t$ and~$z_t$, and that the evolution of these
+states depends on the environment,~$\be_t$. Such a model enables us to
+identify the low dimensional states of neural activity and overt
+behavior, as well as their dynamics. Moreover, it enables us to
+predict one given the others. With relatively minor adjustments, the
+inference algorithms developed previously can be extended to handle
+these multimodal datasets.
+
+Ultimately, the goal of computational and systems neuroscience is to
+understand this interplay between environment, neural activity, and
+behavior. As with all scientific endeavors, our success will be
+measured in our ability to articulate theories of neural computation
+that explain, in simpler terms, the complex nature of these
+multifaceted systems.  With the advent of recording technologies
+capable of probing neural circuits at unprecedented scale and
+advances in machine learning providing the computational and
+statistical tools for making sense of complex data, it seems the stage
+is set for major breakthroughs in our understanding of nature's most
+sophisticated computer: the human brain. 
+
+
