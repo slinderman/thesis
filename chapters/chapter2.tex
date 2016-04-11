@@ -483,7 +483,7 @@ is a~${K \times K}$ transition matrix where the row,~${\bpi^{(k)} \in
   [0,1]^K}$, specifies a discrete conditional distribution over~$z_t$
 given~${z_{t-1}=k}$.  This is known as a hidden Markov model (HMM),
 and the corresponding graphical model is shown in
-Figure~\ref{fig:motifs}. Chapter~\ref{chap:hmms} studies some of the
+Figure~\ref{fig:motifs}. Chapter~\ref{chap:seven} studies some of the
 challenges involved in selecting the number of states,~$K$, in a
 nonparametric way.
 
@@ -520,7 +520,7 @@ biologically realistic model given our knowledge of excitatory and
 inhibitory synapses, it is important to remember that this is simply a
 descriptive model of firing rate dynamics, and it does not necessarily
 map onto physical synaptic connections. As we will see in
-Chapters~\ref{chap:hawkes} and~\ref{chap:discrete_hawkes}, the weights
+Chapters~\ref{chap:three} and~\ref{chap:four}, the weights
 inferred by this type of excitatory autoregressive model can still
 provide useful insight into the structure of neural activity.
 
@@ -539,7 +539,7 @@ firing rate,~$\lambda_{t,n}$. It is common to use an exponential or a
 sigmoidal nonlinearity. In this formulation the
 weights may be either positive
 or negative to reflect either excitatory or inhibitory interactions,
-respectively. Chapter~\ref{chap:nonlinear_hawkes} derives efficient
+respectively. Chapter~\ref{chap:five} derives efficient
 inference algorithms for nonlinear autoregressive models like these.
 
 \paragraph{Factor Models}
@@ -598,9 +598,9 @@ constructing probabilistic models for spike trains. Atop this foundation
 we may layer additional random variables reflecting hypotheses about shared 
 structure. For example, a switching linear dynamical system (Figure~\ref{fig:motifs})
 combines discrete \emph{and} continuous latent states. 
-Likewise, Chapters~\ref{chap:hawkes}, \ref{chap:discrete_hawkes},
-and~\ref{chap:nonlinear_hawkes} consider structured prior distributions on 
-the weights of autoregressive models, and Chapter~\ref{chap:hmms} considers 
+Likewise, Chapters~\ref{chap:three}, \ref{chap:four},
+and~\ref{chap:five} consider structured prior distributions on 
+the weights of autoregressive models, and Chapter~\ref{chap:seven} considers 
 nonparametric Bayesian priors on the number of states in an HMM. Once the 
 dynamics model has been specified, it is easy to test a variety of hypotheses
 about hierarchical structure. In order to fit these models, however, we need 
@@ -840,7 +840,7 @@ efficient types of Gibbs updates outlined below:
   procedure. First, sample~$z_1$ from its marginal conditional
   distribution, $p(z_1 \given \btheta, \bs)$, and then
   sample~${p(z_2 \given z_1, \btheta, \bs)}$. We use this technique 
-  in the spike-and-slab models of Chapter~\ref{chap:nonlinear_hawkes}.
+  in the spike-and-slab models of Chapter~\ref{chap:five}.
   
 \item \textsc{Augmented Gibbs Sampling}: Just as it is possible to
   collapse some variables during block updates, in other cases it is

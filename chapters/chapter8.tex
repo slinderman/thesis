@@ -268,7 +268,7 @@ then
   &= 2^{-b} e^{\kappa \psi}
   \int_{0}^{\infty} e^{-\pgvar \psi^2 /2} \,
   p_{\distPolyaGamma}(\pgvar \given b, 0) \, \mathrm{d}\pgvar,
-\label{eq:pg_identity}
+\label{eq:pg_identity_new}
 \end{align}
 where~${\kappa=a-b/2}$. The integral on the right-hand side is the
 Laplace transform of the \polyagamma density evaluated at~$\psi^2/2$,
@@ -276,7 +276,7 @@ and the left-hand side is the same form found in discrete
 distributions with logistic link functions.  Importantly, viewed as a
 function of~$\psi$ for fixed~$\pgvar$, the right-hand side is an
 unnormalized Gaussian density.  Thus, the identity
-in~\eqref{eq:pg_identity} transforms a logistic likelihood to a
+in~\eqref{eq:pg_identity_new} transforms a logistic likelihood to a
 Gaussian likelihood conditioned on an auxiliary variable,~$\pgvar$.
 
 Now let~$\psi_{t,n} = \bc_n \cdot \bx_t$ be the activation of neuron
@@ -414,7 +414,7 @@ are easy to compose and extend.
     Poisson LDS (PLDS) model fit via EM and find that our algorithms
     are comparably fast, especially when~$D$ is large
     (right,~$D=10$).}
-  \label{fig:hipp}
+  \label{fig:hipp8}
 \end{figure}
 
 
@@ -423,7 +423,7 @@ circular arena.\footnote{Data courtesy of the Wilson lab at MIT.} Spikes were co
 250ms bins for approximately ten minutes.
  We held out half of the spike counts (randomly sampled) to compute the predictive 
 likelihood of each model relative to a constant-rate Poisson model baseline. 
-Figure~\ref{fig:hipp} shows the results of our comparison for a negative binomial model with constant 
+Figure~\ref{fig:hipp8} shows the results of our comparison for a negative binomial model with constant 
 activation and FA, HMM's, LDS's, and switching LDS's with both Poisson and negative binomial observations,
 all fit using our augmented MCMC inference algorithm.  We found that the simple FA models over-fit the 
 training data and performed poorly on generalization tasks. HMMs, which 
