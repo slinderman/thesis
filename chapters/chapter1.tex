@@ -15,45 +15,49 @@
 % instantiate and fit. In doing so, we continue to close the gap between our theory 
 % of neural computation and our methods of analysis.
 
-Neuroscience is undergoing a technological revolution.  In laboratories around
-the world, optical tools are illuminating thousands of neurons at a
-time and silicon probes are providing high-fidelity recordings at
-similar scales.  For some organisms, we can now monitor the activity of
-every single neuron in the brain.  Not long ago, this immense
-recording capability would have been mind-boggling to the average
-practitioner poking around in the dark, hoping to record from a
-handful of neurons.  Complementing these recording capabilities,
-recent advances in connectomics --- the mapping of synaptic
-connectivity --- are providing a more complete atlas of the wiring
-diagram that underlies neural activity.  Likewise, sophisticated
-tracking and processing algorithms are providing rich descriptions of
-the natural behavior that this activity gives rise to.  These
-unprecedented technological capabilities are leading to a fundamental
-paradigm shift.
+Neuroscience is undergoing a revolution in recording technology.  In
+laboratories around the world, optical tools are illuminating
+thousands of neurons at a time \citep{kerr2008imaging}.
+% grewe2010high, prevedel2014simultaneous, ahrens2013whole, lemon2015whole}.  
+For some organisms, we can now monitor large fractions of the neurons
+in the brain \citep{ahrens2013whole, prevedel2014simultaneous,
+  lemon2015whole}.  Not long ago, this immense recording capability
+would have been mind-boggling to the average practitioner poking
+around in the dark, hoping to record from a handful of neurons.
+Complementing these recording capabilities, recent advances in
+connectomics --- the mapping of synaptic connectivity
+\citep{sporns2005human} --- are providing a more complete atlas of the
+wiring diagram that underlies neural activity
+\citep{lichtman2008technicolour, helmstaedter2013connectomic,
+  oh2014mesoscale}.  Likewise, sophisticated monitoring and processing
+methods \citep[e.g.][]{berman2014mapping, wiltschko2015mapping} are providing rich
+measurements of the natural behavior that this activity gives rise to.
 
 % Paradigm shift -> data-driven science
 % new datasets contain patterns that can expose where existing theories fall short
 % new data contains patterns that can suggest new hypotheses, model additions
+These unprecedented technological
+capabilities are leading to a fundamental paradigm shift.
 The scientific process of proposing hypotheses, testing them against
-measured data, and revising them accordingly, is becoming increasingly
+experimental observations, and revising them accordingly, is becoming increasingly
 data-driven.  Rather than collecting data to test a specific
 hypothesis, we can now collect large-scale recordings in relatively
 unstructured experimental setups (e.g. from freely behaving animals)
-and use statistical structure in the data to guide us toward novel
+and use statistical structure in the data to guide us toward 
 hypotheses. Of course, there is no ``free lunch'' --- we must still
-specify what types of structure to look for, and in doing this we are
-implicitly expressing a hypothesis, albeit a more general one. For
-example, when we cluster neuronal data we are implicitly hypothesizing
+specify what types of structure to look for. For
+example, when we cluster neuronal data we are hypothesizing
 that there are different types of neurons, and when we apply principal
-components analysis to neural population recordings we are implicitly
+components analysis to neural population recordings we are 
 assuming that neural activity reflects a low-dimensional latent state.
 As we move toward this more data-driven paradigm, we are presented
-with a fundamental challenge: how do we formulate models that capture
-our intutitions and hypotheses about neural computation, and how do we
-fit these models to large scale recordings?
+with a challenge: how do we formulate models that capture
+our intuitions and hypotheses about neural computation, how do we
+fit these models to large scale recordings, and how do we revise 
+our models based on what we have learned?
 
 This thesis builds a sequence of modeling and inference tools to
-address the problem. We build tools for analyzing \emph{neural spike
+address this challenge. We build tools for analyzing \emph{neural spike
   trains}, which are sequences of discrete events in time, and we use
 probabilistic models to compose flexible hypotheses that allow us to
 \emph{discover structure} in the dynamics of spike trains.  The
@@ -68,15 +72,16 @@ begin by describing each of these these in turn.
 The human brain is a three pound ball of densely packed cells.  It is
 soft, with a consistency like that of tofu.  Amazingly, from this
 curd-like mass of cells, our mental faculties arise.  About half of
-the roughly 170 billion cells in our brain are neurons, the
-fundamental units of computation.  Neurons are electrically excitable
-cells that contain an ionic soup of charged atoms like sodium,
-potassium, and calcium, which together maintain a difference in
-electrical potential between the inside and the outside of the cell
-membrane. When the membrane potential is excited above a certain
-threshold, a cascade of ion channels opens and closes, causing the
-membrane potential to undergo a characteristic action potential, or
-``spike.''
+the roughly 170 billion cells in our brain are neurons, widely
+believed to be the fundamental units of computation
+\citep{DayanAbbott}.  Neurons are electrically excitable cells that
+contain an ionic soup of charged atoms like sodium, potassium, and
+calcium, which together maintain a difference in electrical potential
+between the inside and the outside of the cell membrane
+\citep{kandel2000principles}. When the membrane potential is excited
+above a certain threshold, a cascade of ion channels opens and closes,
+causing the membrane potential to undergo a characteristic action
+potential, or ``spike.''
 
 % Spike hypothesis: at the heart of this computation is the action potential,
 % or ``spike.'' These spikes are
@@ -94,15 +99,18 @@ largely a mystery.
 
 The second challenge is understanding how this information is
 transformed over time. The neurons in our brain are connected by
-about~$10^{14}$ synapses. When a pre-synaptic neuron fires an action
-potential, neurotransmitters are released that then bind with
-receptors on the post-synaptic neuron, causing its ion channels to
-open and allowing current to flow into or out of the post-synaptic
-cell. These currents induce brief changes in the membrane potential of
-the downstream cell called post-synaptic potentials (PSPs). Depending
-on the direction of current, the PSP will be either excitatory, making
-the downstream neuron more likely to spike, or inhibitory, suppressing
-post-synaptic spiking.
+about~$10^{14}$ synapses \citep{kandel2000principles}. When a
+pre-synaptic neuron fires an action potential, neurotransmitters are
+released that then bind with receptors on the post-synaptic neuron,
+causing its ion channels to open and allowing current to flow into or
+out of the post-synaptic cell. These currents induce brief changes in
+the membrane potential of the downstream cell called post-synaptic
+potentials (PSPs). Depending on the direction of current, the PSP will
+be either excitatory, making the downstream neuron more likely to
+spike, or inhibitory, suppressing post-synaptic spiking. The 
+amount of neurotransmitter released and the number of post-synaptic 
+receptors together determine the ``strength'' of the synapse, 
+which is manifest in the amplitude of the PSP \citep{cowan2003synapses}. 
 
 
 This web of synaptic connections imbues neural circuits with complex
@@ -118,8 +126,7 @@ Perhaps the most fundamental aspect of intelligence is our ability to
 learn, to store memories, and to generalize from past experience.  In
 neural circuits, learning is most directly associated with the process
 of synaptic plasticity. In response to coordinated patterns of pre-
-and post-synaptic spiking, synapses adapt their efficacy, which
-manifests as changes in the amplitude of PSPs. This synaptic
+and post-synaptic spiking, synapses adapt their strength. This synaptic
 plasticity leads to changes in the dynamics of neural circuits.  In
 some cases, this plasticity leads to the creation of new associations
 that support generalization from noisy or partial sensory input.
@@ -127,18 +134,18 @@ Thus, a third challenge of deciphering neural computation is
 understanding the processes of learning that cause neural dynamics to
 evolve in an activity-dependent manner.
 
-Our goal is to address these three challenges --- encoding,
-dynamics, and learning --- by searching for patterns in large-scale
-recordings of neural spike trains, simultaneously recorded time series
-of spiking activity in populations of neurons. While this type of data is
-very hard to collect in humans, it is widely collected in worms, fish,
-flies, mice, rats, monkeys, and a host of other model organisms.
-Still, these model organisms have taught us a great deal about the workings
-of human brains and intelligence. 
-This thesis does not focus on the unique aspects of any single organism
-or brain region, but rather on the general challenges associated
-with modeling structure in time series of discrete events that are
-common to all neural spike trains. 
+Our goal, as neuroscientists, is to address these three challenges ---
+encoding, dynamics, and learning --- by searching for patterns in
+large-scale recordings of neural spike trains, simultaneously recorded
+time series of spiking activity in populations of neurons. While this
+type of data is very hard to collect in humans, it is widely collected
+in worms, fish, flies, mice, rats, monkeys, and a host of other model
+organisms.  Still, these model organisms have taught us a great deal
+about the workings of human brains and intelligence.  This thesis does
+not focus on the unique aspects of any single organism or brain
+region, but rather on the general challenges associated with modeling
+structure in time series of discrete events that are common to all
+neural spike trains.
 
 
 \section{Discovering Structure: Types, Features, Networks, and States}
@@ -163,27 +170,26 @@ between neural spike trains, typically associated with implementation
 level descriptions, and higher level abstractions, like those
 hypothesized by algorithmic and computational theories. To do so,
 we compose our spike train models out of a set of simple
-building blocks that appear over and over again in models of
+motifs that appear over and over again in models of
 neural computation. 
 
-\subsection{Low Dimensional Types and Features}
+\subsection{Discrete Types and Low-Dimensional Features}
 Many successes of neuroscience have come from careful cataloging of
 neural types and features.  From the earliest investigations of
-Ram\'on y Cajal, the ``father of modern neuroscience,'' it has been
-clear that the brain is made up of anatomically distinct cell types
-\citep{cajal1899textura}, but further classifications have been made
-on the basis of functional distinctions as
-well. \citet{kuffler1953discharge} identified the response properties
-of ``on'' and ``off'' ganglion cells in the retina, characterizing the
-ways in which these cells respond to light. His work which was carried
-on by his students, Hubel and Wiesel, who characterized simple and
-complex cells in visual cortex \citep{hubel1962receptive}, and
-eventually won the Nobel Prize for their work.  These are pioneering
-examples of a common theme in neuroscience: clustering cells into
-discrete types that facilitate our understanding of neural
-computation. Indeed, the clustering of cells in the early visual
-pathway continues to this day \citep{macosko2015highly,
-  sanes2015types}.
+Ram\'on y Cajal, it has been clear that the brain is made up of
+anatomically distinct cell types \citep{cajal1899textura}, but further
+classifications have been made on the basis of functional distinctions
+as well. \citet{kuffler1953discharge} identified the response
+properties of ``on'' and ``off'' ganglion cells in the retina,
+characterizing the ways in which these cells respond to light. His
+work which was carried on by his students, Hubel and Wiesel, who
+characterized simple and complex cells in visual cortex
+\citep{hubel1962receptive}, and eventually won the Nobel Prize for
+their work.  These are pioneering examples of a common theme in
+neuroscience: clustering cells into discrete types that facilitate our
+understanding of neural computation. Indeed, the clustering of cells
+in the early visual pathway continues to this day
+\citep{macosko2015highly, sanes2015types}.
 
 Complementing these classic examples of discrete subtypes of neurons 
 are similarly compelling examples of neurons characterized by 
@@ -197,19 +203,21 @@ core building blocks in our probabilistic modeling toolkit.
 
 
 \subsection{Networks and Dynamics}
-Networks play a central role in modern neuroscience: they distill
-complex systems into concise representations. Whether the
-nodes of the network represent individual neurons in a ``connectome''
-\citep[e.g.][]{sporns2005human}, populations of cells in a neural circuit
-\citep[e.g.][]{felleman1991distributed}, voxels in an fMRI recording
-\citep[e.g.][]{friston1994functional}, or idealized neurons in a
-theoretical model \citep[e.g.][]{hopfield1982neural}, networks tell us
-about the pairwise relationships in large populations of nodes.  Once we have 
-extracted such a network, a great deal of intuition can be gleaned 
-from its aggregate properties \citep{bullmore2009complex, newman2003structure}.
-Moreover, the network itself can often be summarized in terms of 
-latent types and features of nodes that govern how likely any 
-pair of nodes is to be connected \citep{Goldenberg-2010}.
+Networks play a central role in modern neuroscience: they enable us to
+reason about complex systems in terms of relationships among their
+constituent parts. Whether the nodes of the network represent
+individual neurons in a ``connectome''
+\citep[e.g.][]{sporns2005connectome}, populations of cells in a neural
+circuit \citep[e.g.][]{felleman1991distributed}, voxels in an fMRI
+recording \citep[e.g.][]{friston1994functional}, or idealized neurons
+in a theoretical model \citep[e.g.][]{hopfield1982neural}, networks
+tell us about the pairwise relationships in large populations of
+nodes.  Once we have extracted such a network, a great deal of
+intuition can be gleaned from its aggregate properties
+\citep{bullmore2009complex, newman2003structure}.  Moreover, the
+network itself can often be summarized in terms of latent types and
+features of nodes that govern how likely any pair of nodes is to be
+connected \citep{Goldenberg-2010}.
 
 We often use networks to represent the dynamics of systems.
 For example, an edge in the network may represent the influence that activity
@@ -266,13 +274,14 @@ we can construct sophisticated models for dynamical spike trains.
 \subsection{Latent States of Neural Populations}
 Networks model dynamic data in terms of relationships between nodes,
 which we typically associate with individual neurons. In some cases,
-however, it is more natural to think about neural dynamics in terms of 
-a latent state that evolves over time. For example, population activity 
-might reflect a low-dimensional, continuous latent state with smooth \citep{Yu09} 
-or linear \citep{Smith-2003, paninski2010new} dynamics, or a discrete latent 
-state with Markovian dynamics \citep[e.g.][]{jones2007natural, latimer2015single}. 
-In these models, the firing rates of individual neurons are a function
-of the underlying latent state. 
+however, it is more natural to think about neural dynamics in terms of
+a latent state that evolves over time but cannot be directly
+observed. For example, population activity might reflect a
+low-dimensional, continuous latent state with smooth \citep{Yu09} or
+linear \citep{Smith-2003, paninski2010new} dynamics, or a discrete
+latent state with Markovian dynamics \citep[e.g.][]{jones2007natural,
+  latimer2015single}.  In these models, the firing rates of individual
+neurons are a function of the underlying latent state.
 
 By combining these simple building blocks --- latent types and features, 
 networks, and dynamic latent states --- we can express sophisticated 
@@ -286,28 +295,28 @@ means of tackling this problem.
 \section{A Bayesian Approach} 
 Structural hypotheses specify how a set of parameters and latent
 variables give rise to patterns of neural activity.  These hypotheses
-are naturally formalized in terms of probabilistic models, which
-provide an intuitive way of expressing the joint probability of
+are naturally formalized in terms of probabilistic generative models,
+which provide an intuitive way of expressing the joint probability of
 parameters, latent variables, and observed data.  Once formalized, we
 use the tools of Bayesian inference to compute the posterior
 distribution over parameters and latent variables implied by a given
-spike train, and use this posterior distribution to gain insight into
-the structure of the data and potential shortcomings of our theories.
+spike train and our prior beliefs, and use this posterior distribution
+to gain insight into the structure of the data and potential
+shortcomings of our theories.
 
 Recent decades have witnessed an explosion of interest in Bayesian
-methods, and the development of both theoretical and analytical tools
-have led to the widespread adoption of these techniques
-\citep{bishop2006pattern, murphy2012probabilistic}. 
-Nevertheless, performing Bayesian inference in sophisticated models is
-still a challenge. The art of probabilistic modeling lies in
-balancing two objectives: designing models that capture the
-details of the generative processes underlying our
-data, while simultaneously ensuring that these models admit efficient
-inference algorithms. To achieve this balance, we often look for
-model-specific structure that we can exploit during inference. 
-This thesis is largely dedicated to developing
-algorithms that capitalize on the properties of models in order to
-efficiently scale to large scale recordings.
+machine learning methods, and the development of both theoretical and
+analytical tools have led to the widespread adoption of these
+techniques \citep{bishop2006pattern, murphy2012probabilistic}.
+Nevertheless, performing Bayesian inference in sophisticated models
+will always be a challenge. The art of probabilistic modeling lies in
+balancing two objectives: designing models that capture the details of
+the generative processes underlying our data, while simultaneously
+ensuring that these models admit efficient inference algorithms. To
+achieve this balance, we often look for model-specific structure that
+we can exploit during inference.  This thesis is largely dedicated to
+developing algorithms that capitalize on the properties of models in
+order to efficiently scale to large scale recordings.
 
 
 \begin{figure}[t]
@@ -326,15 +335,15 @@ these two ingredients, we perform Bayesian inference to compute the
 posterior distribution over structural variables and
 parameters. Visualizing, analyzing, and exploring this posterior often
 lead to new insights and ways to think about generative processes that
-can explain the data. We can also criticize the model, formally, by
-assessing goodness-of-fit, evaluating predictive likelihoods, and
-performing posterior predictive checks \citep{Gelman13}. This leads to
-new hypotheses, which in turn lead to new models and repetition of
-this process.  Thus, model building is an interative process in which
-we are constantly adapting and refining hypotheses.
-\citet{blei2014build}, from whom this figure has been adapted, calls
-this ``Box's loop,'' a reference to the foundational work
-of~\citet{box1980sampling}.
+can explain further structure in the data. We can also criticize the
+model, formally, by assessing goodness-of-fit, evaluating predictive
+likelihoods, and performing posterior predictive checks
+\citep{Gelman13}. This leads to new hypotheses, which in turn lead to
+new models and repetition of this process.  Thus, model building is an
+interative process in which we are constantly adapting and refining
+hypotheses.  \citet{blei2014build}, from whom this figure has been
+adapted, calls this ``Box's loop,'' a reference to the foundational
+work of~\citet{box1980sampling}.
 
 
 
@@ -348,11 +357,17 @@ advancing our understanding of spike trains.  We build on this
 foundation and specifically focus on expanding the set of models,
 combining standard point process and spike count models with
 hierarchical prior distributions that capture latent structure. To go
-along with these more sophisticated models, we also derive efficient
-Bayesian inference algorithms that take advantage of clever data
-augmentation strategies. Together, these expand the repertoire of
-probabilistic models that we leverage when looking for structure in
-neural data.
+along with these more sophisticated models, we also derive
+efficient\footnote{We do not mean efficient in the formal,
+  complexity-theoretic sense.  Indeed, approximate Bayesian inference
+  is, in the worst case, NP-hard \citep{dagum1993approximating,
+    roth1996hardness}.  We simply mean that the individual iterations
+  of our algorithm can be performed in low-order polynomial time and
+  that these algorithms yield good empirical results in a reasonable,
+  if not provably polynomial, number of iterations.}  Bayesian
+inference algorithms that take advantage of clever data augmentation
+strategies. Together, these expand the repertoire of probabilistic
+models that we may leverage when looking for structure in neural data.
 
 
 \section{Summary of Contributions}
@@ -379,7 +394,7 @@ processes and probabilistic network models. This is based on
 \citet{linderman2014discovering}. However, since this is the first
 model of the chapter, we provide a more thorough discussion of network
 models, Hawkes processes, and the steps in deriving an efficient
-Markov Chain Monte Carlo (MCMC) inference algorithm.  This is also the
+Markov chain Monte Carlo (MCMC) inference algorithm.  This is also the
 only chapter that will apply these techniques to spike trains from
 domains other than neuroscience, specifically, from social network
 analysis and criminology.
@@ -412,8 +427,8 @@ and fitting them with particle MCMC.  This chapter is based on
 \citet{linderman2014framework}.
 
 Chapter~\ref{chap:seven} departs from network models and instead
-considers dynamical state space models, specifically Hidden Markov
-Models (HMM), for neural data. We address a major challenge in
+considers dynamical discrete state space models, specifically hidden Markov
+models (HMM), for neural data. We address a major challenge in
 applying these well-known models, namely, selecting the number of
 latent states. By introducing a hierarchical Dirichlet process (HDP)
 prior and both an MCMC and a variational inference algorithm, we
