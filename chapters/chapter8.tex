@@ -51,16 +51,16 @@ algorithm capable of efficiently generating random variates in the
 \section{Continuous Latent State Space Models}
 Consider a general formulation of models with a continuous latent
 state,~$\bx_t \in \reals^D$, with affine and potentially nonstationary
-dynamics governed by~$\bA^{(t)}$,~$\bb^{(t)}$, and
-covariance,~$\bSigma^{(t)}$. Furthermore, assume that this state
+dynamics at time~$t$ governed by~$\bA_t$,~$\bb_t$, and
+covariance,~$\bSigma_t$. Furthermore, assume that this state
 governs the observed spike counts via a linear-nonlinear cascade.  We
 summarize this probabilistic model as follows,
 \begin{multline}
-  p(\bS, \bX \given  \bmu^{(1)}, \{\bA^{(t)}, \bSigma^{(t)}\}, \bC, \{\nu_n\})
+  p(\bS, \bX \given  \bmu_1, \{\bA_t, \bb_t, \bSigma_t\}_{t=1}^T, \bC, \{\nu_n\}_{n=1}^N)
   = \\
   \left[
-    \distNormal(\bx_1 \given \bmu^{(1)}, \bSigma^{(1)}) \,
-    \prod_{t=2}^T \distNormal(\bx_t \given \bA^{(t)} \bx_{t-1} + \bb^{(t)}, \bSigma^{(t)})
+    \distNormal(\bx_1 \given \bmu_1, \bSigma_1) \,
+    \prod_{t=2}^T \distNormal(\bx_t \given \bA_t \bx_{t-1} + \bb_t, \bSigma_t)
   \right] \\
   \left[
     \prod_{t=1}^T \prod_{n=1}^N p(s_{t,n} \given \bc_n \cdot \bx_t, \nu_n)
@@ -76,17 +76,17 @@ where
         \end{bmatrix} \in \reals^{N \times D}.
 \end{align*}
 Now consider the special case where there are only~$K$ unique dynamics
-and covariance matrices,~${\{\bA^{(k)}, \bb^{(k)}, \bSigma^{(k)}\}}$, and that at
+and covariance matrices,~${\{\bA_k, \bb_k, \bSigma_k\}_{k=1}^K}$, and that at
 any instant in time, the chosen dynamics are specified by the
 discrete latent variable~${z_t \in \{1, \ldots, K\}}$. Moreover,
 suppose this discrete latent variable follows a Markov model,
 as in the last chapter. Then the dynamics for~$\bX$
 are,
 \begin{multline}
-  p(\bX, \given \bz, \{\bA^{(k)}, \bb^{(k)}, \bSigma^{(k)}\}, \bmu^{(1)})
+  p(\bX, \given \bz, \{\bA_k, \bb_k, \bSigma_k\}_{k=1}^K, \bmu_1)
   = \\ 
-    \distNormal(\bx_1 \given \bmu^{(1)}, \bSigma^{(z_1)})
-    \prod_{t=2}^T \distNormal(\bx_t \given \bA^{(z_t)} \bx_{t-1} + \bb^{(z_t)}, \bSigma^{(z_t)}),
+    \distNormal(\bx_1 \given \bmu_1, \bSigma_{z_1})
+    \prod_{t=2}^T \distNormal(\bx_t \given \bA_{z_t} \bx_{t-1} + \bb_{z_t}, \bSigma_{z_t}),
 \end{multline}
 with,
 \begin{align*}
@@ -105,17 +105,17 @@ The SLDS contains a number of other models as special cases:
   reduces to a standard linear dynamical system (LDS).
   
 \item When there is one discrete latent state and no continuous dynamics
-  (${\bA^{(k)} \equiv 0}$), this reduces to factor analysis (FA).
+  (${\bA_k \equiv 0}$), this reduces to factor analysis (FA).
 
 \item When (i) the state dimensionality is equal to the number of
-  neurson~($D=N$); (ii) there are no continuous dynamics (${\bA^{(k)}
+  neurson~($D=N$); (ii) there are no continuous dynamics (${\bA_k
     \equiv 0}$); and (iii) the emission matrix is the identity (${\bC
     \equiv \bI}$), the SLDS reduces to a hidden Markov model. At each
   point in time, the firing rate is determined solely
-  by~$\bb^{(z_t)}$.
+  by~$\bb_{z_t}$.
 
 \item When the the conditions of the HMM are met \emph{and} the
-  discrete transition matrix,~$P$, has identical rows (${\bpi^{(k)}
+  discrete transition matrix,~$\bP$, has identical rows (${\bpi^{(k)}
     \equiv \bpi}$), the SLDS further reduces to a simple mixture
   model. At each point in time, the discrete latent state is drawn
   from~${z_t \sim \distCategorical(\bpi)}$.
@@ -154,25 +154,27 @@ fully-conjugate Bayesian inference in discrete models as well.
 \subsection{Bayesian Inference with Gaussian Observations}
 Suppose the spike counts,~$\bs_t$ were conditionally distributed
 according to a Gaussian distribution. Moreover, assume the
-distribution has nonstationary, diagonal precision such that
+distribution has nonstationary precision,~$\bOmega_t$, such that
 \begin{align}
   \label{eq:gauss_lkhd}
-  \bs_{t} &\sim \distNormal(\bC \bx_t, \bOmega_t^{-1}), \\
-  \nonumber
-  \bOmega_t &= \diag\left( \left[ \omega_{t,1}, \ldots, \omega_{t,N} \right] \right).
+  p(\bs_t \given \bx_t, \btheta) 
+  &=
+  \distNormal(\bs_t \given \bC \bx_t, \bOmega_t^{-1}).
 \end{align}
 In this case, the conditional distribution over continuous latent
 states,~$p(\bx_{1:T} \given \bs_{1:T}, \btheta)$, is Gaussian as well.
-
-Specifically, the marginal ``filtered'' distribution,~${p(\bx_t \given
-  \bs_{1:t})}$ will be Gaussian. We will write it as,
+The marginal ``filtered'' distribution,~${p(\bx_t \given
+  \bs_{1:t})}$ will be Gaussian,
 \begin{align*}
-  p(\bx_t \given \bs_{1:t}) &= \distNormal(\bx_t \given \bbm_t, \bV_t).
+  p(\bx_t \given \bs_{1:t}) &= \distNormal(\bx_t \given \bbm_t, \bV_t),
 \end{align*}
-We obtain the parameters of this distribution by Kalman filtering.
-The following derivations are standard. We follow the presentation of
-\citet[Chapter 18]{murphy2012probabilistic}.  Kalman filter consists
-of iterating from~${t=1}$ to~${t=T}$. Assume that at iteration~$t$ we
+where~$\bbm_t$ and~$\bV_t$ are the filtered mean and covariance, respectively.
+
+Kalman filtering is an iterative algorithm for computing these filtered means 
+and variances. 
+Here, we follow the presentation of
+\citet[Chapter 18]{murphy2012probabilistic}.  Kalman filtering consists
+of iterating forward in time from~${t=1}$ to~${t=T}$. Assume that at iteration~$t$ we
 have already computed~$\bbm_{t-1}$ and~$\bV_{t-1}$. Given the
 Markovian structure of the probabilistic model, the
 conditional distribution of~$\bx_t$ factors into,
@@ -182,10 +184,15 @@ conditional distribution of~$\bx_t$ factors into,
   \underbrace{p(\bs_t \given \bx_t)}_{\text{condition}} \,
   \underbrace{p(\bx_{t} \given \bs_{1:t-1})}_{\text{predict}}.
 \end{align*}
-To compute its paramters, we perform two steps: we \emph{predict} its
-value given preceding observations, and then we
-\emph{condition} on the current observation. The predictive
-distribution is found by marginalizing over the previous state,
+We will show that both of these factors are Gaussian distributions, 
+and hence their product is as well. 
+
+%To compute its paramters, we perform two steps: we \emph{predict} its
+%value given preceding observations, and then we
+%\emph{condition} on the current observation. 
+
+The first step is to \emph{predict}~$\bx_t$ given observations~$\bs_{1:t-1}$.
+To do so, we marginalize over the previous latent state,~$\bx_{t-1}$,
 \begin{align*}
   p(\bx_t \given \bs_{1:t-1})
   &\propto  \int p(\bx_t \given \bx_{t-1}) \, p(\bx_{t-1} \given \bs_{1:t-1}) \, \mathrm{d} \bx_{t-1} \\
@@ -193,22 +200,24 @@ distribution is found by marginalizing over the previous state,
 \end{align*}
 where
 \begin{align*}
-  \bbm_{t|t-1} &\triangleq \bA^{(t)} \bbm_{t-1} + \bb^{(t)} \\
-  \bV_{t|t-1} &\triangleq \bA^{(t)} \bV_{t-1}\bA^{(t)^\trans} + \bSigma^{(t)}.
+  \bbm_{t|t-1} &\triangleq \bA_t \bbm_{t-1} + \bb_t \\
+  \bV_{t|t-1} &\triangleq \bA_t \bV_{t-1}\bA_t^\trans + \bSigma_t.
 \end{align*}
-Then, we condition on the current observations,~$\bs_t$, to get the
+Then, we \emph{condition} on the current observations,~$\bs_t$, to get the
 parameters of the filtered distribution,
-\begin{align*}
+\begin{align}
+  \nonumber
   \bbm_t &= \bbm_{t|t-1} + \bK_t (\bs_t - \bC \bbm_{t|t-1}) \\
+  \label{eq:kalman_filter}
   \bV_t &= (\bI - \bK_t \bC) \bV_{t|t-1},
-\end{align*}
+\end{align}
 where~$\bK_t$ is the ``Kalman gain'' matrix,
 \begin{align*}
   \bK_t &\triangleq \bV_{t|t-1} \bC^\trans \left[ \bC \bV_{t|t-1} \bC^\trans + \bOmega_t^{-1} \right]^{-1}.
 \end{align*}
 
 Once we have computed the filtered means and covariances for all
-time bins, we can sample from the joint distribution over~$\bX$
+time bins, we can sample from the joint distribution over~$\bx_{1:T}$
 by applying the chain rule,
 \begin{align*}
   p(\bx_{1:T} \given \bs_{1:T}, \btheta)
@@ -219,22 +228,45 @@ by applying the chain rule,
 \end{align*}
 Thus, we can sample in reverse order, starting with~$\bx_T$ and ending
 with~$\bx_1$. The conditional distribution of~${\bx_t}$
-\begin{align*}
+\begin{align}
+  \label{eq:bkwd_sample}
   p(\bx_t \given \bx_{t+1:T}, \bs_{1:T})
   &\propto
   \distNormal(\bx_t \given \bbm_t, \bV_t) \,
-  \distNormal(\bx_{t+1} \given \bA^{(t+1)}\bx_{t} + \bb^{(t)}, \bSigma^{(t+1)}),
-\end{align*}
-which is yet another Gaussian distribution.
+  \distNormal(\bx_{t+1} \given \bA_{t+1}\bx_{t} + \bb_{t+1}, \bSigma^{(t+1)}),
+\end{align}
+which is yet another Gaussian distribution. Now we can write the complete 
+algorithm for block Gibbs sampling the continuous latent states,~$\bx_{1:T}$.
 
-Once we have performed a block Gibbs update for~$\bx_{1:T}$, the rest
-of the MCMC algorithm is straightforward. We can perform a block Gibbs
-update for~$\bz_{1:T}$ in much the same way. The HMM message passing
-algorithms of the last chapter are easily extended to handle this
-case. Finally, sampling the parameters, like~$\bA^{(k)}$
-and~$\bC^{(k)}$, is straightforward as well.  The problem reduces to
-one of inference in a Bayesian linear regression model once we
-have conditioned on~$\bz$,~$\bx$, and~$\bs$.
+\begin{center}
+  \begin{minipage}{.75\textwidth}
+    \vskip-2em
+    \singlespacing
+    \begin{algorithm}[H]
+      \sffamily
+      \begin{algorithmic}
+        \Require $\bs_{1:T}$, $\bz_{1:T}$, $\btheta$ 
+        \For {$t = 1, \ldots, T$}
+          \State Compute~$\bbm_t$ and~$\bV_t$ \Comment{Eq.~\ref{eq:kalman_filter}}
+        \EndFor
+        \For {$t = T, \ldots, 1$}
+          \State Sample~$\bx_t \given \bx_{t+1}, \bbm_t, \bV_t, \btheta$ \Comment{Eq.~\ref{eq:bkwd_sample}}
+        \EndFor
+      \end{algorithmic}
+      \caption{Forward filtering, backward sampling algorithm for the Gaussian linear dynamical system.}
+      \label{prog:ffbs_gaussian_lds}
+    \end{algorithm}
+  \end{minipage}
+\end{center}
+
+
+% The rest of the MCMC algorithm is straightforward. We can perform a
+% block Gibbs update for~$\bz_{1:T}$ in much the same way as we did
+% for~$\bx_{1:T}$. The HMM message passing algorithms of the last
+% chapter are easily extended to handle this case. Finally, sampling the
+% parameters, like~$\bA_k$,~$\bb_k$, and~$\bSigma_k$, is straightforward as
+% well.  The problem reduces to one of inference in a Bayesian linear
+% regression model once we have conditioned on~$\bz$,~$\bx$, and~$\bs$.
 
 \subsection{\polyagamma Augmentation for Discrete Observations}
 The conditional distribution of the latent states is only Gaussian
@@ -246,23 +278,28 @@ is an auxiliary variable scheme that applies to models with logistic
 link functions \citep{polson2013bayesian}.  This augmentation can be
 used to develop Gibbs for models with likelihoods of the form,
 \begin{align*}
-  \nonumber  p(s_{t,n} \given \psi_{t,n}, \theta)
-  &= c(s_{t,n}, \theta) \, \sigma(\psi_{t,n})^{a(s_{t,n}, \theta)} \,
-  (1-\sigma(\psi_{t,n}))^{d(s_{t,n}, \theta)} \\
-  &= c(s_{t,n}, \theta)
-  \frac{(e^{\psi_{t,n}})^{a(s_{t,n}, \theta)}}
-       {(1+e^{\psi_{t,n}})^{b(s_{t,n}, \theta)}}.
+  \nonumber  p(s_{t,n} \given \psi_{t,n}, \nu_n)
+  &= c(s_{t,n}, \nu_n) \, \sigma(\psi_{t,n})^{a(s_{t,n}, \nu_n)} \,
+  (1-\sigma(\psi_{t,n}))^{d(s_{t,n}, \nu_n)} \\
+  &= c(s_{t,n}, \nu_n)
+  \frac{(e^{\psi_{t,n}})^{a(s_{t,n}, \nu_n)}}
+       {(1+e^{\psi_{t,n}})^{b(s_{t,n}, \nu_n)}}.
 \end{align*}
 These are called \emph{logistic likelihoods} because the latent
 variables are transformed by a logistic
 function,~${\sigma(\psi)=e^\psi /(1+e^\psi)}$.  Bernoulli, binomial,
-negative binomial, and multinomial likelihoods can all be put in this form.
+negative binomial, and multinomial likelihoods can all be put in this
+form.  For example, in the Bernoulli
+case,~${a(s_{t,n}, \nu_n) = s_{t,n}}$,
+${b(s_{t,n},\nu_n) \equiv 1}$, and~${c(s_{t,n}, \nu_n) \equiv 1}$.
+We refer back to Table~\ref{tab:obs_models} for the formulation of
+other count distributions.
 
 The augmentation is based on an integral identity
 derived from the Laplace transform of the \polyagamma distribution.
 Specifically, if $p_{\distPolyaGamma}(\pgvar\given b, 0)$ is the
-density of the \polyagamma distribution~${\distPolyaGamma(b, 0)}$,
-then
+density of the \polyagamma distribution,~${\distPolyaGamma(b, 0)}$,
+then,
 \begin{align}
   \frac{(e^{\psi})^a}{(1+e^{\psi})^b}
   &= 2^{-b} e^{\kappa \psi}
@@ -283,68 +320,96 @@ Now let~$\psi_{t,n} = \bc_n \cdot \bx_t$ be the activation of neuron
 $n$ at time~$t$. The likelihood, as a function of~$\bx_t$, is then
 proportional to,
 \begin{align*}
-  p(\bs_t \given \bx_t, \btheta)
+  p(\bs_t \given \bx_t, \{\nu_n\})
   &\propto \prod_{n=1}^N 
-  \frac{(e^{\psi_{t,n}})^{a(s_{t,n}, \theta)}}
-       {(1+e^{\psi_{t,n}})^{b(s_{t,n}, \theta)}} \\
+  \frac{(e^{\psi_{t,n}})^{a(s_{t,n}, \nu_n)}}
+       {(1+e^{\psi_{t,n}})^{b(s_{t,n}, \nu_n)}} \\
   &\propto \prod_{n=1}^N 
-     e^{\kappa(s_{t,n}, \theta) \psi_{t,n}}
+     e^{\kappa(s_{t,n}, \nu_n) \psi_{t,n}}
   \int_{0}^{\infty} e^{-\pgvar_{t,n} \psi_{t,n}^2 /2} \,
-  p_{\distPolyaGamma}(\pgvar_{t,n} \given b(s_{t,n}, \theta), 0) \,
+  p_{\distPolyaGamma}(\pgvar_{t,n} \given b(s_{t,n}, \nu_n), 0) \,
   \mathrm{d}\pgvar_{t,n}.
 \end{align*}
-After introducing these auxiliary variables, the likelihood
-of is proportional to a multivariate Gaussian distribution,
-\begin{align*}
-  p(\bs_t \given \bx_t, \bomega_t, \btheta)
+If we augment the data with these auxiliary variables (effectively 
+carrying out the integral via MCMC),  the likelihood
+of~$\bx_t$ is proportional to a multivariate Gaussian distribution,
+\begin{align}
+  \nonumber
+  p(\bs_t \given \bx_t, \bomega_t, \{\nu_n\})
   &\propto \prod_{n=1}^N
   \distNormal(\bc_n \cdot \bx_t \given
-  \omega_{t,n}^{-1} \kappa(s_{t,n}, \theta), \,
+  \omega_{t,n}^{-1} \kappa(s_{t,n}, \nu_n), \,
   \omega_{t,n}^{-1}) \\
+  \label{eq:pg_likelihood}
   &\propto \distNormal(
-  \bOmega_t^{-1} \kappa(\bs_t, \theta) \given
+  \widehat{\bs}_t \given
   \bC \bx_t, \, 
   \bOmega_t^{-1}),
-\end{align*}
+\end{align}
 where
 \begin{align*}
+  \widehat{\bs}_t &= \bOmega_t^{-1} \kappa(\bs_t, \nu_n) \\
   \bOmega_t &= \diag \left( \left[ \omega_{t,1}, \ldots, \omega_{t,N} \right] \right).
 \end{align*}
-Note the similarity of this likelihood and the Gaussian likelihood
-of~\eqref{eq:gauss_lkhd}. The only difference is that here the
-precision is given by the auxiliary variables, and the observations
-are a function of both~$s_{t,n}$ and~$\omega_{t,n}$.
-Thus, given a set of \polyagamma auxiliary variables, the block Gibbs
-updates that we derived for the Gaussian case will apply equally well
-to the discrete case.
-
-
+Note the similarity between the augmented likelihood
+of~\eqref{eq:pg_likelihood} and the Gaussian likelihood
+of~\eqref{eq:gauss_lkhd}. The only difference is that, here, the
+precision is given by the auxiliary variables, and the ``effective''
+observations,~$\widehat{\bs}_t$, are a function of both~$s_{t,n}$
+and~$\omega_{t,n}$.  Thus, given a set of \polyagamma auxiliary
+variables, the block Gibbs updates that we derived for the Gaussian
+case will apply equally well to the discrete case.
 
 Moreover, by the exponential tilting property of the \polyagamma
 distribution, the conditional distribution of~$\pgvar_n$
 is proportional to a \polyagamma distribution:
-\begin{align*}
+\begin{align}
   \nonumber
-  p(\pgvar_{t,n} \given \psi_{t,n}, s_{t,n}, \btheta) &
+  p(\pgvar_{t,n} \given \psi_{t,n}, s_{t,n}, \nu_n) &
   \propto e^{-\pgvar_{t,n} \psi_{t,n}^2/2}
-  p_{\distPolyaGamma}(\pgvar_{t,n} \given b(s_{t,n}, \btheta), \, 0) \\
-  &\propto p_{\distPolyaGamma}(\pgvar_{t,n} \given b(s_{t,n}, \btheta), \, \psi_{t,n}).
-\end{align*}
+  p_{\distPolyaGamma}(\pgvar_{t,n} \given b(s_{t,n}, \nu_n), \, 0) \\
+  \label{eq:omega_conditional}
+  &\propto p_{\distPolyaGamma}(\pgvar_{t,n} \given b(s_{t,n}, \nu_n), \, \psi_{t,n}).
+\end{align}
 These auxiliary variables are conditionally independent of each other,
 and hence amenable to block parallel Gibbs sampling.  Efficient
 \polyagamma sampling algorithms have been developed for the regimes
 typically encountered in Bernoulli, binomial, and negative binomial
 models \citep{windle2014sampling}.
 
-%When the shape parameter,~$b(x_n, \theta)$, goes to zero, the
+%When the shape parameter,~$b(x_n, \nu_n)$, goes to zero, the
 %\polyagamma density reduces to a delta function at zero. 
+The proposed algorithm for sampling the latent variables and 
+parameters of an SLDS is summarized in Program~\ref{prog:slds}.
+The parameters of the model are aggregated in~$\btheta$.
 
-Thus, our proposed transition operators,~$\mcT_t$, perform three steps, 
-\begin{enumerate}
-\item sample~$\bz$ from its Gaussian conditional distribution;
-\item sample~$\theta$ from its conditional; and
-\item sample all~$\pgvar_n$ in parallel from their \polyagamma conditional distributions.
-\end{enumerate}
+\begin{center}
+  \begin{minipage}{.75\textwidth}
+    \vskip-2em
+    \singlespacing
+    \begin{algorithm}[H]
+      \sffamily
+      \begin{algorithmic}
+        \Require $\bs_{1:T}$ and $\bz_{1:T}$, $\bx_{1:T}$, and $\btheta$ from previous iteration
+        \State Sample $\btheta \given \bz_{1:T}, \bx_{1:T}, \bs_{1:T}$
+        \State Sample $\bz_{1:T} \given \bx_{1:T}, \btheta$ 
+        \Comment{HMM update}
+        \For {$t = 1, \ldots, T$} \Comment{In parallel}
+          \For {$n = 1, \ldots, N$}  \Comment{In parallel}
+            \State Sample $\omega_{t,n} \given s_{t,n}, \bx_t, \btheta$ 
+            \Comment{Eq.~\ref{eq:omega_conditional}}
+          \EndFor
+        \EndFor
+        \State Compute $\bOmega_{1:T}$ and~$\widehat{\bs}_{1:T}$ \Comment{Eq.~\ref{eq:pg_likelihood}}
+        \State Sample $\bx_{1:T} \given \widehat{\bs}_{1:T}, \bz_{1:T}, \bOmega_{1:T}, \btheta$ 
+        \Comment{Prog.~\ref{prog:ffbs_gaussian_lds}}
+      \end{algorithmic}
+      \caption{Single iteration of Gibbs sampler for an switching LDS with discrete count observations}
+      \label{prog:slds}
+    \end{algorithm}
+  \end{minipage}
+\end{center}
+
 
 \subsection{Alternative approaches}
 \TODO{
@@ -368,8 +433,250 @@ Here, we present a simpler, faster, fully Bayesian set of algorithms that
 are easy to compose and extend.
 }
 
+\subsection{Missing Data}
+Sometimes we only have partial observations. For example, in some cases we have 
+multiple recordings from the same circuit, but each recording only provides access 
+to a subset of the population of neurons \citep{turaga2013inferring}. In other cases,
+we simply hold out some of the data for predictive likelihood comparisons. With
+Gaussian observations, we can implement this by replacing the missing data point,~$s_{t,n}$,
+with a zero mean, zero precision observation. In the discrete count model, this can 
+be implemented by setting the auxiliary variable,~$\omega_{t,n}$, to zero. Recall 
+that the \polyagamma auxiliary variables specify the precision of the effective 
+observations. By setting this to zero, and also setting the mean~$\kappa(s_{t,n}, \nu_n)$
+to zero, we can effectively remove this data point. 
+In the experiments below, we will use this approach
+to withhold a subset of spike counts during training.
 
+\section{Model Comparison via Marginal Likelihood Estimation}
+The marginal likelihood of a model is the probability of the
+data,~$\bs$, having integrated out the latent
+variables,~$\bz$ and~$\bx$, and the parameters,~$\btheta$,
+\begin{align*}
+  p(\bs) = \int p(\bs \given \bz, \bx, \btheta) \, 
+  p(\bz, \bx, \btheta) \, \mathrm{d} \bz \, \mathrm{d}\bx \, \mathrm{d}\btheta
+\end{align*}
+By integrating over the latent variables and parameters, the marginal
+likelihood captures a tradeoff between a model's complexity and its
+ability to explain the data.  As such, it is a natural criterion for
+model comparison. For conjugate exponential family 
+models, like linear Gaussian models with Gaussian observations,
+ the marginal likelihood can be computed in closed form. 
+In these cases, marginal likelihood is often the gold-standard 
+for model selection \citep{kass1995bayes}.
 
+Unfortunately, minor adjustments to the model can render the
+integration over parameters and latent variables intractable.  For
+example, the marginal likelihood is intractable the SLDS models 
+with discrete observations we have just described. 
+Instead, we are forced to resort to approximate methods like annealed
+importance sampling (AIS) \citep{neal2001annealed}.  AIS is based on
+sampling from a sequence of intermediate distributions that
+\emph{anneal} between a tractable distribution and the intractable
+posterior. While AIS has proven highly effective for a variety of
+models \citep{grosse2015sandwiching}, the accuracy of the method hinges
+upon the efficiency of the Markov transition operators that target
+the intermediate distributions.  Unfortunately, these distributions
+often lack exploitable structure present in the posterior, making the
+design of efficient transition operators challenging, and ultimately
+compromising the efficacy of AIS. We will show how the \polyagamma 
+augmentation strategies above can be extended to perform efficient 
+annealed importance sampling in the class of switching linear dynamical
+ systems models with count observations.
+
+\subsection{Annealed Importance Sampling}
+
+Annealed importance sampling \citep{neal2001annealed} is a method of
+estimating the marginal likelihood,~$p(\bs)$, by ``annealing'' between
+a tractable distribution, with known normalization constant, and the
+joint distribution, whose normalization constant is the marginal
+likelihood of interest. The annealing path is a sequence of
+distributions,~${p_1(\btheta, \bz, \bx), \ldots, p_M(\btheta, \bz, \bx)}$,
+where~${p_m(\btheta, \bz, \bx)=f_m(\btheta, \bz, \bx)/\mcZ_m}$,
+and~${f_M(\btheta, \bz, \bx) =p(\theta, \bz, \bx)}$, such that~${\mcZ_M=p(\bs)}$.
+Typically, we let~$f_1(\theta, \bz)$ be the normalized prior
+distribution such that~${\mcZ_1=1}$. Then, we let~$f_m(\bz, \theta)$ be
+a geometric average of the prior and the joint:
+\begin{align*}
+  f_m(\btheta, \bz, \bx) &= p(\btheta, \bz, \bx) \, p(\bs \given \btheta, \bz, \bx)^{\beta_m},
+\end{align*}
+with~$\beta_m$ monotonically increasing from~${\beta_1=0}$ to~${\beta_M=1}$.
+
+Given this annealing path, we can generate a sample
+of~$(\btheta, \bz, \bx)$ by first sampling from the prior, and then
+applying a sequence of MCMC transition operators~$\mcT_m$ that leave
+the intermediate distributions~$p_m$ invariant. The result is a sample
+that is, hopefully, closer in distribution to the posterior. We can
+use this procedure as a proposal distribution for importance sampling.
+The importance weights are given by a product of ratios between~$f_m$
+and~$f_{m-1}$.  Since the target density is the unnormalized joint
+distribution, the importance weights will be unbiased estimates of the
+normalization constant, namely the marginal
+likelihood,~${\mcZ_M =p(\bs)}$.
+
+How can we reduce the variance of this estimator? First, we can
+increase the number of intermediate distributions; second, we can
+design rapidly mixing transition operators,~$\mcT_m$. In this chapter,
+we develop transition operators that are both computationally efficient,
+allowing us to run more transitions in a fixed amount of time, and more
+effective, in that they quickly reach their equilibrium distribution.
+
+With a geometric annealing path, the intermediate distributions of the 
+switching LDS are given by,
+\begin{align}
+  \label{eq:intermediate}
+  f_m(\btheta, \bz, \bx) 
+  &= p(\btheta, \bz, \bx) \,  
+    \prod_{t=1}^T \prod_{n=1}^N
+    c(s_{t,n}, \btheta)^{\beta_m} \frac{(e^{\bc_n \cdot \bx_t})^{a(s_{t,n}, \btheta) \cdot \beta_m}}
+    {(1+e^{\bc_n \cdot \bx_t})^{b(s_{t,n}, \btheta) \cdot \beta_m}}.
+\end{align}
+Raising the likelihood to the power~$\beta_m$ does change its
+functional form. It is still amenable to \polyagamma augmentation!
+Thus, the Gibbs sweep defined in Prog.~\ref{prog:slds} can be used as
+a transition operator,~$\mcT_m$.
+
+However, for this transition to be efficient, we must be able to
+sample from the \polyagamma conditional distribution in the regime
+where~${b(s_{t,n}, \btheta) \cdot \beta_m < 1}$.  For Bernoulli
+observations,~${b(s_{t,n}, \btheta) \equiv 1}$, so we will be in this
+regime for all~$\beta_m \in [0,1)$.  While efficient samplers exist
+for \polyagamma distributed variables when the shape parameter is
+greater than one \citep{windle2014sampling}, this ``small shape''
+regime has not been previously explored.  We develop a novel sampling
+algorithm that makes these conditional updates extremely efficient,
+and renders AIS with \polyagamma augmented transitions highly
+effective.
+
+\section{A Novel Sampling Algorithm for the \polyagamma Distribution}
+\label{sec:pgsampling}
+
+\begin{figure}
+\centering
+  \begin{subfigure}[t]{3in}
+    \centering
+    \vskip 0pt
+    \includegraphics[width=\textwidth]{figures/ch8/psi}
+  \end{subfigure}
+  \\
+  \begin{subfigure}[t]{3in}
+    \centering
+    \vskip -2em
+    \includegraphics[width=\textwidth]{figures/ch8/acceptance}
+  \end{subfigure}
+  \vspace{-1em}
+  \caption[Rejection sampling algorithm for the \polyagamma
+    distribution] {\textit{Top:} Plot of~$\Phi(\pgvar \given b)$, the
+    conditional acceptance probability for a proposed value
+    of~$\pgvar$, for~$b\in (0,1]$. In all cases, this function is
+  monotonically increasing from 0 to 1 as a function of~$\pgvar$, and
+  thus defines a cumulative distribution function.  \textit{Bottom:}
+  Acceptance probability,~$\alpha(b,\psi)$, as a function of~$b$
+  and~$\psi$.}
+\label{fig:pgsampling}
+\end{figure}
+\TODO{Update figure}
+
+The \polyagamma distribution,~$\distPolyaGamma(b,\psi)$, is closely related 
+to the Jacobi distribution,~$\distJacobi(b,\psi)$, surveyed by \citet{biane2001probability} and 
+elaborated upon in~\citet{windle2014sampling}.
+Specifically, 
+\begin{align*}
+  \distPolyaGamma(b, \psi) \sim \frac{1}{4} \distJacobi(b, \tfrac{\psi}{2}).
+\end{align*}
+Thus, to develop a sampler for the \polyagamma distribution, 
+it is sufficient to be able to sample the Jacobi distribution.
+
+The density of~$\distJacobi(b,\psi)$ can be written as an infinite alternating sum,
+\begin{multline*}
+  p_{\distJacobi}(\pgvar \given b, \psi) = \\ 
+  \cosh^b(\psi) e^{-\pgvar \psi^2/2} \frac{2^b}{\Gamma(b)} 
+  \sum_{n=0}^\infty (-1)^n \frac{\Gamma(n+b)}{\Gamma(n+1)} \frac{(2n+b)}{\sqrt{2\pi \pgvar^3}}
+  \exp\left\{- \frac{(2n+b)^2}{2\pgvar} \right\}.
+\end{multline*}
+This can be factored as follows,
+\begin{align*}
+  % \nonumber &p_{\distJacobi}(\pgvar \given b, \psi) \\
+  % \nonumber &\quad= \cosh^b(\psi) \frac{b 2^b}{\sqrt{2\pi \pgvar^3}} 
+  %   \exp \left \{ -\frac{b^2}{2\pgvar} - \frac{\pgvar \psi^2}{2} \right \}
+  %   \Phi(\pgvar \given b) \\
+  % &= \cosh^b(\psi) \frac{b 2^b}{\sqrt{2\pi \pgvar^3}} 
+  %   \exp \left \{ -\frac{\psi^2}{2\pgvar} \left[\left( \frac{b}{\psi} \right)^2 + \pgvar^2 \right]\right \}
+  %   \left( 1-\Phi(\pgvar \given b) \right) \\
+  % &= \cosh^b(\psi) \frac{b 2^b}{\sqrt{2\pi \pgvar^3}} 
+  %   \exp \left \{ -\frac{\psi^2}{2\pgvar} \left[\left( \pgvar- \frac{b}{|\psi|} \right)^2  +\frac{2b\pgvar}{|\psi|}\right]\right \}
+  %   \left( 1-\Phi(\pgvar \given b) \right) \\
+  %&= \cosh^b(\psi) \frac{b 2^b}{\sqrt{2\pi \pgvar^3}} 
+  %  \exp \left \{ -\frac{\left(\tfrac{|\psi|}{b}\right)^2 b^2}{2\pgvar} \left( \pgvar- \frac{b}{|\psi|} \right)^2  
+  %  -b|\psi| \right \} 
+  %  \left( 1-\Phi(\pgvar \given b) \right) \\
+  % &\quad = 2^b \, \cosh^b(\psi) \, e^{-b|\psi|} \,
+  %   p_{\distInvGaussian} \left(\pgvar \, \bigg| \, \frac{b}{|\psi|}, \, b^2 \right) 
+  %   \Phi(\pgvar \given b),
+  p_{\distJacobi}(\pgvar \given b,\psi) &= 
+   \alpha^{-1}(b,\psi) \,
+   p_{\distInvGaussian}\left(\pgvar \, \bigg| \, \frac{b}{|\psi|}, \, b^2 \right) \,
+   \Phi(\pgvar \given b),
+\end{align*}
+where~$\alpha^{-1}(b,\psi)$ is a scaling constant greater than one,
+\begin{align*}
+  \alpha^{-1}(b,\psi) = 2^b \, \cosh^b(\psi) \, e^{-b|\psi|} 
+  % &= 2^b \cosh^b(|\psi|) \, e^{-b|\psi|} \\
+  % &= 2^b \left(\frac{(1+e^{-2|\psi|}) e^{-|\psi|}}{2e^{-|\psi|}} \right)^b \\
+  = \left(1 + e^{-2|\psi|} \right)^b \geq 1;
+\end{align*}
+where~$p_{\distInvGaussian}(\cdot)$ denotes the inverse Gaussian density,
+\begin{align*}
+p_{\distInvGaussian} \left(\pgvar \, \bigg| \, \frac{b}{|\psi|}, \, b^2 \right) 
+  % &= \left( \frac{b^2}{2\pi \pgvar^3} \right)^{1/2} 
+  %   \exp \left \{ - \frac{b^2 \left(\pgvar - \tfrac{b}{|\psi|} \right)^2}{2 \left(\tfrac{b}{|\psi|} \right)^2 \pgvar}   \right \} \\
+  &= \frac{b}{\sqrt{2\pi \pgvar^3}}
+    \exp \left \{ - \frac{\psi^2}{2\pgvar}  \left(\pgvar - \frac{b}{|\psi|} \right)^2   \right \};
+\end{align*}
+and where we have defined~$\Phi(\pgvar \given b)$ as,
+\begin{align*}
+  \Phi(\pgvar \given b)  
+  &= \sum_{n=0}^\infty (-1)^n \frac{\Gamma(n+b)}{\Gamma(n+1)} \frac{2n+b}{\Gamma(b+1)}
+    \exp\left\{- \frac{2n(n+b)}{\pgvar} \right\}.  
+\end{align*}
+Figure~\ref{fig:pgsampling} plots~$\Phi(\pgvar \given b)$ for various values of~$b$.
+% , and shows that it is bounded to the range~$[0,1]$.
+Since~$\alpha^{-1}(b,\psi)\geq 1$ and~$\Phi(\pgvar \given b) \in [0,1]$,
+we are guaranteed that~${\alpha^{-1}(b,\psi)\,
+  p_{\distInvGaussian}(\pgvar \given \tfrac{b}{|\psi|}, b^2)}$
+dominates~$p_{\distJacobi}(\pgvar \given b,\psi)$, which makes the
+inverse Gaussian a natural proposal distribution for a rejection
+sampling algorithm.  To determine whether a proposed value of~$\pgvar$
+is accepted, we must sample~$u \sim \mathrm{Unif}(0,1)$, and check
+whether~$u < \Phi(\pgvar \given b)$.
+% This is sometimes referred to
+% as \emph{generalized rejection sampling}~\citep{devroye1986}.
+
+The acceptance probability is~$\alpha(b,\psi)$, the inverse of the
+scaling constant. It is bounded
+between~$[\tfrac{1}{2}, 1]$ when~$b \leq 1$.
+The lower bound (worst case) is achieved when~$\psi=0$ and~$b=1$.
+The upper bound (best case) is approached as~$b$ goes to zero or~$|\psi|$ goes 
+to infinity.
+This is illustrated in Figure~\ref{fig:pgsampling} for a 
+range of~$b$ and~$\psi$.
+
+Determining acceptance requires a comparison against~$\Phi(\pgvar
+\given b)$, for given~$\pgvar$ and~$b$. This function is not
+analytically tractable, however, it is still possible to determine
+whether or not to accept with finite computation. To do so, we use a
+slight modification of the \emph{alternating series method}
+\citep{devroye1986}.  We exploit the fact that ~$\Phi(\pgvar \given b)$
+is an alternating sum, and the absolute value of the terms is
+eventually monotonically decreasing as a function of the index~$n$ for
+all fixed values of~$b$ an~$\psi$.  Thus, after we have computed the
+increasing terms, all subsequent partial sums for even~$n$ are upper
+bounds, and all subsequent partial sums for odd~$n$ are lower bounds
+on~$\Phi(\pgvar\given b)$.  To determine acceptance of~$u$, we
+evaluate until we find an upper bound less than~$u$, at which point we
+reject, or a lower bound greater than~$u$, at which point we
+accept. This is typically done in fewer than six iterations. 
+
+\begin{comment}
 \section{Results}
 
 \begin{figure}
@@ -454,262 +761,5 @@ hippocampal recordings, adopting such an approach allows us to find
 a parsimonious description of the neural activity quickly and efficiently
 in models that traditionally pose significant inferential challenges.
 
+\end{comment}
 
-
-\section{Marginal Likelihood Estimation}
-The marginal likelihood of a model,~$\mcM$, is the probability of the
-data,~$\bx$, having integrated out the latent
-variables,~$\bz$, and parameters,~$\theta$, of the model:
-\begin{align*}
-  {p(\bx \given \mcM) = \int p(\bx \given \bz, \theta) \, p(\bz, \theta
-  \given \mcM) \, \mathrm{d} \bz \, \mathrm{d}\theta}
-\end{align*}
-By integrating over the latent variables and parameters, the marginal
-likelihood captures a tradeoff between a model's complexity and its
-ability to explain the data.  As such, it is a natural criterion for
-model comparison. For conjugate exponential family 
-models, like linear Gaussian models with Gaussian observations,
- the marginal likelihood can be computed in closed form. 
-In these cases, marginal likelihood is often the gold-standard 
-for model selection \cite{kass1995bayes}.
-
-Unfortunately, minor adjustments to the model can render the
-integration over parameters and latent variables intractable.  For
-example, the marginal likelihood is intractable for models with latent
-Gaussian structure, like Gaussian processes or linear dynamical
-systems, and non-Gaussian observations, like discrete counts.
-Instead, we are forced to resort to approximate methods like annealed
-importance sampling (AIS) \cite{neal2001annealed}.  AIS is based on
-sampling from a sequence of intermediate distributions that
-\emph{anneal} between a tractable distribution and the intractable
-posterior. While AIS has proven highly effective for a variety of
-models \cite{grosse2015sandwiching}, the accuracy of the method hinges
-upon the efficiency of the Markov transition operators that target
-the intermediate distributions.  Unfortunately, these distributions
-often lack exploitable structure present in the posterior, making the
-design of efficient transition operators challenging, and ultimately
-compromising the efficacy of AIS.
-
-In this work, we develop efficient transition operators that make AIS
-simple and efficient for a broad class of models: those in which the
-latent variables are Gaussian distributed, the data are discrete, and
-the link is provided by a logistic function. Formally, we consider
-models of the form,
-\begin{align*}
-p(\bx, \bz, \theta) 
-&= p(\theta) \, \distNormal(\bz \given \bJ_\theta, \bh_\theta) \prod_{n=1}^N p(x_n \given z_n, \theta),
-\end{align*}
-where the likelihood can be written,
-\begin{align*}
-\nonumber  p(x_n \given z_n, \theta) &= c(x_n, \theta) \, \sigma(z_n)^{a(x_n, \theta)} \, (1-\sigma(z_n))^{d(x_n, \theta)} \\
-  &= c(x_n, \theta) \frac{(e^{z_n})^{a(x_n, \theta)}}{(1+e^{z_n})^{b(x_n, \theta)}}.
-\end{align*}
-We call these \emph{logistic likelihoods} because the latent variables
-are transformed by a logistic function,~${\sigma(z)=e^z /(1+e^z)}$.
-Bernoulli, binomial, negative binomial, and multinomial likelihoods
-are all in this class.
-
-We have written the Gaussian prior in information form,
-\begin{align*}
-  \distNormal(\bz \given \bJ_\theta, \bh_\theta) &\propto \exp \left \{-\frac{1}{2} \bz^\trans \bJ_\theta \bz + \bh_\theta^\trans \bz \right\}, 
-\end{align*}
-which can be related back to the standard form by the
-transformations,~$\Sigma = J^{-1}$ and~$\mu = J^{-1}h$.  The Gaussian
-prior encapsulates a host of well-known models, like factor analysis,
-sparse linear models, Gaussian processes, and linear dynamical
-systems, as we will highlight in our applications below.
-
-We begin by reviewing annealed importance sampling and the \polyagamma
-augmentation scheme, which we will leverage to develop efficient
-transition operators. Section~\ref{sec:pgsampling} derives a
-novel sampling algorithm for the \polyagamma distribution --
-the main technical contribution of this paper. The remaining
-sections illustrate the practical import of this development
-by demonstrating significant improvements in marginal likelihood
-estimation for a variety of real-world modeling problems.
-
-
-\subsection{Annealed Importance Sampling}
-
-Annealed importance sampling \cite{neal2001annealed} is a method of
-estimating the marginal likelihood,~$p(\bx)$, by ``annealing'' between
-a tractable distribution, with known normalization constant, and the
-joint distribution, whose normalization constant is the marginal
-likelihood of interest. The annealing path is a sequence of
-distributions,~${p_1(\theta, \bz), \ldots, p_T(\theta, \bz)}$,
-where~${p_t(\theta, \bz)=f_t(\theta, \bz)/\mcZ_t}$,
-and~${f_T(\theta, \bz) =p(\theta, \bz, \bx)}$, such that~${\mcZ_T=p(\bx)}$.
-Typically, we let~$f_1(\theta, \bz)$ be the normalized prior
-distribution such that~${\mcZ_1=1}$. Then, we let~$f_t(\bz, \theta)$ be
-a geometric average of the prior and the joint:
-\begin{align*}
-  f_t(\theta, \bz) &= p(\theta, \bz) \, p(\bx \given \bz, \theta)^{\beta_t},
-\end{align*}
-with~$\beta_t$ monotonically increasing from~${\beta_1=0}$ to~${\beta_T=1}$.
-
-Given this annealing path, we can generate a sample of~$(\theta,
-\bz)$ by first sampling from the prior, and then applying a sequence
-of MCMC transition operators~$\mcT_t$ that leave the intermediate
-distributions~$p_t$ invariant. The result is a sample that is,
-hopefully, closer in distribution to the posterior. We can use
-this procedure as a proposal distribution for importance sampling.
-The importance weights are given by a product of ratios between~$f_t$ and~$f_{t-1}$.
-Since the target density is the unnormalized joint distribution,
-the importance weights will be unbiased estimates of the normalization
-constant, namely the marginal likelihood,~${\mcZ_T =p(\bx)}$.
-
-How can we reduce the variance of this estimator? First, we can
-increase the number of intermediate distributions; second, we can
-design rapidly mixing transition operators,~$\mcT_t$. In this work,
-we develop transition operators that are both computationally efficient,
-allowing us to run more transitions in a fixed amount of time, and more
-effective, in that they quickly reach their equilibrium distribution.
-
-With a geometric annealing path, the intermediate distributions are given by,
-\begin{align}
-  \label{eq:intermediate}
-  f_t(\theta, \bz) 
-  &= p(\theta) \, \distNormal(\bz \given \bJ_\theta, \bh_\theta) \,  
-    \prod_{n=1}^N c(x_n, \theta)^{\beta_t} \frac{(e^{z_n})^{a(x_n, \theta) \cdot \beta_t}}
-    {(1+e^{z_n})^{b(x_n, \theta) \cdot \beta_t}}.
-\end{align}
-There is no immediate conjugacy that we can exploit in order to design
-MCMC transition operators for these distributions, but by clever
-augmentation, we can derive efficient updates.
-
-However, for this transition to be efficient, 
-we must be able to sample from the \polyagamma 
-conditional distribution in the regime where~${b(x_n, \theta) \cdot \beta_t < 1}$.
-For Bernoulli observations,~${b(x_n, \theta) \equiv 1}$, so we
-will be in this regime for all~$\beta_t \in [0,1)$.
-While efficient samplers exist for \polyagamma distributed variables 
-when the shape parameter is greater than one \citep{windle2014sampling}, 
-this ``small shape'' regime has not been previously explored.
-We develop a novel sampling algorithm that makes these 
-conditional updates extremely efficient, and renders AIS with 
-\polyagamma augmented transitions highly effective.
-
-\section{A Novel Sampling Algorithm for the \polyagamma Distribution}
-\label{sec:pgsampling}
-
-\begin{figure}
-\centering
-  \begin{subfigure}[t]{3in}
-    \centering
-    \vskip 0pt
-    \includegraphics[width=\textwidth]{figures/ch8/psi}
-  \end{subfigure}
-  \\
-  \begin{subfigure}[t]{3in}
-    \centering
-    \vskip -2em
-    \includegraphics[width=\textwidth]{figures/ch8/acceptance}
-  \end{subfigure}
-  \vspace{-1em}
-  \caption[Rejection sampling algorithm for the \polyagamma
-    distribution] {\textit{Top:} Plot of~$\Psi(\pgvar \given b)$, the
-    conditional acceptance probability for a proposed value
-    of~$\pgvar$, for~$b\in (0,1]$. In all cases, this function is
-  monotonically increasing from 0 to 1 as a function of~$\pgvar$, and
-  thus defines a cumulative distribution function.  \textit{Bottom:}
-  Acceptance probability,~$\alpha(b,z)$, as a function of~$b$
-  and~$z$.}
-\label{fig:pgsampling}
-\end{figure}
-
-The \polyagamma distribution,~$\distPolyaGamma(b,z)$, is closely related 
-to the Jacobi distribution,~$\distJacobi(b,z)$, surveyed by \citet{biane2001probability} and 
-defined in~\citet{windle2014sampling}.
-Specifically, ${\distPolyaGamma(b, z) \sim \frac{1}{4} \distJacobi(b, \tfrac{z}{2})}$.
-Thus, to develop a sampler for the \polyagamma distribution, 
-it is sufficient to be able to sample the Jacobi distribution.
-
-The density of~$\distJacobi(b,z)$ can be written as an infinite alternating sum,
-\begin{multline*}
-  p_{\distJacobi}(\pgvar \given b, z) = \\ 
-  \cosh^b(z) e^{-\pgvar z^2/2} \frac{2^b}{\Gamma(b)} 
-  \sum_{n=0}^\infty (-1)^n \frac{\Gamma(n+b)}{\Gamma(n+1)} \frac{(2n+b)}{\sqrt{2\pi \pgvar^3}}
-  \exp\left\{- \frac{(2n+b)^2}{2\pgvar} \right\}.
-\end{multline*}
-This can be factored as follows,
-\begin{align*}
-  % \nonumber &p_{\distJacobi}(\pgvar \given b, z) \\
-  % \nonumber &\quad= \cosh^b(z) \frac{b 2^b}{\sqrt{2\pi \pgvar^3}} 
-  %   \exp \left \{ -\frac{b^2}{2\pgvar} - \frac{\pgvar z^2}{2} \right \}
-  %   \Psi(\pgvar \given b) \\
-  % &= \cosh^b(z) \frac{b 2^b}{\sqrt{2\pi \pgvar^3}} 
-  %   \exp \left \{ -\frac{z^2}{2\pgvar} \left[\left( \frac{b}{z} \right)^2 + \pgvar^2 \right]\right \}
-  %   \left( 1-\Psi(\pgvar \given b) \right) \\
-  % &= \cosh^b(z) \frac{b 2^b}{\sqrt{2\pi \pgvar^3}} 
-  %   \exp \left \{ -\frac{z^2}{2\pgvar} \left[\left( \pgvar- \frac{b}{|z|} \right)^2  +\frac{2b\pgvar}{|z|}\right]\right \}
-  %   \left( 1-\Psi(\pgvar \given b) \right) \\
-  %&= \cosh^b(z) \frac{b 2^b}{\sqrt{2\pi \pgvar^3}} 
-  %  \exp \left \{ -\frac{\left(\tfrac{|z|}{b}\right)^2 b^2}{2\pgvar} \left( \pgvar- \frac{b}{|z|} \right)^2  
-  %  -b|z| \right \} 
-  %  \left( 1-\Psi(\pgvar \given b) \right) \\
-  % &\quad = 2^b \, \cosh^b(z) \, e^{-b|z|} \,
-  %   p_{\distInvGaussian} \left(\pgvar \, \bigg| \, \frac{b}{|z|}, \, b^2 \right) 
-  %   \Psi(\pgvar \given b),
-  p_{\distJacobi}(\pgvar \given b,z) &= 
-   \alpha^{-1}(b,z) \,
-   p_{\distInvGaussian}\left(\pgvar \, \bigg| \, \frac{b}{|z|}, \, b^2 \right) \,
-   \Psi(\pgvar \given b),
-\end{align*}
-where~$\alpha^{-1}(b,z)$ is a scaling constant greater than one,
-\begin{align*}
-  \alpha^{-1}(b,z) = 2^b \, \cosh^b(z) \, e^{-b|z|} 
-  % &= 2^b \cosh^b(|z|) \, e^{-b|z|} \\
-  % &= 2^b \left(\frac{(1+e^{-2|z|}) e^{-|z|}}{2e^{-|z|}} \right)^b \\
-  = \left(1 + e^{-2|z|} \right)^b \geq 1;
-\end{align*}
-where~$p_{\distInvGaussian}(\cdot)$ denotes the inverse Gaussian density,
-\begin{align*}
-p_{\distInvGaussian} \left(\pgvar \, \bigg| \, \frac{b}{|z|}, \, b^2 \right) 
-  % &= \left( \frac{b^2}{2\pi \pgvar^3} \right)^{1/2} 
-  %   \exp \left \{ - \frac{b^2 \left(\pgvar - \tfrac{b}{|z|} \right)^2}{2 \left(\tfrac{b}{|z|} \right)^2 \pgvar}   \right \} \\
-  &= \frac{b}{\sqrt{2\pi \pgvar^3}}
-    \exp \left \{ - \frac{z^2}{2\pgvar}  \left(\pgvar - \frac{b}{|z|} \right)^2   \right \};
-\end{align*}
-and where we have defined~$\Psi(\pgvar \given b)$ as,
-\begin{align*}
-  \Psi(\pgvar \given b)  
-  &= \sum_{n=0}^\infty (-1)^n \frac{\Gamma(n+b)}{\Gamma(n+1)} \frac{2n+b}{\Gamma(b+1)}
-    \exp\left\{- \frac{2n(n+b)}{\pgvar} \right\}.  
-\end{align*}
-Figure~\ref{fig:pgsampling} plots~$\Psi(\pgvar \given b)$ for various values of~$b$.
-% , and shows that it is bounded to the range~$[0,1]$.
-Since~$\alpha^{-1}(b,z)\geq 1$ and~$\Psi(\pgvar \given b) \in [0,1]$,
-we are guaranteed that~${\alpha^{-1}(b,z)\,
-  p_{\distInvGaussian}(\pgvar \given \tfrac{b}{|z|}, b^2)}$
-dominates~$p_{\distJacobi}(\pgvar \given b,z)$, which makes the
-inverse Gaussian a natural proposal distribution for a rejection
-sampling algorithm.  To determine whether a proposed value of~$\pgvar$
-is accepted, we must sample~$u \sim \mathrm{Unif}(0,1)$, and check
-whether~$u < \Psi(\pgvar \given b)$.
-% This is sometimes referred to
-% as \emph{generalized rejection sampling}~\cite{devroye1986}.
-
-The acceptance probability is~$\alpha(b,z)$, the inverse of the
-scaling constant. It is bounded
-between~$[\tfrac{1}{2}, 1]$ when~$b \leq 1$.
-The lower bound (worst case) is achieved when~$z=0$ and~$b=1$.
-The upper bound (best case) is approached as~$b$ goes to zero or~$|z|$ goes 
-to infinity.
-This is illustrated in Figure~\ref{fig:pgsampling} for a 
-range of~$b$ and~$z$.
-
-Determining acceptance requires a comparison against~$\Psi(\pgvar
-\given b)$, for given~$\pgvar$ and~$b$. This function is not
-analytically tractable, however, it is still possible to determine
-whether or not to accept with finite computation. To do so, we use a
-slight modification of the \emph{alternating series method}
-\cite{devroye1986}.  We exploit the fact that ~$\Psi(\pgvar \given b)$
-is an alternating sum, and the absolute value of the terms is
-eventually monotonically decreasing as a function of the index~$n$ for
-all fixed values of~$b$ an~$z$.  Thus, after we have computed the
-increasing terms, all subsequent partial sums for even~$n$ are upper
-bounds, and all subsequent partial sums for odd~$n$ are lower bounds
-on~$\Psi(\pgvar\given b)$.  To determine acceptance of~$u$, we
-evaluate until we find an upper bound less than~$u$, at which point we
-reject, or a lower bound greater than~$u$, at which point we
-accept. This is typically done in fewer than six iterations. 

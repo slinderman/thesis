@@ -180,16 +180,18 @@
 \definecolor{SchoolColor}{rgb}{0.6471, 0.1098, 0.1882} % Crimson
 \definecolor{SchoolColor2}{rgb}{0.3058,  0.5176,  0.7686} % Blue
 \definecolor{SchoolColor3}{rgb}{0.7686,  0.5882,  0.1019} % Gold
+%\definecolor{NavyBlue}{rgb}{0., .44, .80} 
+\definecolor{DarkBlue}{rgb}{0.2, .36, .50} 
 \definecolor{chaptergrey}{rgb}{0.6471, 0.1098, 0.1882} % for chapter numbers
 
 
 % Chapter font size
 \hypersetup{
     colorlinks,
-    citecolor=SchoolColor2,
+    citecolor=DarkBlue,
     filecolor=black,
     linkcolor=black,
-    urlcolor=SchoolColor2,
+    urlcolor=DarkBlue,
 }
 
 % TODO Notes
