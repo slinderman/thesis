@@ -1,236 +1,199 @@
 \chapter{Continuous State Space Models with Discrete Observations}
 \label{chap:eight}
 
-We show how the \polyagamma augmentation strategy can be leveraged 
-to render the observations conjugate with linear Gaussian latent structure. 
-This allows us to use off-the-shelf inference tools for Gaussian LDS 
-models. It also allows us to extend to switching variants of the LDS 
-by including another layer of discrete, Markovian states. 
-While these models apply directly to Bernoulli and negative-binomial 
-observations, we can approximate Poisson observations as a limit of the 
-negative binomial. Alternatively, we can use a Poisson thinning model with 
-multinomial conditionals to exactly simulate the Poisson model. If time 
-and space allow, we will introduce this novel approach in this chapter.
-Finally, I will compare these models on the basis of their ability to generalize to 
-held out spike counts. Since this is the final chapter, we will also 
-provide a comparison against the models introduced in preceding chapters.
+The past two chapters have explored different notions of latent
+state: a dynamic network in Chapter~\ref{chap:six} and a discrete
+latent state in Chapter~\ref{chap:seven}. These notions are a powerful
+addition to the autoregressive models of the earlier chapters. In
+this chapter, we consider one final extension --- a continuous
+latent state that evolves over time. The dynamics of this state will
+be conditionally linear, but we will consider a \emph{switching}
+variant in which a discrete latent state evolves simultaneously and
+governs the choice of linear dynamics rule. By switching between
+different linear dynamical regimes, we can obtain highly nonlinear
+patterns of dynamics. Moreover, this switching linear dynamical
+system will recover a number of common models as special cases. 
 
-\section*{Abstract}
-Latent state space models such as linear dynamical systems and hidden Markov models 
-are extraordinarily powerful tools for gaining insight into the latent 
-structure underlying neural activity. By beginning with simple hypotheses about 
-the latent states of neural populations and incorporating additional 
-beliefs about the nature of this state and its dynamics, we can compose a
-sequence of increasingly sophisticated models and evaluate them in a
-statistically rigorous manner.
-However, inferring the latent states and parameters of these models is
-particularly challenging when presented with discrete spike counts, since the
-observation likelihoods are not conjugate with the latent Gaussian structure. 
-Thus, we often resort to model-specific approximate inference algorithms which preclude 
-rapid model iteration and typically provide only point estimates of the model parameters. 
-As a result, it is difficult compare models in a way that is robust to the 
-approximation and the particular estimates of the model parameters. 
-Here, we develop a unified framework for composing latent state space models and 
-performing efficient Bayesian inference by leveraging a data augmentation 
-strategy to handle the discrete spike count observations. This framework is
-easily extensible, as we demonstrate by constructing an array of latent state space models
-with a variety of discrete spike count distributions and fitting them to a
-simultaneously recorded population of hippocampal place cells.  
-Our Bayesian approach yields a posterior distribution over latent states and
-parameters, which enables robust prediction and principled model comparison.
-Moreover, we show that our method is very efficient, performing faster than
-alternative point-estimation approaches in our experiments.
+The challenge, as should be expected by now, is in performing efficient
+inference. Fortunately, at this point we have developed a number of
+strategies for tackling this problem. In particular, the \polyagamma
+augmentations introduced in Chapter~\ref{chap:five} will make this
+problem particularly easy. Once we have augmented our observations
+with auxiliary variables, they appear as Gaussian observations to
+the latent states. Thus, all of our tools for efficient Bayesian
+inference in linear Gaussian models are at our disposal. In particular,
+we will derive a block Gibbs sampling algorithm and show that it
+outperforms alternative approaches based on Laplace approximations
+to the nonconjugate Poisson likelihood.
+
+Finally, we will consider a problem that we have given little
+consideration thus far, namely, the problem of Bayesian model
+comparison.  We have tacitly assumed that predictive likelihoods
+provide a sufficient means of comparing two models. In practice, this
+has led to some difficulty, as we encountered with the network model
+comparison in Chapter~\ref{chap:five}. The root cause is that
+predictive likelihood comparisons only implicitly depend on model
+complexity by relying on overfitting to implement a form of Occam's
+razor.  In theory, the marginal likelihood --- the denominator in
+Bayes' rule --- should provide a better estimate of the trade-off
+between how well a model fits the data and the size of the hypothesis
+class.
+
+We will show how the fully-conjugate models derived via \polyagamma
+augmentation enable principled marginal likelihood estimation
+via annealed importance sampling (AIS) \citep{neal2001annealed}. In order
+to make this practically feasible, however, we must dive into the
+guts of the \polyagamma distribution and develop a novel sampling
+algorithm capable of efficiently generating random variates in the
+``small shape'' required by AIS. 
  
-% Latent state space models provide a flexible means 
-% of encoding our intuitions and hypotheses about the structure of neural activity 
-% in a generative, probabilistic framework, and then testing 
-% these hypotheses with statistically rigorous benchmarks. 
-% We begin with the simple hypothesis that neural population activity reflects 
-% a low dimensional latent state, and by including additional 
-% structure we encode our beliefs about the nature of this state and 
-% how it evolves over time we compose a nested sequence of 
-% increasingly sophisticated hypotheses. These hypotheses 
-% correspond to probabilistic models  
  
+\section{Continuous Latent State Space Models}
+Consider a general formulation of models with a continuous latent
+state,~$\bx_t \in \reals^D$, with affine and potentially nonstationary
+dynamics governed by~$\bA^{(t)}$,~$\bb^{(t)}$, and
+covariance,~$\bSigma^{(t)}$. Furthermore, assume that this state
+governs the observed spike counts via a linear-nonlinear cascade.  We
+summarize this probabilistic model as follows,
+\begin{multline}
+  p(\bS, \bX \given  \bmu^{(1)}, \{\bA^{(t)}, \bSigma^{(t)}\}, \bC, \{\nu_n\})
+  = \\
+  \left[
+    \distNormal(\bx_1 \given \bmu^{(1)}, \bSigma^{(1)}) \,
+    \prod_{t=2}^T \distNormal(\bx_t \given \bA^{(t)} \bx_{t-1} + \bb^{(t)}, \bSigma^{(t)})
+  \right] \\
+  \left[
+    \prod_{t=1}^T \prod_{n=1}^N p(s_{t,n} \given \bc_n \cdot \bx_t, \nu_n)
+  \right],
+\end{multline}
+where
+\begin{align*}
+  \bC &=
+        \begin{bmatrix}
+          \text{---} &  \bc_1  & \text{---} \\
+            &  \vdots &   \\
+          \text{---} &  \bc_N  & \text{---}
+        \end{bmatrix} \in \reals^{N \times D}.
+\end{align*}
+Now consider the special case where there are only~$K$ unique dynamics
+and covariance matrices,~${\{\bA^{(k)}, \bb^{(k)}, \bSigma^{(k)}\}}$, and that at
+any instant in time, the chosen dynamics are specified by the
+discrete latent variable~${z_t \in \{1, \ldots, K\}}$. Moreover,
+suppose this discrete latent variable follows a Markov model,
+as in the last chapter. Then the dynamics for~$\bX$
+are,
+\begin{multline}
+  p(\bX, \given \bz, \{\bA^{(k)}, \bb^{(k)}, \bSigma^{(k)}\}, \bmu^{(1)})
+  = \\ 
+    \distNormal(\bx_1 \given \bmu^{(1)}, \bSigma^{(z_1)})
+    \prod_{t=2}^T \distNormal(\bx_t \given \bA^{(z_t)} \bx_{t-1} + \bb^{(z_t)}, \bSigma^{(z_t)}),
+\end{multline}
+with,
+\begin{align*}
+  p(\bz \given \bpi^{(0)}, \bP) &=
+  \distCategorical(z_1\given \bpi^{(0)})
+  \prod_{t=2}^T \distCategorical(z_t \given \bpi^{(z_{t-1})}).
+\end{align*}
+This is known as a \emph{switching linear dynamical system} (SLDS)
+model. At any point in time, the latent state obeys linear dynamics.
+The particular choice of dynamics switches between~$K$ discrete values
+according to a Markov model.
 
-% We develop a computational and statistical framework modeling neural
-% population activity by composing hypotheses about the nature and
-% dynamics of the latent population ``state.'' When the data are
-% continuous and well modeled by a Gaussian distribution, we can
-% leverage a host of well-studied inference algorithms that leverage the
-% compositional structure of the model.  However, these methods are not
-% applicable to discrete observations like neural spike counts, and
-% either general purpose methods or model-specific approximations must
-% be used instead.  We develop an alternative approach that leverages a simple
-% data augmentation strategy to render these discrete observations
-% conjugate with the latent state space model, and thereby enable
-% efficient Bayesian inference. With this framework, we can postulate an
-% array of models that capture increasingly sophisticated latent
-% structure underlying neural activity, efficiently fit the models to
-% neural recordings, and compare them on the basis of their ability to
-% explain held-out data by integrating over the posterior distribution
-% of model parameters. We demonstrate the efficacy of this framework for 
-% comparing spiking models of hippocampus and motor cortex. 
+The SLDS contains a number of other models as special cases:
+\begin{itemize}
+\item When there is only one discrete latent state ($K=1$), this
+  reduces to a standard linear dynamical system (LDS).
+  
+\item When there is one discrete latent state and no continuous dynamics
+  (${\bA^{(k)} \equiv 0}$), this reduces to factor analysis (FA).
 
-% With a sophisticated arsenal of optical and electrophysiological tools, 
-% we can now record neural activity at 
-% unprecedented scales.  In order to make sense of these massive datasets,
-% we need statistical tools to extract latent structure 
-% and provide insight into the computational processes that give rise to our data.
-% Latent state space models provide a compositional framework for expressing 
-% a spectrum of hypotheses about these underlying   
-% generative processes.
-% All models in this framework share the notion of a latent state, be it continuous, discrete, or mixed,
-% and a specification of how that latent state evolves over time. 
-% Principal components analysis (PCA), hidden Markov models (HMMs),
-% linear dynamical systems (LDSs), and switching linear dynamical systems (SLDSs), 
-% are special cases of this framework corresponding to varying hypotheses about 
-% the nature of the latent state 
+\item When (i) the state dimensionality is equal to the number of
+  neurson~($D=N$); (ii) there are no continuous dynamics (${\bA^{(k)}
+    \equiv 0}$); and (iii) the emission matrix is the identity (${\bC
+    \equiv \bI}$), the SLDS reduces to a hidden Markov model. At each
+  point in time, the firing rate is determined solely
+  by~$\bb^{(z_t)}$.
 
-% Neuroscientists probe the computational processes of the brain with an
-% arsenal of tools ranging from single cell recordings to whole brain
-% calcium fluorescence traces and even behavioral observations. Across
-% all domains, recordings exhibit highly structured patterns reflecting
-% the dynamic underlying computational processes of interest. These processes can
-% often be characterized by the evolution of a latent ``state'' that
-% gives rise, via a noisy observation model, to the signals we actually
-% measure.  We develop a Bayesian framework for uncovering this latent
-% state and learning its dynamics.  This framework consists of a library
-% of interpretable building blocks that are composed into structured
-% latent state space models; a family of link functions that connect
-% the latent state to the observed activity; a scalable Bayesian
-% inference algorithm that leverages an auxiliary variable formulation
-% for efficient state estimation; and an algorithm for comparing
-% alternative models on the basis of their marginal likelihood. We
-% demonstrate our framework on a variety of real-world datasets.
+\item When the the conditions of the HMM are met \emph{and} the
+  discrete transition matrix,~$P$, has identical rows (${\bpi^{(k)}
+    \equiv \bpi}$), the SLDS further reduces to a simple mixture
+  model. At each point in time, the discrete latent state is drawn
+  from~${z_t \sim \distCategorical(\bpi)}$.
+\end{itemize}
 
-\section{Latent State Space Models}
-Neural recordings often take the form of a matrix of observed
-spike counts,~$\bS$, whose entries,~$s_{n,t}$, denote the number of spikes 
-emitted by  neuron~$n$ at time~$t$. Depending on the recording, ``neurons''
-may be replaced by voxels or features, and ``spikes'' may be replaced by fluorescence or 
-another measurable signal. Latent state space models begin with the assumption 
-that these observations are a noisy function of some unobserved instantaneous 
-``activation,''~$\psi_{n,t}$, and then hypothesize various models
-for how the activation couples across neurons and evolves through time.
-For example, factor analysis (FA) corresponds to the hypothesis that the activation is well
-modeled as,~$\bpsi_{t} = \bC \bx_t$,
-where~$\bx_t$ represents a low dimensional state at time~$t$, and~$\bC$ is a 
-linear mapping from latent states to activations. 
-Linear dynamical systems (LDS's) extend factor analysis by modeling how the latent 
-states evolve over time. Specifically, an LDS assumes,~$\bx_t \sim \bA \bx_{t-1} + \bepsilon_t$, where 
-the matrix~$\bA$ specifies the linear dynamics and~$\bepsilon_t$ represents Gaussian noise. 
-This captures the temporal correlations in spike counts.
-Hidden Markov models (HMM's) characterize population activity in terms of a \emph{discrete}
-latent state~${z_t \in \{1, \ldots, K\}}$, each of which corresponds to a different 
-activation vector,~$\bpsi^{(k)}$. Then, the instantaneous activation is~$\bpsi_{t}=\bpsi^{(z_t)}$.
-This may be an appropriate model for populations that switch between ``on'' and ``off'' states, 
-for example. 
-Combining HMM's and LDS's, we arrive at a \emph{switching} linear dynamical system (SLDS) model 
-with both continuous and discrete latent states. When in discrete state,~$z_t$, 
-the continuous state,~$\bx_t$, is governed by dynamics matrix,~$\bA^{(z_t)}$. 
-Though the instantaneous dynamics are always linear, switching between these 
-discrete latent states allows us to model complex, nonlinear dynamics of the neural population.
-From this perspective, it is clear that these seemingly disparate models
-correspond to a sequence of nested, increasingly sophisticated hypotheses about
-the latent structure underlying neural activity.
-
-When the observed signal is well modeled by a Gaussian distribution, 
-the conditional distribution over continuous latent states,~$\bx_t$, is 
-Gaussian and can be computed in closed form, and we can leverage a 
-host of off-the-shelf inference algorithms. However, when modeling 
-discrete spike counts, a Bernoulli, Poisson model is more appropriate. 
-In cases where the spike counts are overdispersed, a negative binomial 
-model may provide an even better fit. Unfortunately, these discrete models are not 
-conjugate with the Gaussian latent states and inference is
-considerably more complicated. Substantial work has gone into 
-developing approximate inference algorithms for such models \citep{macke2011empirical},
-but these methods rely on approximations to the model. 
-% The need for model-specific approximations makes it difficult to 
-% tweak the model and incorporate additional structure.
-Though these approximations are fast and effective in practice, they can yield
-asymptotically biased inferences.
-Moreover, they often provide only a point estimate of the latent states and
-parameters, which does not reveal Bayesian uncertainty estimates or permit
-robust model comparison. 
-Here, we present a simpler, faster, fully Bayesian set of algorithms that
-are easy to compose and extend.
-
-
-\begin{figure}
-\centering
-% Top row: \psi's
-  \begin{subfigure}[t]{.26\textwidth}
-    \centering
-    \vskip 0pt
-    \includegraphics[height=1.4in]{figures/ch8/pred_ll_best_bar.pdf}
-    \label{fig:pred_ll_best}
-  \end{subfigure}
-  ~
-  \hspace{-2em}
-  \begin{subfigure}[t]{.46\textwidth}
-    \centering
-    \vskip 0pt
-    \includegraphics[height=1.4in]{figures/ch8/pred_ll_vs_D_bar.pdf}
-  \end{subfigure}
-  ~
-  \begin{subfigure}[t]{.26\textwidth}
-    \centering
-    \vskip 0pt
-    \includegraphics[height=1.4in]{figures/ch8/pred_ll_best_vs_time_D10.pdf}
-  \end{subfigure}
-  \\
-  \begin{subfigure}[t]{\textwidth}
-    \centering
-    \vskip 0pt
-    \includegraphics[width=3.8in]{figures/ch8/pred_ll_legend.pdf}
-  \end{subfigure}
-  \vspace{-1em}
-  \caption[Comparison of state space models on hippocampal data]
-  {A comparison of latent state space models (FA, LDS, SLDS,
-    and HMM) with either Poisson (P) or negative binomial (NB)
-    observations fit by our P\'{o}lya-gamma augmented Gibbs sampler to
-    a population recording of hippocampal place cells. We measure
-    predictive log likelihood on a heldout subset of spike counts and
-    find that negative binomial dynamical systems provide the best
-    account (left). The latent state space dimensionality,~$D$, is fit
-    by cross validation (center), and as the dimension increases the
-    models over-fit the training data. Finally, we compare to a
-    Poisson LDS (PLDS) model fit via EM and find that our algorithms
-    are comparably fast, especially when~$D$ is large
-    (right,~$D=10$).}
-  \label{fig:hipp}
+\begin{figure}[t]
+  \centering%
+\includegraphics[width=5.5in]{figures/ch8/graphical_models} 
+\vspace{-.25in}
+\caption{Special cases of the switching linear dynamical system.
+  Adapted from Figure~\ref{fig:motifs}.}
+\label{fig:slds_models}
 \end{figure}
+
+The graphical models corresponding to these special cases are shown in
+Figure~\ref{fig:slds_models}, with the omission of some model
+parameters to conserve space. This figure is adapted from
+Figure~\ref{fig:motifs}. The only model that is not captured here
+is the autoregressive model since, here, all interaction between
+spike counts arises through the latent state. Next we show how
+a single, unified algorithm can support efficient
+inference in the SLDS and all its special cases.
 
 
 \section{Bayesian Inference with \polyagamma Augmentation}
-% TODO: Edit the text to reduce overlap with Finale submission!
-\polyagamma augmentation is an auxiliary variable scheme that allows
-logistic likelihoods to appear as Gaussians.  This
-scheme has recently been used to develop Gibbs sampling and
-variational inference algorithms for Bernoulli, binomial, 
-negative binomial, and multinomial regression models
-with logit link functions \citep{polson2013bayesian}.
-Here, we use the augmentation strategy to
-develop efficient Markov transition operators for the 
-intermediate distributions encountered in annealed importance sampling.
 
-The \polyagamma augmentation is based on an integral identity
-derived from the Laplace transform of the \polyagamma distribution. 
-Specifically, if $p_{\distPolyaGamma}(\pgvar\given b, 0)$ is the density of
-the \polyagamma distribution~${\distPolyaGamma(b, 0)}$, then
+First we show how inference can be performed in the case where
+the spikes are imagined to be conditionally Gaussian distributed.
+While unrealistic, the key elements of the inference algorithm
+will be conserved when we move to discrete count observations.
+Given the Gaussian inference algorithm, we will show how the \polyagamma
+augmentation explored in Chapter~\ref{chap:five} enables efficient,
+fully-conjugate Bayesian inference in discrete models as well.
+
+
+\subsection{Bayesian Inference with Gaussian Observations}
+Suppose the spike counts,~$\bs_t$ were conditionally distributed
+according to a diagonal Gaussian distribution given~$\bx_t$,~$\bC$,
+and~$\{\nu_n\}$:
+\begin{align*}
+  s_{t,n} \sim \distNormal(\bc_n \cdot \bx_t, \nu_n), & & &
+  \text{ or, equivalently,} & & & 
+  \bs_t \sim \distNormal(\bC \bx_t, \bV),
+\end{align*}
+where~${\bV = \left[ \nu_1, \ldots, \nu_N\right]}$.
+In this case, the conditional distribution over continuous latent
+states,~$p(\bX \given \bS, \bz, \{\bA^{(k)}, \bb^{(k)},
+\bSigma^{(k)}\}, \bmu^{(1)})$, is Gaussian as well.
+
+To
+perform inference, we could leverage off-the-shelf message passing
+algorithms for block updates of the continuous latent states.
+
+\subsection{\polyagamma Augmentation for Discrete Observations}
+
+% TODO: Edit the text to reduce overlap with Finale submission!
+Recall from Chapter~\ref{chap:five} that the \polyagamma augmentation
+is an auxiliary variable scheme that allows logistic likelihoods to
+appear as Gaussians.  This scheme has recently been used to develop
+Gibbs sampling and variational inference algorithms for Bernoulli,
+binomial, negative binomial, and multinomial regression models with
+logit link functions \citep{polson2013bayesian}.  It is based on an
+integral identity derived from the Laplace transform of the
+\polyagamma distribution.  Specifically, if
+$p_{\distPolyaGamma}(\pgvar\given b, 0)$ is the density of the
+\polyagamma distribution~${\distPolyaGamma(b, 0)}$, then
 \begin{equation}
-\frac{(e^{z})^a}{(1+e^{z})^b} = \int_{0}^{\infty} 2^{-b} e^{\kappa z}  e^{-\pgvar z^2 /2} \, p_{\distPolyaGamma}(\pgvar \given b, 0) \, \mathrm{d}\pgvar,
+\frac{(e^{x})^a}{(1+e^{x})^b} = \int_{0}^{\infty} 2^{-b} e^{\kappa x}  e^{-\pgvar x^2 /2} \, p_{\distPolyaGamma}(\pgvar \given b, 0) \, \mathrm{d}\pgvar,
 \label{eq:pg_identity}
 \end{equation}
 where~${\kappa=a-b/2}$. The integral on the right-hand side is the
-Laplace transform of the \polyagamma density evaluated at~$z^2/2$,
-and the left-hand side is the same form found in
-the intermediate distributions of Eq.~\ref{eq:intermediate}.  Importantly, viewed as a function of~$z$ for
-fixed~$\pgvar$, the right-hand side is an unnormalized Gaussian
-density.  Thus, the identity in equation~\ref{eq:pg_identity}
-transforms a logistic likelihood to a Gaussian likelihood conditioned on an
-auxiliary variable,~$\pgvar$. 
+Laplace transform of the \polyagamma density evaluated at~$x^2/2$, and
+the left-hand side is the same form found in the intermediate
+distributions of Eq.~\ref{eq:intermediate}.  Importantly, viewed as a
+function of~$x$ for fixed~$\pgvar$, the right-hand side is an
+unnormalized Gaussian density.  Thus, the identity in
+equation~\ref{eq:pg_identity} transforms a logistic likelihood to a
+Gaussian likelihood conditioned on an auxiliary variable,~$\pgvar$.
 
 We employ this augmentation scheme to sample the intermediate
 distributions,~$f_t(\theta, \bz)$, by plugging the
@@ -282,9 +245,78 @@ Thus, our proposed transition operators,~$\mcT_t$, perform three steps,
 \item sample all~$\pgvar_n$ in parallel from their \polyagamma conditional distributions.
 \end{enumerate}
 
+\subsection{Alternative approaches}
+\TODO{
+Gaussian and can be computed in closed form, and we can leverage a 
+host of off-the-shelf inference algorithms. However, when modeling 
+discrete spike counts, a Bernoulli, Poisson model is more appropriate. 
+In cases where the spike counts are overdispersed, a negative binomial 
+model may provide an even better fit. Unfortunately, these discrete models are not 
+conjugate with the Gaussian latent states and inference is
+considerably more complicated. Substantial work has gone into 
+developing approximate inference algorithms for such models \citep{macke2011empirical},
+but these methods rely on approximations to the model. 
+% The need for model-specific approximations makes it difficult to 
+% tweak the model and incorporate additional structure.
+Though these approximations are fast and effective in practice, they can yield
+asymptotically biased inferences.
+Moreover, they often provide only a point estimate of the latent states and
+parameters, which does not reveal Bayesian uncertainty estimates or permit
+robust model comparison. 
+Here, we present a simpler, faster, fully Bayesian set of algorithms that
+are easy to compose and extend.
+}
+
 
 
 \section{Results}
+
+\begin{figure}
+\centering
+% Top row: \psi's
+  \begin{subfigure}[t]{.26\textwidth}
+    \centering
+    \vskip 0pt
+    \includegraphics[height=1.4in]{figures/ch8/pred_ll_best_bar.pdf}
+    \label{fig:pred_ll_best}
+  \end{subfigure}
+  ~
+  \hspace{-2em}
+  \begin{subfigure}[t]{.46\textwidth}
+    \centering
+    \vskip 0pt
+    \includegraphics[height=1.4in]{figures/ch8/pred_ll_vs_D_bar.pdf}
+  \end{subfigure}
+  ~
+  \begin{subfigure}[t]{.26\textwidth}
+    \centering
+    \vskip 0pt
+    \includegraphics[height=1.4in]{figures/ch8/pred_ll_best_vs_time_D10.pdf}
+  \end{subfigure}
+  \\
+  \begin{subfigure}[t]{\textwidth}
+    \centering
+    \vskip 0pt
+    \includegraphics[width=3.8in]{figures/ch8/pred_ll_legend.pdf}
+  \end{subfigure}
+  \vspace{-1em}
+  \caption[Comparison of state space models on hippocampal data]
+  {A comparison of latent state space models (FA, LDS, SLDS,
+    and HMM) with either Poisson (P) or negative binomial (NB)
+    observations fit by our P\'{o}lya-gamma augmented Gibbs sampler to
+    a population recording of hippocampal place cells. We measure
+    predictive log likelihood on a heldout subset of spike counts and
+    find that negative binomial dynamical systems provide the best
+    account (left). The latent state space dimensionality,~$D$, is fit
+    by cross validation (center), and as the dimension increases the
+    models over-fit the training data. Finally, we compare to a
+    Poisson LDS (PLDS) model fit via EM and find that our algorithms
+    are comparably fast, especially when~$D$ is large
+    (right,~$D=10$).}
+  \label{fig:hipp}
+\end{figure}
+
+
 First, we studied a population of 47 hippocampal place cells recorded from a freely moving rat in a 
 circular arena.\footnote{Data courtesy of the Wilson lab at MIT.} Spikes were counted in 
 250ms bins for approximately ten minutes.
