@@ -1,4 +1,4 @@
-\chapter{Continuous State Space Models with Discrete Observations}
+\chapter{Continuous State Space Models with Count Observations}
 \label{chap:eight}
 
 The past two chapters have explored different notions of latent
@@ -50,49 +50,60 @@ algorithm capable of efficiently generating random variates in the
  
 \section{Continuous Latent State Space Models}
 Consider a general formulation of models with a continuous latent
-state,~$\bx_t \in \reals^D$, with affine and potentially nonstationary
+state,~$\bx_t \in \reals^D$, with affine, but potentially nonstationary,
 dynamics at time~$t$ governed by~$\bA_t$,~$\bb_t$, and
-covariance,~$\bSigma_t$. Furthermore, assume that this state
-governs the observed spike counts via a linear-nonlinear cascade.  We
-summarize this probabilistic model as follows,
-\begin{multline}
-  p(\bS, \bX \given  \bmu_1, \{\bA_t, \bb_t, \bSigma_t\}_{t=1}^T, \bC, \{\nu_n\}_{n=1}^N)
-  = \\
-  \left[
+covariance,~$\bSigma_t$. Let the initial state distribution have 
+mean~$\bmu_1$. Furthermore, assume that a linear activation model
+~$\bpsi_t = \bC \bx_t$, where the mean spike count,~$s_{t,n}$ is 
+a nonlinear function of~$\psi_{t,n}$ and neuron-specific parameters,~$\nu_n$.
+We refer to the collection of model parameters as,
+\begin{align*}
+  \btheta = \left\{ \{\bA_t, \bb_t, \bSigma_t\}_{t=1}^T, \bmu_1, \bC, \{\nu_n\}_{n=1}^N \right\}
+\end{align*}
+Given these parameters, we can summarize this probabilistic model.  In
+keeping with standard texts \citep[e.g.][Chapter
+18]{murphy2012probabilistic}, we use ``Matlab'' notation to refer to
+a sequence of spike count vectors,~$\bs_{1:T}$, and a sequence of
+latent state vectors,~$\bx_{1:T}$. We have,
+\begin{align*}
+  p(\bs_{1:T}, \bx_{1:T} \given  \btheta) 
+  &= 
+    p(\btheta) \, p (\bx \given \btheta) \, p(\bs_{1:T} \given \bx_{1:T}, \btheta)
+\end{align*}
+where
+\begin{align}
+  \nonumber
+  p(\bx_{1:T} \given \btheta) 
+  &= 
     \distNormal(\bx_1 \given \bmu_1, \bSigma_1) \,
     \prod_{t=2}^T \distNormal(\bx_t \given \bA_t \bx_{t-1} + \bb_t, \bSigma_t)
-  \right] \\
-  \left[
-    \prod_{t=1}^T \prod_{n=1}^N p(s_{t,n} \given \bc_n \cdot \bx_t, \nu_n)
-  \right],
-\end{multline}
-where
-\begin{align*}
-  \bC &=
-        \begin{bmatrix}
-          \text{---} &  \bc_1  & \text{---} \\
-            &  \vdots &   \\
-          \text{---} &  \bc_N  & \text{---}
-        \end{bmatrix} \in \reals^{N \times D}.
-\end{align*}
+  \\
+  \nonumber
+  p(\bs_{1:T} \given \bx_{1:T}, \btheta) 
+  &= 
+    \prod_{t=1}^T p(\bs_{t} \given \bC \bx_t, \{\nu_n\}) \\
+  \label{eq:s_likelihood}
+  &=
+    \prod_{t=1}^T \prod_{n=1}^N p(s_{t,n} \given \psi_{t,n}, \nu_n).
+\end{align}
+
 Now consider the special case where there are only~$K$ unique dynamics
 and covariance matrices,~${\{\bA_k, \bb_k, \bSigma_k\}_{k=1}^K}$, and that at
 any instant in time, the chosen dynamics are specified by the
 discrete latent variable~${z_t \in \{1, \ldots, K\}}$. Moreover,
 suppose this discrete latent variable follows a Markov model,
-as in the last chapter. Then the dynamics for~$\bX$
+as in the last chapter. Then the dynamics for~$\bz_{1:T}$ and~$\bx_{1:T}$
 are,
-\begin{multline}
-  p(\bX, \given \bz, \{\bA_k, \bb_k, \bSigma_k\}_{k=1}^K, \bmu_1)
-  = \\ 
+\begin{align*}
+  p(\bz_{1:T} \given \btheta) 
+  &=
+    \distCategorical(z_1\given \bpi^{(0)})
+    \prod_{t=2}^T \distCategorical(z_t \given \bpi^{(z_{t-1})}).
+  \\
+  p(\bx_{1:T} \given \bz_{1:T}, \btheta)
+  &= 
     \distNormal(\bx_1 \given \bmu_1, \bSigma_{z_1})
     \prod_{t=2}^T \distNormal(\bx_t \given \bA_{z_t} \bx_{t-1} + \bb_{z_t}, \bSigma_{z_t}),
-\end{multline}
-with,
-\begin{align*}
-  p(\bz \given \bpi^{(0)}, \bP) &=
-  \distCategorical(z_1\given \bpi^{(0)})
-  \prod_{t=2}^T \distCategorical(z_t \given \bpi^{(z_{t-1})}).
 \end{align*}
 This is known as a \emph{switching linear dynamical system} (SLDS)
 model. At any point in time, the latent state obeys linear dynamics.
@@ -140,18 +151,19 @@ a single, unified algorithm can support efficient
 inference in the SLDS and all its special cases.
 
 
-\section{Bayesian Inference with \polyagamma Augmentation}
-
-First we show how inference can be performed in the case where
-the spikes are imagined to be conditionally Gaussian distributed.
-While unrealistic, the key elements of the inference algorithm
-will be conserved when we move to discrete count observations.
-Given the Gaussian inference algorithm, we will show how the \polyagamma
-augmentation explored in Chapter~\ref{chap:five} enables efficient,
-fully-conjugate Bayesian inference in discrete models as well.
+\section{Markov chain Monte Carlo Inference}
 
 
-\subsection{Bayesian Inference with Gaussian Observations}
+First we show how the continuous latent states,~$\bx_{1:T}$, can be
+updated with a block Gibbs sampler when the spikes are conditionally
+Gaussian distributed.  While unrealistic for neural spike trains, the
+key elements of the inference algorithm will be conserved when we move
+to discrete count observations.  Given the Gaussian inference
+algorithm, we will show how the \polyagamma augmentation explored in
+Chapter~\ref{chap:five} enables efficient, fully-conjugate Bayesian
+inference in discrete models as well.
+
+\subsection{Block Gibbs Sampling Latent States with Gaussian Observations}
 Suppose the spike counts,~$\bs_t$ were conditionally distributed
 according to a Gaussian distribution. Moreover, assume the
 distribution has nonstationary precision,~$\bOmega_t$, such that
@@ -162,11 +174,12 @@ distribution has nonstationary precision,~$\bOmega_t$, such that
   \distNormal(\bs_t \given \bC \bx_t, \bOmega_t^{-1}).
 \end{align}
 In this case, the conditional distribution over continuous latent
-states,~$p(\bx_{1:T} \given \bs_{1:T}, \btheta)$, is Gaussian as well.
-The marginal ``filtered'' distribution,~${p(\bx_t \given
-  \bs_{1:t})}$ will be Gaussian,
+states,~${p(\bx_{1:T} \given \bs_{1:T}, \bz_{1:T}, \btheta)}$, is
+jointly Gaussian as well.  The marginal ``filtered'' distribution
+given observations up to time~$t$ is a Gaussian, which we will denote
+by,
 \begin{align*}
-  p(\bx_t \given \bs_{1:t}) &= \distNormal(\bx_t \given \bbm_t, \bV_t),
+  p(\bx_t \given \bs_{1:t}, \bz_{1:t}, \btheta) &= \distNormal(\bx_t \given \bbm_t, \bV_t),
 \end{align*}
 where~$\bbm_t$ and~$\bV_t$ are the filtered mean and covariance, respectively.
 
@@ -179,10 +192,10 @@ have already computed~$\bbm_{t-1}$ and~$\bV_{t-1}$. Given the
 Markovian structure of the probabilistic model, the
 conditional distribution of~$\bx_t$ factors into,
 \begin{align*}
-  p(\bx_t \given \bs_{1:t})
+  p(\bx_t \given \bs_{1:t}, \bz_{1:t}, \btheta)
   &\propto
-  \underbrace{p(\bs_t \given \bx_t)}_{\text{condition}} \,
-  \underbrace{p(\bx_{t} \given \bs_{1:t-1})}_{\text{predict}}.
+  \underbrace{p(\bs_t \given \bx_t, \btheta)}_{\text{condition}} \,
+  \underbrace{p(\bx_{t} \given \bs_{1:t-1}, \bz_{1:t}, \btheta)}_{\text{predict}}.
 \end{align*}
 We will show that both of these factors are Gaussian distributions, 
 and hence their product is as well. 
@@ -194,8 +207,9 @@ and hence their product is as well.
 The first step is to \emph{predict}~$\bx_t$ given observations~$\bs_{1:t-1}$.
 To do so, we marginalize over the previous latent state,~$\bx_{t-1}$,
 \begin{align*}
-  p(\bx_t \given \bs_{1:t-1})
-  &\propto  \int p(\bx_t \given \bx_{t-1}) \, p(\bx_{t-1} \given \bs_{1:t-1}) \, \mathrm{d} \bx_{t-1} \\
+  p(\bx_t \given \bs_{1:t-1}, \bz_{1:t}, \btheta)
+  &\propto  \int p(\bx_t \given \bx_{t-1}, z_{t}, \btheta) \, 
+    p(\bx_{t-1} \given \bs_{1:t-1}, \bz_{1:t-1}, \btheta) \, \mathrm{d} \bx_{t-1} \\
   &= \distNormal(\bx_t \given \bbm_{t|t-1}, \bV_{t|t-1}),
 \end{align*}
 where
@@ -220,20 +234,21 @@ Once we have computed the filtered means and covariances for all
 time bins, we can sample from the joint distribution over~$\bx_{1:T}$
 by applying the chain rule,
 \begin{align*}
-  p(\bx_{1:T} \given \bs_{1:T}, \btheta)
-  &= p(\bx_T \given \bs_{1:T})
-  \prod_{t} p(\bx_{t} \given \bx_{t+1:T}, \bs_{1:T}, \btheta) \\
-  &\propto p(\bx_T \given \bs_{1:T})
-  \prod_{t} p(\bx_t \given \bs_{1:t}) \, p(\bx_{t+1} \given \bx_{t}, \btheta).
+  p(\bx_{1:T} \given \bs_{1:T}, \bz_{1:T}, \btheta)
+  &= p(\bx_T \given \bs_{1:T}, \bz_{1:T}, \btheta)
+  \prod_{t} p(\bx_{t} \given \bx_{t+1:T}, \bs_{1:T}, \bz_{1:T}, \btheta) \\
+  &\propto p(\bx_T \given \bs_{1:T}, \bz_{1:T}, \btheta)
+  \prod_{t} p(\bx_t \given \bs_{1:t}, \bz_{1:t}, \btheta) \, 
+    p(\bx_{t+1} \given \bx_{t}, z_{t+1}, \btheta).
 \end{align*}
 Thus, we can sample in reverse order, starting with~$\bx_T$ and ending
 with~$\bx_1$. The conditional distribution of~${\bx_t}$
 \begin{align}
   \label{eq:bkwd_sample}
-  p(\bx_t \given \bx_{t+1:T}, \bs_{1:T})
+  p(\bx_t \given \bx_{t+1:T}, \bs_{1:T}, \bz_{1:T}, \btheta)
   &\propto
   \distNormal(\bx_t \given \bbm_t, \bV_t) \,
-  \distNormal(\bx_{t+1} \given \bA_{t+1}\bx_{t} + \bb_{t+1}, \bSigma^{(t+1)}),
+  \distNormal(\bx_{t+1} \given \bA_{t+1}\bx_{t} + \bb_{t+1}, \bSigma_{t+1}),
 \end{align}
 which is yet another Gaussian distribution. Now we can write the complete 
 algorithm for block Gibbs sampling the continuous latent states,~$\bx_{1:T}$.
@@ -278,20 +293,28 @@ is an auxiliary variable scheme that applies to models with logistic
 link functions \citep{polson2013bayesian}.  This augmentation can be
 used to develop Gibbs for models with likelihoods of the form,
 \begin{align*}
-  \nonumber  p(s_{t,n} \given \psi_{t,n}, \nu_n)
-  &= c(s_{t,n}, \nu_n) \, \sigma(\psi_{t,n})^{a(s_{t,n}, \nu_n)} \,
-  (1-\sigma(\psi_{t,n}))^{d(s_{t,n}, \nu_n)} \\
-  &= c(s_{t,n}, \nu_n)
-  \frac{(e^{\psi_{t,n}})^{a(s_{t,n}, \nu_n)}}
-       {(1+e^{\psi_{t,n}})^{b(s_{t,n}, \nu_n)}}.
+  \nonumber  p(s \given \psi, \nu)
+  &= c(s, \nu) \, \sigma(\psi)^{a(s, \nu)} \,
+  (1-\sigma(\psi))^{d(s, \nu)} \\
+  &= c(s, \nu)
+  \frac{(e^{\psi})^{a(s, \nu)}}
+       {(1+e^{\psi})^{b(s, \nu)}}.
 \end{align*}
 These are called \emph{logistic likelihoods} because the latent
 variables are transformed by a logistic
 function,~${\sigma(\psi)=e^\psi /(1+e^\psi)}$.  Bernoulli, binomial,
 negative binomial, and multinomial likelihoods can all be put in this
 form.  For example, in the Bernoulli
-case,~${a(s_{t,n}, \nu_n) = s_{t,n}}$,
-${b(s_{t,n},\nu_n) \equiv 1}$, and~${c(s_{t,n}, \nu_n) \equiv 1}$.
+case,
+\begin{align*}
+  \distBernoulli(s \given \psi) 
+  &= \sigma(\psi)^{s}
+    (1-\sigma(\psi))^{1-s}
+  = \frac{(e^{\psi})^{s}}
+       {(1+e^{\psi})}.
+\end{align*}
+Thus,~${a(s, \nu) = s}$,
+${b(s,\nu) \equiv 1}$, and~${c(s, \nu) \equiv 1}$.
 We refer back to Table~\ref{tab:obs_models} for the formulation of
 other count distributions.
 
@@ -316,11 +339,11 @@ unnormalized Gaussian density.  Thus, the identity
 in~\eqref{eq:pg_identity_new} transforms a logistic likelihood to a
 Gaussian likelihood conditioned on an auxiliary variable,~$\pgvar$.
 
-Now let~$\psi_{t,n} = \bc_n \cdot \bx_t$ be the activation of neuron
-$n$ at time~$t$. The likelihood, as a function of~$\bx_t$, is then
-proportional to,
+Now, let us return to the likelihood of~\eqref{eq:s_likelihood},
+where~${\psi_{t,n} = [\bC \bx_t]_n = \bc_n \cdot \bx_t}$ is the activation of neuron $n$
+at time~$t$. As a function of~$\bx_t$, the likelihood is proportional to,
 \begin{align*}
-  p(\bs_t \given \bx_t, \{\nu_n\})
+  p(\bs_t \given \bx_t, \btheta)
   &\propto \prod_{n=1}^N 
   \frac{(e^{\psi_{t,n}})^{a(s_{t,n}, \nu_n)}}
        {(1+e^{\psi_{t,n}})^{b(s_{t,n}, \nu_n)}} \\
@@ -330,9 +353,10 @@ proportional to,
   p_{\distPolyaGamma}(\pgvar_{t,n} \given b(s_{t,n}, \nu_n), 0) \,
   \mathrm{d}\pgvar_{t,n}.
 \end{align*}
-If we augment the data with these auxiliary variables (effectively 
-carrying out the integral via MCMC),  the likelihood
-of~$\bx_t$ is proportional to a multivariate Gaussian distribution,
+If rather than integrating over~$\omega_{t,n}$ explicitly, we instead
+augment our data by introducing~$\omega_{t,n}$ as auxiliary variables,
+the likelihood of~$\bx_t$ is proportional to a multivariate Gaussian
+distribution,
 \begin{align}
   \nonumber
   p(\bs_t \given \bx_t, \bomega_t, \{\nu_n\})
@@ -355,18 +379,19 @@ Note the similarity between the augmented likelihood
 of~\eqref{eq:pg_likelihood} and the Gaussian likelihood
 of~\eqref{eq:gauss_lkhd}. The only difference is that, here, the
 precision is given by the auxiliary variables, and the ``effective''
-observations,~$\widehat{\bs}_t$, are a function of both~$s_{t,n}$
-and~$\omega_{t,n}$.  Thus, given a set of \polyagamma auxiliary
-variables, the block Gibbs updates that we derived for the Gaussian
-case will apply equally well to the discrete case.
+observations,~$\widehat{s}_{t,n}$, are a function of
+both~$s_{t,n}$,~$\omega_{t,n}$, and~$\nu_n$.  Thus, given a set of
+\polyagamma auxiliary variables, the block Gibbs updates in
+Prog.~\ref{prog:ffbs_gaussian_lds} will apply equally well to the
+setting with discrete count observations.
 
 Moreover, by the exponential tilting property of the \polyagamma
-distribution, the conditional distribution of~$\pgvar_n$
+distribution, the conditional distribution of~$\pgvar_{t,n}$
 is proportional to a \polyagamma distribution:
 \begin{align}
   \nonumber
   p(\pgvar_{t,n} \given \psi_{t,n}, s_{t,n}, \nu_n) &
-  \propto e^{-\pgvar_{t,n} \psi_{t,n}^2/2}
+  \propto e^{-\pgvar_{t,n} \psi_{t,n}^2/2} \,
   p_{\distPolyaGamma}(\pgvar_{t,n} \given b(s_{t,n}, \nu_n), \, 0) \\
   \label{eq:omega_conditional}
   &\propto p_{\distPolyaGamma}(\pgvar_{t,n} \given b(s_{t,n}, \nu_n), \, \psi_{t,n}).
@@ -381,7 +406,6 @@ models \citep{windle2014sampling}.
 %\polyagamma density reduces to a delta function at zero. 
 The proposed algorithm for sampling the latent variables and 
 parameters of an SLDS is summarized in Program~\ref{prog:slds}.
-The parameters of the model are aggregated in~$\btheta$.
 
 \begin{center}
   \begin{minipage}{.75\textwidth}
@@ -485,21 +509,34 @@ annealed importance sampling in the class of switching linear dynamical
 
 \subsection{Annealed Importance Sampling}
 
+\sloppy
 Annealed importance sampling \citep{neal2001annealed} is a method of
 estimating the marginal likelihood,~$p(\bs)$, by ``annealing'' between
 a tractable distribution, with known normalization constant, and the
 joint distribution, whose normalization constant is the marginal
 likelihood of interest. The annealing path is a sequence of
-distributions,~${p_1(\btheta, \bz, \bx), \ldots, p_M(\btheta, \bz, \bx)}$,
-where~${p_m(\btheta, \bz, \bx)=f_m(\btheta, \bz, \bx)/\mcZ_m}$,
-and~${f_M(\btheta, \bz, \bx) =p(\theta, \bz, \bx)}$, such that~${\mcZ_M=p(\bs)}$.
-Typically, we let~$f_1(\theta, \bz)$ be the normalized prior
-distribution such that~${\mcZ_1=1}$. Then, we let~$f_m(\bz, \theta)$ be
-a geometric average of the prior and the joint:
+distributions,~${q_1(\btheta, \bz, \bx)}$ to~${q_M(\btheta, \bz, \bx) = p(\btheta, \bz, \bx \given \bs)}$,
+where
 \begin{align*}
-  f_m(\btheta, \bz, \bx) &= p(\btheta, \bz, \bx) \, p(\bs \given \btheta, \bz, \bx)^{\beta_m},
+q_m(\btheta, \bz, \bx) &= f_m(\btheta, \bz, \bx)/\mcZ_m, & 
+f_M(\btheta, \bz, \bx) &= p(\theta, \bz, \bx, \bs), & 
+\mcZ_M &= p(\bs).
+\end{align*}
+Typically, we let~$q_1(\btheta, \bz, \bx)$ be the normalized prior
+distribution such
+that~${f_1(\btheta, \bz, \bx) = p(\btheta, \bz, \bx)}$
+and~${\mcZ_1=1}$. Then, we let~$f_m(\bz, \theta)$ be a geometric
+average of the prior and the joint:
+\begin{align*}
+  f_m(\btheta, \bz, \bx) 
+  &=
+  \Big[ p(\btheta, \bz, \bx) \Big]^{1-\beta_m} \,
+  \Big[ p(\btheta, \bz, \bx, \bs) \Big]^{\beta_m} \\
+  &= p(\btheta, \bz, \bx) \, p(\bs \given \btheta, \bz, \bx)^{\beta_m},
 \end{align*}
 with~$\beta_m$ monotonically increasing from~${\beta_1=0}$ to~${\beta_M=1}$.
+As we anneal between~$0$ and~$1$, the intermediate distributions 
+interpolate between the prior and the unnormalized posterior.
 
 Given this annealing path, we can generate a sample
 of~$(\btheta, \bz, \bx)$ by first sampling from the prior, and then
@@ -508,7 +545,9 @@ the intermediate distributions~$p_m$ invariant. The result is a sample
 that is, hopefully, closer in distribution to the posterior. We can
 use this procedure as a proposal distribution for importance sampling.
 The importance weights are given by a product of ratios between~$f_m$
-and~$f_{m-1}$.  Since the target density is the unnormalized joint
+and~$f_{m-1}$.  
+\todo{show how to compute the weights to get an estimate of the ML}
+Since the target density is the unnormalized joint
 distribution, the importance weights will be unbiased estimates of the
 normalization constant, namely the marginal
 likelihood,~${\mcZ_M =p(\bs)}$.
@@ -541,7 +580,7 @@ where~${b(s_{t,n}, \btheta) \cdot \beta_m < 1}$.  For Bernoulli
 observations,~${b(s_{t,n}, \btheta) \equiv 1}$, so we will be in this
 regime for all~$\beta_m \in [0,1)$.  While efficient samplers exist
 for \polyagamma distributed variables when the shape parameter is
-greater than one \citep{windle2014sampling}, this ``small shape''
+greater than or equal to one \citep{windle2014sampling}, this ``small shape''
 regime has not been previously explored.  We develop a novel sampling
 algorithm that makes these conditional updates extremely efficient,
 and renders AIS with \polyagamma augmented transitions highly
