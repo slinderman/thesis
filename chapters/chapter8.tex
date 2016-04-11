@@ -153,90 +153,191 @@ fully-conjugate Bayesian inference in discrete models as well.
 
 \subsection{Bayesian Inference with Gaussian Observations}
 Suppose the spike counts,~$\bs_t$ were conditionally distributed
-according to a diagonal Gaussian distribution given~$\bx_t$,~$\bC$,
-and~$\{\nu_n\}$:
-\begin{align*}
-  s_{t,n} \sim \distNormal(\bc_n \cdot \bx_t, \nu_n), & & &
-  \text{ or, equivalently,} & & & 
-  \bs_t \sim \distNormal(\bC \bx_t, \bV),
-\end{align*}
-where~${\bV = \left[ \nu_1, \ldots, \nu_N\right]}$.
+according to a Gaussian distribution. Moreover, assume the
+distribution has nonstationary, diagonal precision such that
+\begin{align}
+  \label{eq:gauss_lkhd}
+  \bs_{t} &\sim \distNormal(\bC \bx_t, \bOmega_t^{-1}), \\
+  \nonumber
+  \bOmega_t &= \diag\left( \left[ \omega_{t,1}, \ldots, \omega_{t,N} \right] \right).
+\end{align}
 In this case, the conditional distribution over continuous latent
-states,~$p(\bX \given \bS, \bz, \{\bA^{(k)}, \bb^{(k)},
-\bSigma^{(k)}\}, \bmu^{(1)})$, is Gaussian as well.
+states,~$p(\bx_{1:T} \given \bs_{1:T}, \btheta)$, is Gaussian as well.
 
-To
-perform inference, we could leverage off-the-shelf message passing
-algorithms for block updates of the continuous latent states.
+Specifically, the marginal ``filtered'' distribution,~${p(\bx_t \given
+  \bs_{1:t})}$ will be Gaussian. We will write it as,
+\begin{align*}
+  p(\bx_t \given \bs_{1:t}) &= \distNormal(\bx_t \given \bbm_t, \bV_t).
+\end{align*}
+We obtain the parameters of this distribution by Kalman filtering.
+The following derivations are standard. We follow the presentation of
+\citet[Chapter 18]{murphy2012probabilistic}.  Kalman filter consists
+of iterating from~${t=1}$ to~${t=T}$. Assume that at iteration~$t$ we
+have already computed~$\bbm_{t-1}$ and~$\bV_{t-1}$. Given the
+Markovian structure of the probabilistic model, the
+conditional distribution of~$\bx_t$ factors into,
+\begin{align*}
+  p(\bx_t \given \bs_{1:t})
+  &\propto
+  \underbrace{p(\bs_t \given \bx_t)}_{\text{condition}} \,
+  \underbrace{p(\bx_{t} \given \bs_{1:t-1})}_{\text{predict}}.
+\end{align*}
+To compute its paramters, we perform two steps: we \emph{predict} its
+value given preceding observations, and then we
+\emph{condition} on the current observation. The predictive
+distribution is found by marginalizing over the previous state,
+\begin{align*}
+  p(\bx_t \given \bs_{1:t-1})
+  &\propto  \int p(\bx_t \given \bx_{t-1}) \, p(\bx_{t-1} \given \bs_{1:t-1}) \, \mathrm{d} \bx_{t-1} \\
+  &= \distNormal(\bx_t \given \bbm_{t|t-1}, \bV_{t|t-1}),
+\end{align*}
+where
+\begin{align*}
+  \bbm_{t|t-1} &\triangleq \bA^{(t)} \bbm_{t-1} + \bb^{(t)} \\
+  \bV_{t|t-1} &\triangleq \bA^{(t)} \bV_{t-1}\bA^{(t)^\trans} + \bSigma^{(t)}.
+\end{align*}
+Then, we condition on the current observations,~$\bs_t$, to get the
+parameters of the filtered distribution,
+\begin{align*}
+  \bbm_t &= \bbm_{t|t-1} + \bK_t (\bs_t - \bC \bbm_{t|t-1}) \\
+  \bV_t &= (\bI - \bK_t \bC) \bV_{t|t-1},
+\end{align*}
+where~$\bK_t$ is the ``Kalman gain'' matrix,
+\begin{align*}
+  \bK_t &\triangleq \bV_{t|t-1} \bC^\trans \left[ \bC \bV_{t|t-1} \bC^\trans + \bOmega_t^{-1} \right]^{-1}.
+\end{align*}
+
+Once we have computed the filtered means and covariances for all
+time bins, we can sample from the joint distribution over~$\bX$
+by applying the chain rule,
+\begin{align*}
+  p(\bx_{1:T} \given \bs_{1:T}, \btheta)
+  &= p(\bx_T \given \bs_{1:T})
+  \prod_{t} p(\bx_{t} \given \bx_{t+1:T}, \bs_{1:T}, \btheta) \\
+  &\propto p(\bx_T \given \bs_{1:T})
+  \prod_{t} p(\bx_t \given \bs_{1:t}) \, p(\bx_{t+1} \given \bx_{t}, \btheta).
+\end{align*}
+Thus, we can sample in reverse order, starting with~$\bx_T$ and ending
+with~$\bx_1$. The conditional distribution of~${\bx_t}$
+\begin{align*}
+  p(\bx_t \given \bx_{t+1:T}, \bs_{1:T})
+  &\propto
+  \distNormal(\bx_t \given \bbm_t, \bV_t) \,
+  \distNormal(\bx_{t+1} \given \bA^{(t+1)}\bx_{t} + \bb^{(t)}, \bSigma^{(t+1)}),
+\end{align*}
+which is yet another Gaussian distribution.
+
+Once we have performed a block Gibbs update for~$\bx_{1:T}$, the rest
+of the MCMC algorithm is straightforward. We can perform a block Gibbs
+update for~$\bz_{1:T}$ in much the same way. The HMM message passing
+algorithms of the last chapter are easily extended to handle this
+case. Finally, sampling the parameters, like~$\bA^{(k)}$
+and~$\bC^{(k)}$, is straightforward as well.  The problem reduces to
+one of inference in a Bayesian linear regression model once we
+have conditioned on~$\bz$,~$\bx$, and~$\bs$.
 
 \subsection{\polyagamma Augmentation for Discrete Observations}
-
-% TODO: Edit the text to reduce overlap with Finale submission!
+The conditional distribution of the latent states is only Gaussian
+if the observations are as well. Fortunately, we can make the
+observations effectively \emph{look} Gaussian by augmenting the
+data with \polyagamma auxiliary variables. 
 Recall from Chapter~\ref{chap:five} that the \polyagamma augmentation
-is an auxiliary variable scheme that allows logistic likelihoods to
-appear as Gaussians.  This scheme has recently been used to develop
-Gibbs sampling and variational inference algorithms for Bernoulli,
-binomial, negative binomial, and multinomial regression models with
-logit link functions \citep{polson2013bayesian}.  It is based on an
-integral identity derived from the Laplace transform of the
-\polyagamma distribution.  Specifically, if
-$p_{\distPolyaGamma}(\pgvar\given b, 0)$ is the density of the
-\polyagamma distribution~${\distPolyaGamma(b, 0)}$, then
-\begin{equation}
-\frac{(e^{x})^a}{(1+e^{x})^b} = \int_{0}^{\infty} 2^{-b} e^{\kappa x}  e^{-\pgvar x^2 /2} \, p_{\distPolyaGamma}(\pgvar \given b, 0) \, \mathrm{d}\pgvar,
+is an auxiliary variable scheme that applies to models with logistic
+link functions \citep{polson2013bayesian}.  This augmentation can be
+used to develop Gibbs for models with likelihoods of the form,
+\begin{align*}
+  \nonumber  p(s_{t,n} \given \psi_{t,n}, \theta)
+  &= c(s_{t,n}, \theta) \, \sigma(\psi_{t,n})^{a(s_{t,n}, \theta)} \,
+  (1-\sigma(\psi_{t,n}))^{d(s_{t,n}, \theta)} \\
+  &= c(s_{t,n}, \theta)
+  \frac{(e^{\psi_{t,n}})^{a(s_{t,n}, \theta)}}
+       {(1+e^{\psi_{t,n}})^{b(s_{t,n}, \theta)}}.
+\end{align*}
+These are called \emph{logistic likelihoods} because the latent
+variables are transformed by a logistic
+function,~${\sigma(\psi)=e^\psi /(1+e^\psi)}$.  Bernoulli, binomial,
+negative binomial, and multinomial likelihoods can all be put in this form.
+
+The augmentation is based on an integral identity
+derived from the Laplace transform of the \polyagamma distribution.
+Specifically, if $p_{\distPolyaGamma}(\pgvar\given b, 0)$ is the
+density of the \polyagamma distribution~${\distPolyaGamma(b, 0)}$,
+then
+\begin{align}
+  \frac{(e^{\psi})^a}{(1+e^{\psi})^b}
+  &= 2^{-b} e^{\kappa \psi}
+  \int_{0}^{\infty} e^{-\pgvar \psi^2 /2} \,
+  p_{\distPolyaGamma}(\pgvar \given b, 0) \, \mathrm{d}\pgvar,
 \label{eq:pg_identity}
-\end{equation}
+\end{align}
 where~${\kappa=a-b/2}$. The integral on the right-hand side is the
-Laplace transform of the \polyagamma density evaluated at~$x^2/2$, and
-the left-hand side is the same form found in the intermediate
-distributions of Eq.~\ref{eq:intermediate}.  Importantly, viewed as a
-function of~$x$ for fixed~$\pgvar$, the right-hand side is an
-unnormalized Gaussian density.  Thus, the identity in
-equation~\ref{eq:pg_identity} transforms a logistic likelihood to a
+Laplace transform of the \polyagamma density evaluated at~$\psi^2/2$,
+and the left-hand side is the same form found in discrete
+distributions with logistic link functions.  Importantly, viewed as a
+function of~$\psi$ for fixed~$\pgvar$, the right-hand side is an
+unnormalized Gaussian density.  Thus, the identity
+in~\eqref{eq:pg_identity} transforms a logistic likelihood to a
 Gaussian likelihood conditioned on an auxiliary variable,~$\pgvar$.
 
-We employ this augmentation scheme to sample the intermediate
-distributions,~$f_t(\theta, \bz)$, by plugging the
-integral identity in Eq.~\ref{eq:pg_identity} into the likelihood
-of Eq.~\ref{eq:intermediate}. We augment each observation
-with an \polyagamma distributed auxiliary variable~$\pgvar_n$.
-Given these auxiliary variables, the conditional distribution of~$\bz$ is Gaussian,
-\begin{align}
-  \label{eq:f_t}
-  f_t(\bz \given \theta, \bpgvar) &\propto \distNormal(\bz \given \bJ_\theta, \bh_\theta) \,
-  \prod_{n=1}^N e^{\kappa(x_n, \theta) \beta_t z_n - \pgvar_n z_n^2 /2} \\
-  &\propto \distNormal(\bz \given \bJ_\theta, \bh_\theta) \,
-  \distNormal \left(\bz \given \bcappgvar, \, \bkappa(\bx, \theta) \,\beta_t \right) \\
-  &\propto \distNormal \left(\bz \given \bJ_\theta + \bcappgvar,\,
-  \bh_\theta + \bkappa(\bx, \theta) \,\beta_t \right)
-\end{align}
-where~${\bcappgvar = \text{diag}([\pgvar_1, \ldots, \pgvar_N])}$, and
-the vector~${\bkappa(\bx, \theta)}$ has entries~
-${\kappa(x_n, \theta) = a(x_n, \theta) - b(x_n, \theta)/2}$.
-When~${\beta_t \to 0}$, the second parameter reduces to its prior,~$\bh_\theta$.
-As we will show next, the auxiliary variables will also go
-to zero, causing the precision to reduce to its prior value as well.
+Now let~$\psi_{t,n} = \bc_n \cdot \bx_t$ be the activation of neuron
+$n$ at time~$t$. The likelihood, as a function of~$\bx_t$, is then
+proportional to,
+\begin{align*}
+  p(\bs_t \given \bx_t, \btheta)
+  &\propto \prod_{n=1}^N 
+  \frac{(e^{\psi_{t,n}})^{a(s_{t,n}, \theta)}}
+       {(1+e^{\psi_{t,n}})^{b(s_{t,n}, \theta)}} \\
+  &\propto \prod_{n=1}^N 
+     e^{\kappa(s_{t,n}, \theta) \psi_{t,n}}
+  \int_{0}^{\infty} e^{-\pgvar_{t,n} \psi_{t,n}^2 /2} \,
+  p_{\distPolyaGamma}(\pgvar_{t,n} \given b(s_{t,n}, \theta), 0) \,
+  \mathrm{d}\pgvar_{t,n}.
+\end{align*}
+After introducing these auxiliary variables, the likelihood
+of is proportional to a multivariate Gaussian distribution,
+\begin{align*}
+  p(\bs_t \given \bx_t, \bomega_t, \btheta)
+  &\propto \prod_{n=1}^N
+  \distNormal(\bc_n \cdot \bx_t \given
+  \omega_{t,n}^{-1} \kappa(s_{t,n}, \theta), \,
+  \omega_{t,n}^{-1}) \\
+  &\propto \distNormal(
+  \bOmega_t^{-1} \kappa(\bs_t, \theta) \given
+  \bC \bx_t, \, 
+  \bOmega_t^{-1}),
+\end{align*}
+where
+\begin{align*}
+  \bOmega_t &= \diag \left( \left[ \omega_{t,1}, \ldots, \omega_{t,N} \right] \right).
+\end{align*}
+Note the similarity of this likelihood and the Gaussian likelihood
+of~\eqref{eq:gauss_lkhd}. The only difference is that here the
+precision is given by the auxiliary variables, and the observations
+are a function of both~$s_{t,n}$ and~$\omega_{t,n}$.
+Thus, given a set of \polyagamma auxiliary variables, the block Gibbs
+updates that we derived for the Gaussian case will apply equally well
+to the discrete case.
 
-By the exponential tilting property of the \polyagamma
+
+
+Moreover, by the exponential tilting property of the \polyagamma
 distribution, the conditional distribution of~$\pgvar_n$
 is proportional to a \polyagamma distribution:
 \begin{align*}
   \nonumber
-  f_t(\pgvar_n \given z_n, x_n, \theta) &
-  \propto e^{-\pgvar_n z_n^2/2}
-  p_{\distPolyaGamma}(\pgvar_n \given b(x_n, \theta) \cdot \beta_t, \, 0) \\
-  &\propto p_{\distPolyaGamma}(\pgvar_n \given b(x_n, \theta) \cdot \beta_t, \, z_n).
+  p(\pgvar_{t,n} \given \psi_{t,n}, s_{t,n}, \btheta) &
+  \propto e^{-\pgvar_{t,n} \psi_{t,n}^2/2}
+  p_{\distPolyaGamma}(\pgvar_{t,n} \given b(s_{t,n}, \btheta), \, 0) \\
+  &\propto p_{\distPolyaGamma}(\pgvar_{t,n} \given b(s_{t,n}, \btheta), \, \psi_{t,n}).
 \end{align*}
-When the shape parameter,~$b(x_n, \theta) \cdot \beta_t$, goes to zero, the
-\polyagamma density reduces to a delta function at zero. 
+These auxiliary variables are conditionally independent of each other,
+and hence amenable to block parallel Gibbs sampling.  Efficient
+\polyagamma sampling algorithms have been developed for the regimes
+typically encountered in Bernoulli, binomial, and negative binomial
+models \citep{windle2014sampling}.
 
-In many cases, the functions in the exponent,~$a(\cdot)$ and~$b(\cdot)$,
-will be independent of~$\theta$, in which case we can update theta
-as we would for the standard model. The main exception is the
-negative binomial likelihood,~$x_n \sim \distNegBinomial(\theta, \sigma(z_n))$,
-where~$\theta$ is the unspecified ``number of failures.''
-In this case,~$\theta$ is scalar and can be sampled using a number
-of general purpose techniques like slice sampling.
+%When the shape parameter,~$b(x_n, \theta)$, goes to zero, the
+%\polyagamma density reduces to a delta function at zero. 
 
 Thus, our proposed transition operators,~$\mcT_t$, perform three steps, 
 \begin{enumerate}
