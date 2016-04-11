@@ -1,6 +1,6 @@
 # Scott Linderman's Thesis
 
-*April 2016*
+*Harvard University, April, 2016*
 
 Neuroscience is entering an exciting new age.  Modern recording
 technologies enable us to simultaneously measure the activity of
