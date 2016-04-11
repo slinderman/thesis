@@ -518,7 +518,7 @@ likelihood of interest. The annealing path is a sequence of
 distributions,~${q_1(\btheta, \bz, \bx)}$ to~${q_M(\btheta, \bz, \bx) = p(\btheta, \bz, \bx \given \bs)}$,
 where
 \begin{align*}
-q_m(\btheta, \bz, \bx) &= f_m(\btheta, \bz, \bx)/\mcZ_m, & 
+q_m(\btheta, \bz, \bx) &= \frac{f_m(\btheta, \bz, \bx)}{\mcZ_m}, & 
 f_M(\btheta, \bz, \bx) &= p(\theta, \bz, \bx, \bs), & 
 \mcZ_M &= p(\bs).
 \end{align*}
@@ -540,17 +540,50 @@ interpolate between the prior and the unnormalized posterior.
 
 Given this annealing path, we can generate a sample
 of~$(\btheta, \bz, \bx)$ by first sampling from the prior, and then
-applying a sequence of MCMC transition operators~$\mcT_m$ that leave
-the intermediate distributions~$p_m$ invariant. The result is a sample
-that is, hopefully, closer in distribution to the posterior. We can
-use this procedure as a proposal distribution for importance sampling.
-The importance weights are given by a product of ratios between~$f_m$
-and~$f_{m-1}$.  
-\todo{show how to compute the weights to get an estimate of the ML}
-Since the target density is the unnormalized joint
-distribution, the importance weights will be unbiased estimates of the
-normalization constant, namely the marginal
-likelihood,~${\mcZ_M =p(\bs)}$.
+applying a sequence of MCMC transition operators that leave
+the intermediate distributions~$q_m$ invariant,
+\begin{align*}
+  \mcT_m(\btheta, \bz, \bx \from \btheta', \bz', \bx').
+\end{align*}
+The result of applying these transition operators
+for~${m=1, \ldots, M}$ is a sample that is, hopefully, closer in
+distribution to the posterior. We can use this procedure as a proposal
+distribution for importance sampling.  The importance weights are
+given by a product of ratios between~$f_m$ and~$f_{m-1}$.  Since the
+target density is the unnormalized joint distribution, the importance
+weights will be unbiased estimates of the normalization constant,
+namely the marginal likelihood,~${\mcZ_M =p(\bs)}$. The annealed
+importance sampling algorithm is summarized in Prog.~\ref{prog:ais}.
+\begin{center}
+  \begin{minipage}{.85\textwidth}
+    \vskip-2em
+    \singlespacing
+    \begin{algorithm}[H]
+      \sffamily
+      \begin{algorithmic}
+        %\Require $\bs_{1:T}$
+        \For {$\ell=1$ to~$L$}
+          \State $w^{(k)} \from \mcZ_1$
+          \State Sample $\btheta^{(1)}, \bz^{(1)}, \bx^{(1)} \sim q_1(\btheta, \bz, \bx)$
+          \For {$m=2$ to~$M$}
+            \State 
+            ${
+              w^{(\ell)} \from w^{(\ell)} \times 
+              \frac{f_m(\btheta^{(m-1)}, \,  \bz^{(m-1)}, \, \bx^{(m-1)})}
+              {f_{m-1}(\btheta^{(m-1)}, \, \bz^{(m-1)}, \, \bx^{(m-1)})}
+            }$
+            \State Sample ${\btheta^{(m)}, \bz^{(m)}, \bx^{(m)} \sim 
+              \mcT_m (\btheta, \bz, \bx \from \btheta^{(m-1)}, \,  \bz^{(m-1)}, \, \bx^{(m-1)})}$
+          \EndFor
+        \EndFor\\
+        \Return {$\widehat{\mcZ}_M = \frac{1}{L} \sum_{\ell=1}^L w^{(\ell)} $}
+      \end{algorithmic}
+      \caption{Annealed Importance Sampling (AIS). Adapted from \citep{grosse2015sandwiching}.}
+      \label{prog:ais}
+    \end{algorithm}
+    \vspace{.5em}
+  \end{minipage}
+\end{center}
 
 How can we reduce the variance of this estimator? First, we can
 increase the number of intermediate distributions; second, we can
@@ -566,11 +599,13 @@ switching LDS are given by,
   f_m(\btheta, \bz, \bx) 
   &= p(\btheta, \bz, \bx) \,  
     \prod_{t=1}^T \prod_{n=1}^N
-    c(s_{t,n}, \btheta)^{\beta_m} \frac{(e^{\bc_n \cdot \bx_t})^{a(s_{t,n}, \btheta) \cdot \beta_m}}
-    {(1+e^{\bc_n \cdot \bx_t})^{b(s_{t,n}, \btheta) \cdot \beta_m}}.
+    c(s_{t,n}, \btheta)^{\beta_m} \frac{(e^{\psi_{t,n}})^{a(s_{t,n}, \btheta) \cdot \beta_m}}
+    {(1+e^{\psi_{t,n}})^{b(s_{t,n}, \btheta) \cdot \beta_m}}.
 \end{align}
+where, again,~$\psi_{t,n}$ is a function of~$\bx$ and~$\btheta$.
 Raising the likelihood to the power~$\beta_m$ does change its
-functional form. It is still amenable to \polyagamma augmentation!
+functional form; it only changes the power in the exponent.
+Most importantly, it is still amenable to \polyagamma augmentation!
 Thus, the Gibbs sweep defined in Prog.~\ref{prog:slds} can be used as
 a transition operator,~$\mcT_m$.
 
@@ -588,26 +623,6 @@ effective.
 
 \section{A Novel Sampling Algorithm for the \polyagamma Distribution}
 \label{sec:pgsampling}
-
-\begin{figure}
-\centering
-  \begin{subfigure}[t]{2.7in}
-    \includegraphics[width=\textwidth]{figures/ch8/phi}
-  \end{subfigure}
-  \begin{subfigure}[t]{2.7in}
-    \includegraphics[width=\textwidth]{figures/ch8/acceptance}
-  \end{subfigure}
-  \vspace{-1em}
-  \caption[Rejection sampling algorithm for the \polyagamma
-    distribution] {\textit{Top:} Plot of~$\Phi(\pgvar \given b)$, the
-    conditional acceptance probability for a proposed value
-    of~$\pgvar$, for~$b\in (0,1]$. In all cases, this function is
-  monotonically increasing from 0 to 1 as a function of~$\pgvar$, and
-  thus defines a cumulative distribution function.  \textit{Bottom:}
-  Acceptance probability,~$\alpha(b,\psi)$, as a function of~$b$
-  and~$\psi$.}
-\label{fig:pgsampling}
-\end{figure}
 
 The \polyagamma distribution,~$\distPolyaGamma(b,\psi)$, is closely related 
 to the Jacobi distribution,~$\distJacobi(b,\psi)$, surveyed by \citet{biane2001probability} and 
@@ -671,30 +686,60 @@ and where we have defined~$\Phi(\pgvar \given b)$ as,
   &= \sum_{n=0}^\infty (-1)^n \frac{\Gamma(n+b)}{\Gamma(n+1)} \frac{2n+b}{\Gamma(b+1)}
     \exp\left\{- \frac{2n(n+b)}{\pgvar} \right\}.  
 \end{align*}
-Figure~\ref{fig:pgsampling} plots~$\Phi(\pgvar \given b)$ for various values of~$b$.
+
+
+\begin{figure}
+\centering
+  \begin{subfigure}[t]{2.7in}
+    \caption{}
+    \label{fig:pg_phi}
+    \vspace{-1em}
+    \includegraphics[width=\textwidth]{figures/ch8/phi}
+  \end{subfigure}
+  \begin{subfigure}[t]{2.7in}
+    \caption{}
+    \label{fig:pg_acceptance}
+    \vspace{-1em}
+    \includegraphics[width=\textwidth]{figures/ch8/acceptance}
+  \end{subfigure}
+  \vspace{-1em}
+  \caption[Rejection sampling algorithm for the \polyagamma
+    distribution] {\textbf{(a)} Plot of~$\Phi(\pgvar \given b)$, the
+    conditional acceptance probability for a proposed value
+    of~$\pgvar$, for a range of~$b\in (0,1]$. In all cases, this function is
+  monotonically decreasing from 1 to 0 as a function of~$\pgvar$, and
+  thus defines a cumulative distribution function. 
+  \textbf{(b)}
+  Acceptance probability,~$\alpha(b,\psi)$, as a function of~$b$
+  and~$\psi$.}
+\label{fig:pgsampling}
+\end{figure}
+
+Figure~\ref{fig:pg_phi} plots~$\Phi(\pgvar \given b)$ for various values of~$b$.
 % , and shows that it is bounded to the range~$[0,1]$.
-Since~$\alpha^{-1}(b,\psi)\geq 1$ and~$\Phi(\pgvar \given b) \in [0,1]$,
+Since~${\alpha^{-1}(b,\psi)\geq 1}$ and~${\Phi(\pgvar \given b) \in [0,1]}$,
 we are guaranteed that~${\alpha^{-1}(b,\psi)\,
   p_{\distInvGaussian}(\pgvar \given \tfrac{b}{|\psi|}, b^2)}$
-dominates~$p_{\distJacobi}(\pgvar \given b,\psi)$, which makes the
-inverse Gaussian a natural proposal distribution for a rejection
+dominates~$p_{\distJacobi}(\pgvar \given b,\psi)$.
+Thus, the
+inverse Gaussian is a natural proposal distribution for a rejection
 sampling algorithm.  To determine whether a proposed value of~$\pgvar$
 is accepted, we must sample~$u \sim \mathrm{Unif}(0,1)$, and check
 whether~$u < \Phi(\pgvar \given b)$.
-% This is sometimes referred to
-% as \emph{generalized rejection sampling}~\citep{devroye1986}.
 
 The acceptance probability is~$\alpha(b,\psi)$, the inverse of the
 scaling constant. It is bounded
-between~$[\tfrac{1}{2}, 1]$ when~$b \leq 1$.
-The lower bound (worst case) is achieved when~$\psi=0$ and~$b=1$.
+between~$[\tfrac{1}{2}, 1]$ when~${b \leq 1}$.
+The lower bound (worst case) is achieved when~${\psi=0}$ and~${b=1}$.
 The upper bound (best case) is approached as~$b$ goes to zero or~$|\psi|$ goes 
 to infinity.
-This is illustrated in Figure~\ref{fig:pgsampling} for a 
+This is illustrated in Figure~\ref{fig:pg_acceptance} for a 
 range of~$b$ and~$\psi$.
 
-Determining acceptance requires a comparison against~$\Phi(\pgvar
-\given b)$, for given~$\pgvar$ and~$b$. This function is not
+\paragraph{Determining acceptance}
+In order to determine whether to accept or reject a proposed 
+value of~$\omega$, we need to compare against~${\Phi(\pgvar
+\given b)}$, for given~$\pgvar$ and~$b$. This function is not
 analytically tractable, however, it is still possible to determine
 whether or not to accept with finite computation. To do so, we use a
 slight modification of the \emph{alternating series method}
@@ -709,6 +754,9 @@ evaluate until we find an upper bound less than~$u$, at which point we
 reject, or a lower bound greater than~$u$, at which point we
 accept. This is typically done in fewer than six iterations. 
 
+\section{Conclusion}
+
+%%% Commenting out Cosyne experiment results
 \begin{comment}
 \section{Results}
 
