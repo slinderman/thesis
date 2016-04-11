@@ -21,6 +21,7 @@ First, install the included fonts. Then run
 non-standard fonts.
 
 To compile a single chapter, run
+
     xelatex --jobname=<chapternumber> singlechater.tex
     bibtex <chapternumber>
     xelatex --jobname=<chapternumber> singlechater.tex
