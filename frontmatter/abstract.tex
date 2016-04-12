@@ -26,7 +26,7 @@ discrete time analogue, the linear autoregressive Poisson model.  By
 leveraging the linear nature of these models and the Poisson
 superposition principle, we derive elegant auxiliary variable
 formulations and efficient inference algorithms. We then generalize
-these to nonlinear and nonstationary models of neural spike trains, 
+these to nonlinear and nonstationary models of neural spike trains by
 using the \polyagamma augmentation, a recent development for modeling
 count data, to develop efficient Markov chain Monte Carlo (MCMC)
 inference algorithms.
@@ -34,12 +34,13 @@ inference algorithms.
 In the latter chapters, we shift our focus from autoregressive models
 to latent state space models of neural activity. We provide an
 empirical study of Bayesian nonparametric methods for hidden Markov
-models of neural spike trains, and an efficient MCMC algorithm for
+models of neural spike trains and an efficient MCMC algorithm for
 switching linear dynamical systems with discrete observations, again
-leveraging the \polyagamma augmentation. Along the way, we develop
-a novel \polyagamma sampling algorithm and consider its applications in
-marginal likelihood estimation, an important problem for Bayesian
-model comparison.
+leveraging the \polyagamma augmentation. In pursuit of a principled
+means of Bayesian model comparison, we develop a novel \polyagamma
+sampling algorithm that enables an efficient annealed
+importance sampling algorithm for estimating the marginal likelihood of
+these models.
 
 In closing, we consider the ``Bayesian brain'' hypothesis --- the
 hypothesis that neural circuits are themselves performing Bayesian

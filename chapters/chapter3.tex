@@ -8,18 +8,18 @@
 
 Networks are fundamental models for complex systems, enabling us to
 reason about systems by studying the relationships between their
-parts.
-As we discussed in Chapter~\ref{chap:one}, networks are employed in a myriad of ways throughout
-neuroscience.  Whether they represent synapses in the human
-connectome, systems-level interactions in brain circuits, pairwise
-correlations in fMRI recordings, or coupling in theoretical models,
-networks abstract away the messy details of systems.  A network consists of nodes, which
-may represent neurons, populations, voxels, etc., depending on the application.
-Connecting these nodes is a set of edges, 
-which represent interactions between  pairs of nodes, like the effect
-of one neuron's spikes on the subsequent activity of its downstream
-neighbors.  By reducing a system to a network of nodes and edges,
-we create a simplified object for analysis.
+parts.  As we discussed in Chapter~\ref{chap:one}, networks are
+employed in a myriad of ways throughout neuroscience.  Whether they
+represent synapses in the human connectome, population-level
+interactions in brain circuits, pairwise correlations in fMRI
+recordings, or coupling in theoretical models, networks serve as an
+abstraction for the messy details of systems.  A network consists of a
+set of nodes, which may represent neurons, populations, voxels, etc.,
+depending on the application.  Connecting these nodes is a set of
+edges, which represent interactions between pairs of nodes, like the
+effect of one neuron's spikes on the subsequent activity of its
+downstream neighbors.  By reducing a system to a network of nodes and
+edges, we create a simplified object for analysis.
 
 %Representing these systems as networks facilitates a number of
 %analyses. 
@@ -31,15 +31,13 @@ probabilistic modeling.  For example, we may look for clusters or
 features of nodes that have similar patterns of connectivity.  Other
 analyses are more supervised in nature; in a ``link prediction'' task
 we want to predict whether or not a pair of nodes is connected, given
-partial observations of the network.
-%In some cases,
-% we wish to classify networks recorded from healthy and diseased patients. 
- Traditionally, network analysis has focused on \emph{explicit
-   network} problems in which the network itself is considered to be
- the observed data.  That is, the nodes are and edges are considered
- known. A rich literature has arisen in recent years for applying
- statistical machine learning models to this type of problem, e.g.,
- \citet{Liben-2007,Hoff-2008,Goldenberg-2010}.
+partial observations of the network \citep{Liben-2007}.
+Traditionally, network analysis has focused on \emph{explicit network}
+problems in which the network itself is considered to be the observed
+data.  That is, the nodes are and edges are considered known. A rich
+literature has arisen in recent years for applying statistical machine
+learning models to this type of problem, e.g.,
+\citet{Liben-2007,Hoff-2008,Goldenberg-2010}.
 
 In practice, however, we are often confronted with \emph{implicit
   networks} that cannot be observed directly, but about which we wish
@@ -53,12 +51,12 @@ For example, in connectomics problems the network must be inferred
 from noisy electron microscopy images; in spike train modeling the
 network must be inferred from weak anatomical evidence and noisy
 measurements of population activity; and in fMRI experiments, the
-network is derived from noisy BOLD responses.  In both cases, if we
+network is derived from noisy BOLD responses.  In all cases, if we
 knew the underlying network (i.e.  if we knew how the nodes were
 connected), we could assign a likelihood to the observed electron
 microscopy images or to the measured activity. By combining this
 likelihood with a prior distribution that reflects our intuitions
-about the network structure, we can construct a probabilistic model to
+about the network structure, we construct a probabilistic model to
 tackle these implicit network problems.
 
 
@@ -70,50 +68,51 @@ processes.  Specifically, we combine the Hawkes process
 \citep{Hawkes-1971} with hierarchical prior distributions on the network.  This
 combination allows us to reason about properties of neurons that govern
 network structure, which in turn governs the dynamics of activity via
-a Hawkes process. Inference
-in the resulting model is done with Markov chain Monte Carlo by leveraging
-an elegant data augmentation scheme that allows efficient parallelism.
+a Hawkes process. 
 
-Figure~\ref{fig:network_hawkes} illustrates the components of the
+Figure~\ref{fig:fig1} illustrates the components of the
 probabilistic model. At the highest level, we have a network of
 neurons.  The pattern of connectivity in the network may be governed
 by latent variables like cell types and locations. In this case there
 are four types of cells (different colors in
-Fig.~\ref{fig:fig1_network}), and each cell has a location in the
+Fig.~\ref{fig:fig1}a), and each cell has a location in the
 two-dimensional plane. Nearby cells of the same type are more likely
 to connect. The network governs the dynamics of the firing rate
-(Fig.~\ref{fig:fig1_activation}), which in turn gives rise to the
-observed spikes (Fig.~\ref{fig:fig1_spikes}. In this case, spikes on
+(Fig.~\ref{fig:fig1}b), which in turn gives rise to the
+observed spikes (Fig.~\ref{fig:fig1}c). In this case, spikes on
 one neuron induce impulse responses that feed back into the firing
 rate of downstream neurons. These firing rate--spike train dynamics are 
 modeled with Hawkes processes. 
 
 \begin{figure}[t]
   \centering
-  \begin{subfigure}[b]{1.7in}
+  % \begin{subfigure}[b]{1.7in}
+  %   \centering
+  %   \caption{}
+  %   \vspace{-.25in}
+  %   \includegraphics[width=\textwidth]{figures/ch3/new_clustered_embedded_neurons}
+  %   \label{fig:fig1_network}
+  % \end{subfigure}
+  % \hspace{.25in}
+  % \begin{subfigure}[b]{1.7in}
+  %   \centering
+  %   \caption{}
+  %   \vspace{-.25in}
+  %   \includegraphics[width=\textwidth]{figures/ch3/new_activation}
+  %   \label{fig:fig1_activation}
+  % \end{subfigure}
+  % \hspace{.25in}
+  % \begin{subfigure}[b]{1.7in}
+  %   \centering
+  %   \caption{}
+  %   \vspace{-.25in}
+  %   \includegraphics[width=\textwidth]{figures/ch3/new_observed_spikes}
+  %   \label{fig:fig1_spikes}
+  % \end{subfigure}
+  \begin{subfigure}[t]{5.5in}
     \centering
-    \caption{}
-    \vspace{-.25in}
-    \includegraphics[width=\textwidth]{figures/ch3/new_clustered_embedded_neurons}
-    \label{fig:fig1_network}
+    \includegraphics[width=\textwidth]{figures/ch3/figure1}
   \end{subfigure}
-  \hspace{.25in}
-  \begin{subfigure}[b]{1.7in}
-    \centering
-    \caption{}
-    \vspace{-.25in}
-    \includegraphics[width=\textwidth]{figures/ch3/new_activation}
-    \label{fig:fig1_activation}
-  \end{subfigure}
-  \hspace{.25in}
-  \begin{subfigure}[b]{1.7in}
-    \centering
-    \caption{}
-    \vspace{-.25in}
-    \includegraphics[width=\textwidth]{figures/ch3/new_observed_spikes}
-    \label{fig:fig1_spikes}
-  \end{subfigure}
-  \vspace{-.2in}
   \caption[Components of the network Hawkes model]{
      Components of the generative model. 
      \textbf{(a)} Each neuron is endowed with latent variables, like 
@@ -127,7 +126,7 @@ modeled with Hawkes processes.
      \textbf{(c)} Spikes are randomly generated according to the 
      activation. Each spike induces an impulse response on the activation 
      of downstream neurons.}
-  \label{fig:network_hawkes}
+  \label{fig:fig1}
 \end{figure}
 
 The rest of the chapter is organized as follows. In
@@ -135,17 +134,17 @@ Section~\ref{sec:graph_models} we introduce a compositional
 probabilistic model for networks, and in
 Section~\ref{sec:hawkes_processes} we introduce Hawkes processes.
 Section~\ref{sec:network_hawkes_model} stitches these two components
-together into a joint model for implicit networks.  Before diving into
-inference applications, we first consider the theoretical consequences
-of a particular network model on the stability of the system, and
-provide some intuition on how the network properties affect the
-asymptotic behavior of the system.  Then, in
-Section~\ref{sec:hawkes_inference}, we derive a Gibbs sampling
-algorithm with an elegant auxiliary variable formulation.  Finally,
-the remaining sections consider applications, first to synthetic data,
-and then to biological recordings.  While the primary emphasis is on
-modeling neural data, we also explore some applications in areas of
-finance and criminology.
+together into a joint model for implicit networks with spike train
+observations.  Before diving into inference applications, we first
+consider the theoretical consequences of a particular network model on
+the stability of the system, and provide some intuition on how the
+network properties affect the asymptotic behavior of the system.
+Then, in Section~\ref{sec:hawkes_inference}, we derive a Gibbs
+sampling algorithm with an elegant auxiliary variable formulation that
+allows efficient parallelism.  Finally, the remaining sections
+consider applications, first to synthetic data, and then to biological
+recordings.  While the primary emphasis is on modeling neural data, we
+also explore some applications in areas of finance and criminology.
 
 \section{Probabilistic Network Models}
 \label{sec:graph_models}
@@ -172,6 +171,22 @@ latent features--- also form the building blocks of
 standard network models.  We briefly outline a few simple models that
 are used in this and following chapters.
 
+\begin{table}
+\begin{center}
+\begin{tabular}{c|c|c|c}
+Name & $\bvartheta$ & $\mathrm{dom}(\bz_n)$ & $\rho_{n \to n'}$ \\
+\hline
+Empty Model & --- &  --- & $0$ \\
+Dense Model & --- & --- & $1$ \\
+Bernoulli Model & $\rho$ & --- & $\rho$ \\
+Stochastic Block Model & $\{\{\rho_{k \to k'}\}\}$ & $\{1, \ldots, K\}$ & $\rho_{z_n \to z_{n'}}$ \\
+Latent Distance Model & $\gamma_0$ & $\reals^K$ & $\sigma(-||\bz_n - \bz_{n'}||_2^2 + \gamma_0)$
+\end{tabular}
+\end{center}
+\caption{Binary adjacency matrix models.}
+\label{tab:A_models}
+\end{table}
+
 Table~\ref{tab:A_models} summarizes a few models for binary adjacency
 matrices. In all cases, the distribution over~$\bA$ factorizes into a
 product over edges,
@@ -187,20 +202,20 @@ below:
 \begin{itemize}
 \item \textit{Empty Model: } The empty model is essentially a null
   model. According to this model, there are no connections between
-  neurons. Nevertheless, it is useful to enumerate it here because
-  the empty model provides a baseline for more sophisticated models
-  by capturing the null hypothesis that neurons are independent. 
+  neurons. Nevertheless, it is useful to list it here because
+  the empty model provides a baseline for more sophisticated models,
+  capturing the null hypothesis that neurons are independent. 
   
-\item \textit{Dense Model: } On the other extreme, the dense model
+\item \textit{Dense Model: } At the other extreme, the dense model
   corresponds to the hypothesis that all pairs of neurons are
   connected. In the models of neural activity that follow, the
   dense model will reduce to the standard models in use today, which
-  do not incorporate prior distributions over the network.
+  do not incorporate structured prior distributions over the network.
   
 \item \textit{Bernoulli Model: } The Bernoulli model is a
   spike-and-slab model in which each connection is an independent and
-  identically distributed Bernoulli random variable with
-  probability~$\rho$. This is also known as an Erd\H{o}s-R\'enyi model.
+  identically distributed Bernoulli random variable. 
+  This is also known as an Erd\H{o}s-R\'enyi model.
   
 \item \textit{Stochastic Block Model (SBM): } In the stochastic block
   model (SBM) \citep{Nowicki-2001}, each neuron has an associated
@@ -222,22 +237,6 @@ below:
   standard normal prior,~$\gamma_0 \sim \distNormal(0, 1)$.
 
 \end{itemize}
-\begin{table}
-\begin{center}
-\begin{tabular}{c|c|c|c}
-Name & $\bvartheta$ & $\mathrm{dom}(\bz_n)$ & $\rho_{n \to n'}$ \\
-\hline
-Empty Model & --- &  --- & $0$ \\
-Dense Model & --- & --- & $1$ \\
-Bernoulli Model & $\rho$ & --- & $\rho$ \\
-Stochastic Block Model & $\{\{\rho_{k \to k'}\}\}$ & $\{1, \ldots, K\}$ & $\rho_{z_n \to z_{n'}}$ \\
-Latent Distance Model & $\gamma_0$ & $\reals^K$ & $\sigma(-||\bz_n - \bz_{n'}||_2^2 + \gamma_0)$
-\end{tabular}
-\end{center}
-\caption{Binary adjacency matrix models.}
-\label{tab:A_models}
-\end{table}
-
 
 
 % Weight models

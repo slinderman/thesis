@@ -11,7 +11,7 @@ spike trains.  We start by introducing the language of generative
 models, which allow us to formalize, in probabilistic terms, our
 hypotheses about dynamics and low-dimensional structure.  The key
 ingredients are latent variables that reflect the underlying state of
-the system, and conditional distributions that relate these variables
+the system and conditional distributions that relate these variables
 to the observed data.  Once we understand the basics of this language,
 we can begin to articulate hypotheses about dynamical data in the form
 of generative time series models.  Section~\ref{sec:motifs} enumerates
@@ -24,7 +24,7 @@ which are introduced in Section~\ref{sec:inference_algorithms}.  At
 the end of this chapter, we will have the basic foundation necessary
 to start looking for structure in neural data. The rest of the thesis
 will build upon this foundation by developing more sophisticated
-models and more efficient inference algorithms, and putting them to
+models and more efficient inference algorithms, and by putting them to
 use on real neural recordings.
 
 \section{Generative Probabilistic Models}
@@ -40,10 +40,10 @@ probability that a neuron spikes at any moment in time.
 As a simple illustration, consider the following generative
 process. Suppose a neuron has two states, an \emph{up} state and an
 \emph{down} state. In the \emph{up} state, it spikes at a high
-rate, say 100Hz, and in the \emph{down} state it rarely fires, say at 10Hz.
-Assume that every 50ms the neuron flips a coin to decide what state it
-will be in and then fires a random number of spikes according to the
-rate associated with its current state. For the sake of simplicity, 
+rate, say 100Hz, and in the \emph{down} state it fires less frequently, say at 10Hz.
+Assume that every 50ms the neuron flips a coin to decide its new state
+and then fires a random number of spikes according to the
+firing rate associated with that state. For the sake of simplicity, 
 assume the precise spike times are uniformly distributed over the 50ms
 interval. Once the interval has elapsed, the neuron
 flips another coin and its rate immediately changes to reflect its new
@@ -70,24 +70,26 @@ spiking is adequately captured by firing rates, the notion that a
 neuron has only two firing rates and that it randomly switches between
 them is obviously a gross simplification. Nevertheless, this very
 simple model captures some patterns of spiking that have been observed
-in experiment \citep{cowan1994spontaneous, shu2003turning}. 
+in actual experiments \citep{cowan1994spontaneous, shu2003turning}. 
 
 \sloppy We can formalize this generative story with a probabilistic
 model that specifies a distribution over latent states and observed
 spike counts. Let~$s_t \in \naturals$ denote the number of spikes
-counted in the~$t$-th time bin, and~$z_t \in \{\textit{up},
-\textit{down}\}$ denote the corresponding state of the neuron. The
-assumption that states are drawn from a coin flip corresponds to the
-prior distribution, ${z_t \sim \distCategorical(\bpi)}$,
-where~${\bpi \in [0,1]^2}$ is a vector that specifies the probability
-of \textit{up} and \textit{down} states.  Implicitly, we have assumed
-that~${\bpi=\big[\tfrac{1}{2}, \tfrac{1}{2} \big]}$, though this need
-not be the case.  We previously said that the neurons fire a random
-number of spikes according to their state-dependent firing rate; now
-we will formalize this by assuming,~${s_{t} \sim
-  \distPoisson(\lambda_{z_t} \cdot \Delta t)}$, where ${\Delta t =
-  0.05\text{s}}$, ${\lambda_{\textit{up}} = 100\,\text{spikes/s}}$,
-and ${\lambda_{\textit{down}} = 10\,\text{spike/s}}$.
+counted in the~$t$-th time bin,
+and~$z_t \in \{\textit{up}, \textit{down}\}$ denote the corresponding
+state of the neuron. The assumption that states are drawn from a coin
+flip corresponds to the prior distribution,
+${z_t \sim \distCategorical(\bpi)}$, where~${\bpi = [\pi_{\textit{up}}, \pi_{\textit{down}}]}$
+is a non-negative vector that sums to one and specifies the
+probability of \textit{up} and \textit{down} states.  Implicitly, we
+have assumed that~${\bpi=\big[\tfrac{1}{2}, \tfrac{1}{2} \big]}$,
+though this need not be the case.  We previously said that the neurons
+fire a random number of spikes according to their state-dependent
+firing rate; now we will formalize this by
+assuming,~${s_{t} \sim \distPoisson(\lambda_{z_t} \cdot \Delta t)}$,
+where ${\Delta t = 0.05\text{s}}$,
+${\lambda_{\textit{up}} = 100\,\text{spikes/s}}$, and
+${\lambda_{\textit{down}} = 10\,\text{spike/s}}$.
 
 Figure~\ref{fig:updown} shows a neural spike train sampled from this
 generative model. The time bins are colored blue or yellow depending
@@ -118,13 +120,14 @@ variable in the joint distribution or explicitly condition on it.
 
 The probabilistic model specifies the particular factorization of the
 likelihood implied by the generative story.
-Eq.~\ref{eq:lkhd_chain_rule} simply applies the product rule of
-probability, which does not reflect any loss of generality. However,
-in going from \eqref{eq:lkhd_chain_rule} to
+Eq.~\ref{eq:lkhd_chain_rule} applies the product rule of
+probability, and reflects the assumptions that~$\bz$ depends only on~$\bpi$
+and~$\bs$ depends only on~$\bz$ and~$\blambda$. 
+In going from \eqref{eq:lkhd_chain_rule} to
 \eqref{eq:lkhd_factorized}, we have asserted that the latent
 states~$z_t$ and~$z_{t'}$ are conditionally independent given~$\bpi$,
 and that the spike counts~$s_{t}$ and~$s_{t'}$ are conditionally
-independent given their corresponding latent states. This conditional
+independent given their corresponding latent states and firing rates. This conditional
 independence assumption, which was implicit in the generative story,
 is made explicit when we factor the likelihood into a product over
 time bins.  Eq.~\ref{eq:lkhd_factorized_forms} specifies the
@@ -156,7 +159,7 @@ product of the likelihood and the prior distributions:
      p(\blambda \given \alpha, \beta).
 \end{align}
 
-When constructing a probabilistic model, we can express these prior
+When constructing a probabilistic model, we express these prior
 intuitions and simultaneously make inference a bit easier by using
 \emph{conjugate} prior distributions.
 
@@ -258,7 +261,7 @@ fluorescence traces \citep{pnevmatikakis2016simultaneous,
 results in an enormous compression. Rather than considering electrode 
 potentials, which may be sampled at upwards of 10kHz, or calcium 
 fluorescence traces, which are highly autocorrelated due to the relatively 
-slow dynamics of calcium concentration in cells, we can instead consider 
+slow dynamics of calcium concentration in cells, we instead consider 
 only the times of action potentials.
 
 % While this thesis treats the spike trains as given, it is also possible to
@@ -271,8 +274,8 @@ only the times of action potentials.
 % and if precise timing is important to the overarching model.
 
 The most general representation 
-of a spike train is as set of real-valued times for each neuron.
-In Figure~\ref{fig:updown}, this corresponds to the locations of
+of a spike train is a set of real-valued times for each neuron.
+In Figure~\ref{fig:updown}, this corresponds to the temporal locations of
 each black spike.
 When there is more than one neuron, we have a set of
 \emph{marked} spike times, which we call,
@@ -339,7 +342,7 @@ corresponding rate matrix,~$\bLambda$, where,
           \lambda_{T,1} & \cdots & \lambda_{T,N}
         \end{bmatrix}.
 \end{align*}
-Here,~$s_{t,n} \in \naturals$ denotes the number of spikes fired in
+Here,~${s_{t,n} \in \naturals}$ denotes the number of spikes fired in
 the~$t$-th time bin by the~$n$-th neuron, and~${\lambda_{t,n} \in \reals_+}$ denotes 
 the corresponding firing rate. Sometimes, the effects we
 are interested in studying occur at relatively slow time scales, so
@@ -347,10 +350,10 @@ discretizing may provide valuable compression while retaining most of
 the relevant information. For example, if we are studying neural
 dynamics on the order of minutes, then simply knowing how many spikes
 occurred each second may provide most of the relevant information, while
-precise spike timing may be superfluous.
+precise, millisecond-resolution spike timing may be superfluous.
 
 However, the primary reason to discretize spike times into a matrix of
-counts is that the statistics and machine learning community have
+counts is that the statistics and machine learning community has
 developed a much broader set of models for matrices than for sets of
 continuous time events.  In the next section, we will explore a number
 of common modeling motifs that can be applied to time series data
@@ -360,7 +363,7 @@ focus on extending these motifs in novel ways.
 
 \section{Motifs of Time Series Models}
 \label{sec:motifs}
-The art of probabilistic modeling is in balancing conflicting concerns:
+The art of probabilistic modeling lies in balancing two conflicting concerns:
 our model should capture as much of the relevant structure in the data 
 as possible, drawing on our intuition and our existing knowledge of the 
 system, yet at the same time we wish to limit the complexity of the model
@@ -387,12 +390,13 @@ possible joint distributions over this set of variables.
 The edges of the graph do not, however, specify the type of the random
 variable or functional form of the factors. For example, a node may
 indicate either a discrete or a continuous random variable, and an
-edge may indicate either a linear or a nonlinear dependence
-pattern. In this way, two models may share the same graph but have
+edge may indicate an arbitrary form of dependence, like a linear 
+relationship.
+In this way, two models may share the same graph but have
 fundamentally different interpretations. This is true of mixture
 models and factor analysis models shown in Figure~\ref{fig:motifs}.
 Some patterns of factorization, types, and dependencies are used
-over and over again and form the foundational
+over and over again and form the
 building blocks for more complex models.
 Next, we discuss a few of the common motifs shown in Figure~\ref{fig:motifs}.
 
@@ -419,18 +423,18 @@ state. We can easily extend this to populations of neurons and
 mixtures of more than two states.  Suppose there are now~$K$ states,
 such that~${z_t \in \{1, \ldots, K\}}$. Furthermore, we generalize the
 rates~$\lambda_{\textit{up}}$ and~$\lambda_{\textit{down}}$, to
-vectors of rates, one for each neuron and state.  Changing notation
-slightly, let~${\bmu_k =
-  \big[ \mu_{k,1}, \ldots, \mu_{k,N}\big]}$ denote a vector
-of rates where $\mu_{k,n}$ is the firing rate of
+vectors of rates, one for each neuron and state.  In a slight abuse 
+of notation, let~${\blambda_k = [\lambda_{k,1}, \ldots, \lambda_{k,N}]}$denote a vector
+of rates where $\lambda_{k,n}$ is the firing rate of
 the~${n\text{-th}}$ neuron in state~$k$.
 
 In a mixture model, the latent states are discrete, the time bins are
 conditionally independent, and the dependence of~$s_t$ on~$z_t$
-and~$\bmu$ is linear.  To see the latter claim, note that that the
-instantaneous firing rate can be written, ${\lambda_{t,n} =
-  \sum_{k=1}^K \bbI[z_t=k] \cdot \mu_{k,n}}$. These provide multiple
-dimensions along with the mixture model may be generalized.
+and~$\blambda$ is linear.  To see the latter claim, note that that the
+instantaneous firing rate of neuron~$n$ can be written,
+${\sum_{k=1}^K \bbI[z_t=k] \cdot \lambda_{k,n}}$. These three
+properties suggest multiple dimensions along with the mixture model
+may be generalized.
 
 %We can write the full rate
 %matrix,~$\bLambda$, as the outer product of a ~${T \times K}$
@@ -495,9 +499,9 @@ model the rate as a function of previous spike counts. For example, consider
 an autoregressive model with linear dynamics,
 \begin{align}
   \label{eq:ar_model}
-  \lambda_{t,n} &= \sum_{m=1}^N \sum_{d=1}^D w_{n \from m}^{(d)} \cdot s_{t-d, m}.
+  \lambda_{t,n} &= \sum_{m=1}^N \sum_{d=1}^D w_{m \to n}^{(d)} \cdot s_{t-d, m}.
 \end{align}
-The weight,~$w_{n \from m}^{(d)}$, specifies the influence that spikes
+The weight,~$w_{m \to n}^{(d)}$, specifies the influence that spikes
 on neuron~$m$ have on the rate of neuron~$n$ at an offset of~$d$ time bins
 in the future. 
 Unlike the HMM, which has an
@@ -511,7 +515,7 @@ in the special case that~$D=1$.
 
 Since the
 firing rates must be non-negative, the weights must be as well.  That
-is,~$w_{n \from m}^{(d)} \in \reals_+$.
+is,~$w_{m \to n}^{(d)} \in \reals_+$.
 This implicitly instantiates
 the hypothesis that interactions between spikes on one neuron and
 the rate of another is always excitatory~---~a spike can never
@@ -529,7 +533,7 @@ In order to capture both excitatory and inhibitory autoregressive weights,
 we need to introduce a nonlinear function that ensures a non-negative firing 
 rate. Specifically, assume that,
 \begin{align*}
-  \psi_{t,n} &= \sum_{m=1}^N \sum_{d=1}^D w_{n \from m}^{(d)} \cdot s_{t-d,m}, \\
+  \psi_{t,n} &= \sum_{m=1}^N \sum_{d=1}^D w_{m \to n}^{(d)} \cdot s_{t-d,m}, \\
   \lambda_{t,n} &= g \left( \psi_{t,n} \right).
 \end{align*}
 The nonlinear
@@ -551,7 +555,7 @@ discrete variable~${z_t \in \{1, \ldots, K\}}$ is replaced by a
 discrete probability distribution~${\bpi_t \in [0,1]^K}$. The rate
 is then a non-negative combination,
 \begin{align*}
-  \lambda_{t,n} &= \sum_{k=1}^K \pi_{t,k} \cdot \mu_{k,n}
+  \lambda_{t,n} &= \sum_{k=1}^K \pi_{t,k} \cdot \lambda_{k,n}
 \end{align*}
 This is naturally interpreted as a \emph{mixed membership model} in
 which the rates at each time bin derive from a mixture of discrete
@@ -577,7 +581,7 @@ observations.
 
 \paragraph{Linear Dynamical Systems}
 In the same way that HMM's extended mixture models with temporal
-dynamics, linear dynamical systems (LDS's) extend factor models with
+dynamics, linear dynamical systems (LDSs) extend factor models with
 linear autoregressive dynamics in the latent state.  We simply replace
 the prior on~$\bx$ with a model of the form,
 \begin{align*}
@@ -596,7 +600,8 @@ These motifs --- continuous and discrete latent states, linear autoregressive
 dynamics, and nonlinear link functions --- provide a foundation for 
 constructing probabilistic models for spike trains. Atop this foundation 
 we may layer additional random variables reflecting hypotheses about shared 
-structure. For example, a switching linear dynamical system (Figure~\ref{fig:motifs})
+structure. For example, a switching linear dynamical system, shown in Figure~\ref{fig:motifs}
+and studied in Chapter~\ref{chap:eight},
 combines discrete \emph{and} continuous latent states. 
 Likewise, Chapters~\ref{chap:three}, \ref{chap:four},
 and~\ref{chap:five} consider structured prior distributions on 
@@ -617,11 +622,11 @@ of the model.
 \label{sec:inference_algorithms}
 Given an observed spike train, our goal is to compute the posterior
 distribution over latent variables,~$\bz$, and parameters,~$\btheta$,
-of the model.  For example, in an HMM the latent variables are just
+of the model.  For example, in an LDS the latent variables are just
 the dynamic latent states, and the parameters
-are~${\btheta = \{\bA, \bC\}}$, the transition matrix and the
-state--rate matrix. Bayes' rule relates the posterior distribution to
-the joint distribution of our probabilistic model,
+are~${\btheta = \{\bP, \blambda\}}$, the transition matrix and the
+firing rates for each latent state. Bayes' rule relates the posterior
+distribution to the joint distribution of our probabilistic model,
 \begin{align}
   \label{eq:bayes_rule}
   p(\bz, \btheta \given \bs) 
@@ -636,12 +641,11 @@ inference. We will briefly describe each of these in turn.
 
 \subsection{Markov Chain Monte Carlo}
 Markov Chain Monte Carlo (MCMC) algorithms are a workhorse of modern
-machine learning, and many texts are devoted to the subject,
-e.g.~\citet{geyer1992practical, gilks2005markov, robert2013monte}.  The
-fundamental idea is to generate a collection of samples from the
+machine learning, and many texts are devoted to the subject
+\citep[e.g.][]{geyer1992practical, gilks2005markov, robert2013monte}.
+The fundamental idea is to generate a collection of samples from the
 posterior distribution and use them to estimate expectations.
-Specifically, if we can collect a set of
-samples,
+Specifically, given a set of samples,
 \begin{align*}
   \left \{ \big(\bz^{(1)}, \btheta^{(1)} \big), 
            \ldots, 
@@ -652,7 +656,7 @@ where
 \begin{align*}
   \bz^{(\ell)}, \btheta^{(\ell)} &\sim p(\bz, \btheta \given \bs),
 \end{align*}
-then we can form a Monte Carlo estimate of the expectation of a function~$f(\bz, \btheta)$
+we can form a Monte Carlo estimate of the expectation of a function~$f(\bz, \btheta)$
 with respect to the posterior,
 \begin{align*}
   \bbE_{p(\bz, \btheta \given \bs)} \left[ f(\bz, \btheta) \right] 
@@ -735,7 +739,7 @@ Consider a transition operator,~$\mcT_{\bz}$, that only updates~$\bz$,
 holding ~$\btheta$ constant. In order to update~$\bz$, it samples from
 the conditional distribution,~$p(\bz \given \btheta, \bs)$. To see
 that this transition operator leaves the posterior distribution
-invariant, we plug it into Eq.~\ref{eq:invariance}:
+invariant, we plug it into~\eqref{eq:invariance}:
 \begin{align*}
   \int \mcT_{\bz} \big((\bz', \btheta') \to (\bz, \btheta) \big) \, 
     &p \big(\bz', \btheta' \given \bs \big) \, 
@@ -800,12 +804,12 @@ efficient types of Gibbs updates outlined below:
   conditional distribution is chain structured (each state depends
   only on the previous state and the current spike counts), we can
   actually sample this distribution using dynamic programming
-  without enumerating all possible assignments.
+  without enumerating all possible assignments \citep[e.g.][]{bishop2006pattern}.
   
 \item \textsc{Block Parallel Gibbs Sampling}:
   A special case of block Gibbs sampling occurs when an entire block 
   of variables is conditionally independent given the rest. For example,
-  consider the conditional distribution over~$\bz$ in a mixture model,
+  consider the conditional distribution of~$\bz$ in a mixture model,
   \begin{align*}
     p(\bz \given \btheta, \bs) 
     &\propto \prod_{t=1}^T p(z_t \given \btheta) \,
@@ -940,14 +944,14 @@ constant with respect to~$\theta_j$, and
   \widetilde{p}_j(\theta_j) 
   &\propto \exp \left \{ \bbE_{q(\bz, \btheta_{\neg j} ; \bvartheta_{\neg j})} \big[ \log p(\bs, \bz, \btheta) \big] \right \}.
 \end{align}
-We are able to separate the expectations in the third line of
-Eq.~\ref{eq:separate_expectations} because of the factorized form
+We are able to separate the expectations in the third line 
+of~\eqref{eq:separate_expectations} because of the factorized form
 of~$q(\bz, \btheta; \bvartheta)$.
 Since KL-divergence is minimized when the two
 distributions are equal, the optimal~$q_j(\theta_j; \vartheta_j)$, given the
 variational factors for the remaining variables, is equal
 to~$\widetilde{p}_j(\theta_j)$.  As in the Gibbs sampling algorithms
-developed before, the expectation in Eq.~\ref{eq:optimal_factor} is
+developed before, the expectation in~\eqref{eq:optimal_factor} is
 often greatly simplified by the factorization of the joint
 distribution in our probabilistic model. Moreover, when the model 
 is constructed out of conjugate distributions, these mean field 
@@ -960,11 +964,11 @@ groups of random variables to share a variational factor.  For
 example, in an HMM, we can group the latent states~$\bz$ together in a
 shared factor,~$q(\bz)$, that does not necessarily factor into a
 product over time bins.
-If the optimal shared factor given by Eq.~\ref{eq:optimal_factor} has
+If the optimal shared factor given by~\eqref{eq:optimal_factor} has
 a tractable form, we can perform coordinate ascent on the variational
 lower bound by updating the parameters of the shared factor,
 rather than sequentially updating individual factors for each time bin.
-As a result, our coordinate ascent algorithm converges much more rapidly.
+As a result, our coordinate ascent algorithm will converge much more rapidly.
 The only other requirement is that it must be possible to compute the
 expectations with respect to the shared factor. In the case of HMMs,
 the same type of dynamic programming algorithm that enables efficient
@@ -1006,12 +1010,11 @@ where
 \end{align*}
 When Bayesian inference is performed with MCMC, the samples~$\{\btheta^{(\ell)}\}$
 are simply the states visited by the Markov chain. When variational methods
-are used, we assume the variational posterior is such that~$q(\btheta)$ is
-easy to sample from.
+are used, we assume they are drawn from the  variational posterior,~$q(\btheta)$.
 
 This is by no means the only method of comparing models. In ``fully
 Bayesian'' analyses, it is common to compare models on the basis of
-their \emph{marginal likelihood},~$p(\bs)$. Recall that this is the
+their \emph{marginal likelihood},~$p(\bs)$ \citep{kass1995bayes}. Recall that this is the
 quantity that variational methods attempt to lower bound. Unfortunately,
 we cannot evaluate the tightness of variational lower bounds because
 they depend on the KL-divergence, which is intractable.
@@ -1041,10 +1044,10 @@ performance. Rather than assessing how well the model predicts
 held-out data, they assess how well statistics of data simulated from
 the posterior distribution match statistics calculated from samples of
 the real data. Rather than evaluating how well one model performs
-relative to another, PPCs assess how well the model explains important
+relative to another, PPCs assess how well the model explains relevant
 aspects of the data.
 
-\section{The Frontier of Modeling and Inference}
+\section{Conclusion}
 With this background, we have the basic tools necessary to formulate
 models, perform Bayesian inference, and evaluate model performance.
 However, as we incorporate more structure into our model and scale up
@@ -1054,9 +1057,9 @@ motifs at our disposal by leveraging model structure to develop
 efficient inference algorithms. One of the major techniques we use is
 the introduction of auxiliary variables that render the model
 conjugate and enable block parallel Gibbs samplers or structured mean
-field algorithms. Essentially, these methods provide nice ``axes''
-for inference. By adding dimensions to our posterior, it is sometimes
-easier to make two simple updates rather than one hard update.  These
-insights enable us to push the frontier of modeling and inference for
-complex discrete datasets like neural spike trains, and extend the
-set of motifs in our modeling toolkit.
+field algorithms. Essentially, these methods provide nice ``axes'' for
+inference. While this increases the dimensionality of the posterior,
+it is sometimes easier to make two simple updates rather than one hard
+update.  These insights enable us to push the frontier of modeling and
+inference for complex discrete datasets like neural spike trains, and
+extend the set of motifs in our modeling toolkit.
