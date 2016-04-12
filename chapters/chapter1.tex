@@ -398,7 +398,11 @@ processes and develops a nonlinear autoregressive model for neural
 spike trains. Again, we use probabilistic network models as prior
 distributions over the pattern of functional interaction, and in doing
 so, show that interesting representations of neural populations can
-be learned directly from the data. A preliminary version of this work
+be learned directly from the data. The key to efficient inference is
+the \polyagamma augmentation --- a recently developed method for
+performing Bayesian inference in models with linear Gaussian structure
+and discrete observations \citep{polson2013bayesian}. 
+A preliminary version of this work
 was presented by \citet{linderman2015cosyne}.
 
 Chapter~\ref{chap:six} continues the network theme, but here we begin
@@ -424,6 +428,18 @@ sensitive to hyperparameter settings. Thus, we introduce a variety of
 methods for selecting hyperparameters and perform a thorough
 comparison on real and synthetic data. This is based on
 \citet{linderman2016nonparametric}.
+
+Building on the discrete state space models of the preceding chapter,
+Chapter~\ref{chap:eight} develops efficient Bayesian inference
+algorithms for switching linear dynamical systems (SLDSs) with
+discrete count observations. The \polyagamma augmentation once again
+makes Bayesian inference surprisingly easy. Given these auxiliary
+variables, a host of tools for inference in Gaussian models is at
+our disposal.  We then turn to a major problem, that of model comparison.
+We derive a novel sampling algorithm for the \polyagamma distribution
+that renders annealed importance sampling (AIS) simple and efficient
+for a broad class of models, including the SLDSs of this chapter.
+A preliminary version of this work was presented in \citet{linderman2016cosyne}.
 
 Chapter~\ref{chap:nine} takes a step in a radical direction. We build
 on the probabilistic models of the preceding chapters, but here we

@@ -3,7 +3,7 @@
 
 The past two chapters have explored different notions of latent
 state: a dynamic network in Chapter~\ref{chap:six} and a discrete
-latent state in Chapter~\ref{chap:seven}. These notions are a powerful
+latent state in Chapter~\ref{chap:seven}. These states are a powerful
 addition to the autoregressive models of the earlier chapters. In
 this chapter, we consider one final extension --- a continuous
 latent state that evolves over time. These continuous latent state
@@ -11,12 +11,13 @@ space models are one of the most common methods in computational
 neuroscience \citep{Smith-2003, paninski2010new, macke2011empirical,
   Buesing12, Petreska-2011, cunningham2014dimensionality}.
 
-In general, these methods typically assume that the latent state obeys
-linear dynamics. Here, however, we will consider the more general case
-in which the dynamics are only \emph{conditionally} linear given a
-dynamic discrete latent state \citep{Petreska-2011}.  This is known as
-a \emph{switching} linear dynamical system.  By switching between
-different linear dynamical regimes, we obtain highly nonlinear
+The simplest form of continuous state space model assumes that the
+latent state obeys linear dynamics. Here, however, we will consider a
+more general case in which the dynamics are only \emph{conditionally}
+linear given a dynamic discrete latent state \citep{Petreska-2011}.
+This is known as a \emph{switching} linear dynamical system
+\citep{murphy2012probabilistic, fox2009bayesian}.  By switching
+between different linear dynamical regimes, we obtain highly nonlinear
 patterns of dynamics. Moreover, this switching linear dynamical system
 will recover a number of common models as special cases.
 
@@ -60,15 +61,16 @@ algorithm capable of efficiently generating random variates in the
 ``small shape'' regime required by AIS. 
  
  
-\section{Continuous Latent State Space Models}
-Consider a general formulation of models with a continuous latent
-state,~$\bx_t \in \reals^D$, with affine, but potentially nonstationary,
-dynamics at time~$t$ governed by~$\bA_t$,~$\bb_t$, and
-covariance,~$\bSigma_t$. Let the initial state distribution have 
+\section{A Hierarchy of Latent State Space Models}
+Consider a general class of models with a continuous latent
+state,~$\bx_t \in \reals^D$, that obeys affine, but potentially
+nonstationary, dynamics at time~$t$ governed by~$\bA_t$,~$\bb_t$, and
+noise covariance,~$\bSigma_t$. Let the initial state distribution have
 mean~$\bmu_1$. Furthermore, assume that a linear activation model
-~$\bpsi_t = \bC \bx_t$, where the mean spike count,~$s_{t,n}$ is 
-a nonlinear function of~$\psi_{t,n}$ and neuron-specific parameters,~$\nu_n$.
-We refer to the collection of model parameters as,
+~$\bpsi_t = \bC \bx_t$, where the mean spike count,~$s_{t,n}$ is a
+nonlinear function of~$\psi_{t,n}$ and neuron-specific
+parameters,~$\nu_n$.  We refer to the collection of model parameters
+as,
 \begin{align*}
   \btheta = \left\{ \{\bA_t, \bb_t, \bSigma_t\}_{t=1}^T, \bmu_1, \bC, \{\nu_n\}_{n=1}^N \right\}
 \end{align*}
@@ -80,7 +82,7 @@ latent state vectors,~$\bx_{1:T}$. We have,
 \begin{align*}
   p(\bs_{1:T}, \bx_{1:T} \given  \btheta) 
   &= 
-    p(\btheta) \, p (\bx \given \btheta) \, p(\bs_{1:T} \given \bx_{1:T}, \btheta)
+    p(\btheta) \, p (\bx_{1:T} \given \btheta) \, p(\bs_{1:T} \given \bx_{1:T}, \btheta)
 \end{align*}
 where
 \begin{align}
@@ -685,27 +687,43 @@ switching LDS are given by,
   f_m(\btheta, \bz, \bx) 
   &= p(\btheta, \bz, \bx) \,  
     \prod_{t=1}^T \prod_{n=1}^N
-    c(s_{t,n}, \btheta)^{\beta_m} \frac{(e^{\psi_{t,n}})^{a(s_{t,n}, \btheta) \cdot \beta_m}}
-    {(1+e^{\psi_{t,n}})^{b(s_{t,n}, \btheta) \cdot \beta_m}}.
+    c(s_{t,n}, \nu_n)^{\beta_m} \frac{(e^{\psi_{t,n}})^{a(s_{t,n}, \nu_n) \cdot \beta_m}}
+    {(1+e^{\psi_{t,n}})^{b(s_{t,n}, \nu_n) \cdot \beta_m}}.
 \end{align}
-where, again,~$\psi_{t,n}$ is a function of~$\bx$ and~$\btheta$.
-Raising the likelihood to the power~$\beta_m$ does change its
-functional form; it only changes the power in the exponent.
-Most importantly, it is still amenable to \polyagamma augmentation!
-Thus, the Gibbs sweep defined in Algorithm~\ref{alg:slds} can be used as
-a transition operator,~$\mcT_m$.
-
-However, for this transition to be efficient, we must be able to
-sample from the \polyagamma conditional distribution in the regime
-where~${b(s_{t,n}, \btheta) \cdot \beta_m < 1}$.  For Bernoulli
-observations,~${b(s_{t,n}, \btheta) \equiv 1}$, so we will be in this
+where, again,~$\nu_n$ is a parameter in~$\btheta$, and ~$\psi_{t,n}$
+is a function of~$\bx$ and~$\btheta$.  Raising the likelihood to the
+power~$\beta_m$ does change its functional form; it only changes the
+power in the exponent.  Most importantly, it is still amenable to
+\polyagamma augmentation!  Thus, the Gibbs sweep defined in
+Algorithm~\ref{alg:slds} can be used as a transition
+operator,~$\mcT_m$. The only differences in targeting~$f_m$ are that,
+\begin{align*}
+  \kappa(s_{t,n}, \nu_n) &= \left(a(s_{t,n}, \nu) - \frac{1}{2} b(s_{t,n}, \nu_n) \right) \cdot \beta_m,
+\end{align*}
+and
+\begin{align*}
+  \nonumber
+  p(\pgvar_{t,n} \given \psi_{t,n}, s_{t,n}, \nu_n) 
+  &\propto p_{\distPolyaGamma}(\pgvar_{t,n} \given
+  \underbrace{b(s_{t,n}, \nu_n) \cdot \beta_m}_{\text{often } < 1}, \, \psi_{t,n}).
+\end{align*}
+Thus, for this transition to be efficient, we must be able to sample
+from the \polyagamma conditional distribution in the regime
+where~${b(s_{t,n}, \nu_n) \cdot \beta_m < 1}$.  For Bernoulli
+observations,~${b(s_{t,n}, \nu_n) \equiv 1}$, so we will be in this
 regime for all~$\beta_m \in [0,1)$.  While efficient samplers exist
-for \polyagamma distributed variables when the shape parameter is
-greater than or equal to one \citep{windle2014sampling}, this ``small shape''
-regime has not been previously explored.  We develop a novel sampling
-algorithm that makes these conditional updates extremely efficient,
-and renders AIS with \polyagamma augmented transitions highly
-effective.
+  for \polyagamma distributed variables when the shape parameter is
+  greater than or equal to one \citep{windle2014sampling}, the default
+  method for this ``small shape'' is to approximate a \polyagamma
+  sample with a weighted sum of gamma random variates
+  \citep{polson2013bayesian}.  As the number of random variates in the
+  sum approaches infinity, the approximate sample converges to a true
+  draw from the \polyagamma distribution. To get a reasonably accurate
+  draw, we typically need to sample around 200 gamma random variates
+  per \polyagamma sample.  With~$TN$ auxiliary variables, this quickly
+  becomes prohibitively expensive. Next, we develop a novel sampling
+  algorithm that makes these conditional updates very efficient, and
+  renders AIS with \polyagamma augmented transitions highly effective.
 
 \section{A Novel Sampling Algorithm for the \polyagamma Distribution}
 \label{sec:pgsampling}
