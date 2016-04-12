@@ -6,25 +6,37 @@ state: a dynamic network in Chapter~\ref{chap:six} and a discrete
 latent state in Chapter~\ref{chap:seven}. These notions are a powerful
 addition to the autoregressive models of the earlier chapters. In
 this chapter, we consider one final extension --- a continuous
-latent state that evolves over time. The dynamics of this state will
-be conditionally linear, but we will consider a \emph{switching}
-variant in which a discrete latent state evolves simultaneously and
-governs the choice of linear dynamics rule. By switching between
-different linear dynamical regimes, we can obtain highly nonlinear
-patterns of dynamics. Moreover, this switching linear dynamical
-system will recover a number of common models as special cases. 
+latent state that evolves over time. These continuous latent state
+space models are one of the most common methods in computational
+neuroscience \citep{Smith-2003, paninski2010new, macke2011empirical,
+  Buesing12, Petreska-2011, cunningham2014dimensionality}.
 
-The challenge, as should be expected by now, is in performing efficient
-inference. Fortunately, at this point we have developed a number of
-strategies for tackling this problem. In particular, the \polyagamma
-augmentations introduced in Chapter~\ref{chap:five} will make this
-problem particularly easy. Once we have augmented our observations
-with auxiliary variables, they appear as Gaussian observations to
-the latent states. Thus, all of our tools for efficient Bayesian
-inference in linear Gaussian models are at our disposal. In particular,
-we will derive a block Gibbs sampling algorithm and show that it
-outperforms alternative approaches based on Laplace approximations
-to the nonconjugate Poisson likelihood.
+In general, these methods typically assume that the latent state obeys
+linear dynamics. Here, however, we will consider the more general case
+in which the dynamics are only \emph{conditionally} linear given a
+dynamic discrete latent state \citep{Petreska-2011}.  This is known as
+a \emph{switching} linear dynamical system.  By switching between
+different linear dynamical regimes, we obtain highly nonlinear
+patterns of dynamics. Moreover, this switching linear dynamical system
+will recover a number of common models as special cases.
+
+The challenge, as should be expected by now, is in performing
+efficient inference in the face of discrete observations. The
+aforementioned existing methods have relied upon a Laplace
+approximation to the Poisson likelihood, which are asymptotically
+biased. Given the tools developed in previous chapters, we can now
+develop asymptotically exact Gibbs sampling algorithms. In particular,
+the \polyagamma augmentations introduced in Chapter~\ref{chap:five}
+will make it easy to develop efficient algorithms that leverage many
+of the standard tools that exist for Gaussian observation models. Once
+we have augmented our observations with \polyagamma auxiliary
+variables, they appear as Gaussian observations to the latent
+states. Thus, all of our tools for efficient Bayesian inference in
+linear Gaussian models are at our disposal.
+%In particular, we will
+%derive a block Gibbs sampling algorithm and show that it outperforms
+%alternative approaches based on Laplace approximations to the
+%nonconjugate Poisson likelihood.
 
 Finally, we will consider a problem that we have given little
 consideration thus far, namely, the problem of Bayesian model
@@ -45,7 +57,7 @@ via annealed importance sampling (AIS) \citep{neal2001annealed}. In order
 to make this practically feasible, however, we must dive into the
 guts of the \polyagamma distribution and develop a novel sampling
 algorithm capable of efficiently generating random variates in the
-``small shape'' required by AIS. 
+``small shape'' regime required by AIS. 
  
  
 \section{Continuous Latent State Space Models}
@@ -269,7 +281,7 @@ algorithm for block Gibbs sampling the continuous latent states,~$\bx_{1:T}$.
         \EndFor
       \end{algorithmic}
       \caption{Forward filtering, backward sampling algorithm for the Gaussian linear dynamical system.}
-      \label{prog:ffbs_gaussian_lds}
+      \label{alg:ffbs_gaussian_lds}
     \end{algorithm}
   \end{minipage}
 \end{center}
@@ -340,7 +352,7 @@ in~\eqref{eq:pg_identity_new} transforms a logistic likelihood to a
 Gaussian likelihood conditioned on an auxiliary variable,~$\pgvar$.
 
 Now, let us return to the likelihood of~\eqref{eq:s_likelihood},
-where~${\psi_{t,n} = [\bC \bx_t]_n = \bc_n \cdot \bx_t}$ is the activation of neuron $n$
+where~${\psi_{t,n} = [\bC \bx_t]_n = \bc_n^\trans \bx_t}$ is the activation of neuron $n$
 at time~$t$. As a function of~$\bx_t$, the likelihood is proportional to,
 \begin{align*}
   p(\bs_t \given \bx_t, \btheta)
@@ -361,7 +373,7 @@ distribution,
   \nonumber
   p(\bs_t \given \bx_t, \bomega_t, \{\nu_n\})
   &\propto \prod_{n=1}^N
-  \distNormal(\bc_n \cdot \bx_t \given
+  \distNormal(\bc_n^\trans \bx_t \given
   \omega_{t,n}^{-1} \kappa(s_{t,n}, \nu_n), \,
   \omega_{t,n}^{-1}) \\
   \label{eq:pg_likelihood}
@@ -382,7 +394,7 @@ precision is given by the auxiliary variables, and the ``effective''
 observations,~$\widehat{s}_{t,n}$, are a function of
 both~$s_{t,n}$,~$\omega_{t,n}$, and~$\nu_n$.  Thus, given a set of
 \polyagamma auxiliary variables, the block Gibbs updates in
-Prog.~\ref{prog:ffbs_gaussian_lds} will apply equally well to the
+Algorithm~\ref{alg:ffbs_gaussian_lds} will apply equally well to the
 setting with discrete count observations.
 
 Moreover, by the exponential tilting property of the \polyagamma
@@ -405,7 +417,7 @@ models \citep{windle2014sampling}.
 %When the shape parameter,~$b(x_n, \nu_n)$, goes to zero, the
 %\polyagamma density reduces to a delta function at zero. 
 The proposed algorithm for sampling the latent variables and 
-parameters of an SLDS is summarized in Program~\ref{prog:slds}.
+parameters of an SLDS is summarized in Program~\ref{alg:slds}.
 
 \begin{center}
   \begin{minipage}{.75\textwidth}
@@ -426,36 +438,14 @@ parameters of an SLDS is summarized in Program~\ref{prog:slds}.
         \EndFor
         \State Compute $\bOmega_{1:T}$ and~$\widehat{\bs}_{1:T}$ \Comment{Eq.~\ref{eq:pg_likelihood}}
         \State Sample $\bx_{1:T} \given \widehat{\bs}_{1:T}, \bz_{1:T}, \bOmega_{1:T}, \btheta$ 
-        \Comment{Prog.~\ref{prog:ffbs_gaussian_lds}}
+        \Comment{Algorithm~\ref{alg:ffbs_gaussian_lds}}
       \end{algorithmic}
       \caption{Single iteration of Gibbs sampler for an switching LDS with discrete count observations}
-      \label{prog:slds}
+      \label{alg:slds}
     \end{algorithm}
   \end{minipage}
 \end{center}
 
-
-\subsection{Alternative approaches}
-\TODO{
-Gaussian and can be computed in closed form, and we can leverage a 
-host of off-the-shelf inference algorithms. However, when modeling 
-discrete spike counts, a Bernoulli, Poisson model is more appropriate. 
-In cases where the spike counts are overdispersed, a negative binomial 
-model may provide an even better fit. Unfortunately, these discrete models are not 
-conjugate with the Gaussian latent states and inference is
-considerably more complicated. Substantial work has gone into 
-developing approximate inference algorithms for such models \citep{macke2011empirical},
-but these methods rely on approximations to the model. 
-% The need for model-specific approximations makes it difficult to 
-% tweak the model and incorporate additional structure.
-Though these approximations are fast and effective in practice, they can yield
-asymptotically biased inferences.
-Moreover, they often provide only a point estimate of the latent states and
-parameters, which does not reveal Bayesian uncertainty estimates or permit
-robust model comparison. 
-Here, we present a simpler, faster, fully Bayesian set of algorithms that
-are easy to compose and extend.
-}
 
 \subsection{Missing Data}
 Sometimes we only have partial observations. For example, in some cases we have 
@@ -468,8 +458,104 @@ be implemented by setting the auxiliary variable,~$\omega_{t,n}$, to zero. Recal
 that the \polyagamma auxiliary variables specify the precision of the effective 
 observations. By setting this to zero, and also setting the mean~$\kappa(s_{t,n}, \nu_n)$
 to zero, we can effectively remove this data point. 
-In the experiments below, we will use this approach
-to withhold a subset of spike counts during training.
+%In the experiments below, we will use this approach
+%to withhold a subset of spike counts during training.
+
+\section{Alternative approaches}
+Most alternative approaches to performing Bayesian inference in latent
+state space models with discrete observations have relied on a Laplace
+approximation \citep{tierney1986accurate} to the conditional
+distribution,~${p(\bx_{1:T} \given \bs_{1:T}, \bz_{1:T}, \btheta)}$
+\citep{Smith-2003, paninski2010new, macke2011empirical}
+\footnote{While the Laplace approximation is most common, see 
+  \citet{buesing2012spectral} and \citet{pfau2013robust} for some
+  interesting new directions.}. Given a
+Gaussian approximation, the model parameters,~$\btheta$, can be
+optimized such that they maximize the \emph{expected} joint log
+probability under the approximate Gaussian distribution on~$\bx$. This
+constitutes an approximate expectation-maximization (EM) algorithm
+\citep{dempster1977maximum}.
+
+\sloppy
+For completeness, we describe the fundamentals of this approach,
+largely following the presentation of~\citet{macke2011empirical}.
+Consider a generative model in which~${s_{t,n} \sim \distPoisson(\exp\{\bc_n^\trans \bx_t\})}$.  The conditional log probability of~$\bx_{1:T}$ is
+given by,
+\begin{align*}
+  \log p(\bx_{1:T} \given \bs_{1:T}, \bz_{1:T}, \btheta)
+  &\simeq \sum_{t=1}^T \sum_{n=1}^N s_{t,n} (\bc_{n}^\trans \bx_{t}) - \exp\{\bc_n^\trans\bx_{t}\} + \\
+  &-\frac{1}{2} (\bx_1 - \bmu_1)^\trans \bSigma_{z_1}^{-1} (\bx_1 - \bmu_1) + \\
+  &-\frac{1}{2} \sum_{t=2}^T (\bx_t - \bA_{z_t} \bx_{t-1} - \bb_{z_t})^\trans
+  \bSigma_{z_t}^{-1} (\bx_t - \bA_{z_t} \bx_{t-1} - \bb_{z_t}),
+\end{align*}
+where~$\simeq$ denotes equality up to an additive constant.
+This log probability is concave and can be efficiently maximized to
+obtain the mean of the Laplace approximation,
+\begin{align*}
+  \bmu^* &= \argmax_{\bx_{1:T}}
+  \log p(\bx_{1:T} \given \bs_{1:T}, \bz_{1:T}, \btheta).
+\end{align*}
+Once the mean has been found, the optimal covariance is given by
+the inverse Hessian of the log posterior evalulated at~$\bmu^*$,
+\begin{align*}
+  \bSigma^* &= - \left[ \nabla \nabla_{\bx_{1:T}}
+      \log p(\bx_{1:T} \given \bs_{1:T}, \bz_{1:T}, \btheta) \, \Big|_{\bx_{1:T}=\bmu^*} \right]^{-1}.
+\end{align*}
+By exploiting the chain structure of the graphical model, this
+inverse Hessian can be computed in time linear in~$T$ using essentially
+the same forward-backward approaches used during sampling.
+
+The mean and covariance parameterize a Gaussian approximation,
+\begin{align*}
+  p(\bx_{1:T} \given \bs_{1:T}, \bz_{1:T}, \btheta)
+  &\approx
+  q(\bx_{1:T}) =
+  \distNormal(\bx_{1:T} \given \bmu^*, \bSigma*).
+\end{align*}
+Given this approximation, the parameters are updated by maximizing
+the expected log probability,
+\begin{align*}
+  \btheta^*
+  &=
+  \argmax_{\btheta} \bbE_{q} \left[ \log p(\bs_{1:T}, \bx_{1:T}, \bz_{1:T}, \btheta) \right]. 
+\end{align*}
+For example, consider this expectation as a function of the emission
+matrix,~$\bC$,
+\begin{align*}
+  \bbE_q \left[ \log p(\bs_{1:T}, \bx_{1:T}, \bz_{1:T}, \btheta) \right]
+  &\simeq
+  \sum_{t=1}^T \sum_{n=1}^N s_{t,n} (\bc_{n}^\trans \bbE_q[\bx_{t}]) - \bbE_q\left[\exp\{\bc_n^\trans \bx_{t}\} \right], \\
+  &=
+  \sum_{t=1}^T \sum_{n=1}^N s_{t,n} (\bc_{n}^\trans \bmu_{t}^*)
+  - \exp \left\{
+  \bc_n^\trans \bmu_t^*  +\frac{1}{2} \bc_n^\trans \bSigma_{tt}^* \bc_n
+  \right\}.
+\end{align*}
+The last line follows from the moment generating function of the
+multivariate Gaussian distribution.  This objective function is
+concave in~$\bc_n$. Note that closed form, concave expectations
+arise from the particular choice of exponential link function.
+Other models may require Monte Carlo estimates of the expectation
+inside the optimization. As more and more approximation is required,
+the performance of these methods tends to suffer.
+
+Finally, we must handle the discrete latent states,~$\bz_{1:T}$.
+The simplest approach would be to alternate between updating the
+discrete and continuous latent states, as we have advocated in the
+MCMC algorithm presented above. Alternatively, \citet{Petreska-2011}
+have suggested a joint update for both~$\bx_{1:T}$ and~$\bz_{1:T}$
+based on an approximate filtering technique. We leave a detailed
+comparison of these two approaches to future work.
+
+From our perspective, the principal advangages of the \polyagamma
+augmentation are: (i) it allows for simple block Gibbs updates that
+leverage off-the-shelf code for Gaussian models; (ii) it provides an
+asymptotically unbiased estimate of the posterior distribution;
+(iii) the stochasticity of the MCMC transitions allows the sampling
+algorithm to escape local modes, to which expectation-maximization
+algorithms are prone \citep{bishop2006pattern}; and (iv) once we
+have an MCMC algorithm, a number of natural extensions are clear,
+like the marginal likelihood estimation methods we discuss next.
 
 \section{Model Comparison via Marginal Likelihood Estimation}
 The marginal likelihood of a model is the probability of the
@@ -553,7 +639,7 @@ given by a product of ratios between~$f_m$ and~$f_{m-1}$.  Since the
 target density is the unnormalized joint distribution, the importance
 weights will be unbiased estimates of the normalization constant,
 namely the marginal likelihood,~${\mcZ_M =p(\bs)}$. The annealed
-importance sampling algorithm is summarized in Prog.~\ref{prog:ais}.
+importance sampling algorithm is summarized in Algorithm~\ref{alg:ais}.
 \begin{center}
   \begin{minipage}{.85\textwidth}
     \vskip-2em
@@ -579,7 +665,7 @@ importance sampling algorithm is summarized in Prog.~\ref{prog:ais}.
         \Return {$\widehat{\mcZ}_M = \frac{1}{L} \sum_{\ell=1}^L w^{(\ell)} $}
       \end{algorithmic}
       \caption{Annealed Importance Sampling (AIS). Adapted from \citep{grosse2015sandwiching}.}
-      \label{prog:ais}
+      \label{alg:ais}
     \end{algorithm}
     \vspace{.5em}
   \end{minipage}
@@ -587,7 +673,7 @@ importance sampling algorithm is summarized in Prog.~\ref{prog:ais}.
 
 How can we reduce the variance of this estimator? First, we can
 increase the number of intermediate distributions; second, we can
-design rapidly mixing transition operators,~$\mcT_m$. In this chapter,
+design rapidly mixing transition operators,~$\mcT_m$. In this section,
 we develop transition operators that are both computationally efficient,
 allowing us to run more transitions in a fixed amount of time, and more
 effective, in that they quickly reach their equilibrium distribution.
@@ -606,7 +692,7 @@ where, again,~$\psi_{t,n}$ is a function of~$\bx$ and~$\btheta$.
 Raising the likelihood to the power~$\beta_m$ does change its
 functional form; it only changes the power in the exponent.
 Most importantly, it is still amenable to \polyagamma augmentation!
-Thus, the Gibbs sweep defined in Prog.~\ref{prog:slds} can be used as
+Thus, the Gibbs sweep defined in Algorithm~\ref{alg:slds} can be used as
 a transition operator,~$\mcT_m$.
 
 However, for this transition to be efficient, we must be able to
@@ -634,14 +720,25 @@ Specifically,
 Thus, to develop a sampler for the \polyagamma distribution, 
 it is sufficient to be able to sample the Jacobi distribution.
 
-The density of~$\distJacobi(b,\psi)$ can be written as an infinite alternating sum,
-\begin{multline*}
+As derived by \citet{windle2014sampling}, the density
+of~$\distJacobi(b,\psi)$ can be written as an infinite alternating
+sum,
+\begin{multline}
+  \label{eq:jacobi_density}
   p_{\distJacobi}(\pgvar \given b, \psi) = \\ 
   \cosh^b(\psi) e^{-\pgvar \psi^2/2} \frac{2^b}{\Gamma(b)} 
   \sum_{n=0}^\infty (-1)^n \frac{\Gamma(n+b)}{\Gamma(n+1)} \frac{(2n+b)}{\sqrt{2\pi \pgvar^3}}
   \exp\left\{- \frac{(2n+b)^2}{2\pgvar} \right\}.
-\end{multline*}
-This can be factored as follows,
+\end{multline}
+\citet{windle2014sampling} developed a number of methods for sampling
+this distribution. Most rely on finding tractable upper bounds on the density
+that can serve as a proposal distribution. Given a sample from the proposal,
+it is possible to accept or reject using the \emph{alternating series method} \citep{devroye1986}. We will go into more detail on this shortly.
+
+We take the same basic approach, but we present a novel means of
+finding an upper bound on the Jacobi density.  Massaging terms
+in~\eqref{eq:jacobi_density}, we can factor this into the product of
+three terms:
 \begin{align*}
   % \nonumber &p_{\distJacobi}(\pgvar \given b, \psi) \\
   % \nonumber &\quad= \cosh^b(\psi) \frac{b 2^b}{\sqrt{2\pi \pgvar^3}} 
@@ -663,24 +760,24 @@ This can be factored as follows,
   p_{\distJacobi}(\pgvar \given b,\psi) &= 
    \alpha^{-1}(b,\psi) \,
    p_{\distInvGaussian}\left(\pgvar \, \bigg| \, \frac{b}{|\psi|}, \, b^2 \right) \,
-   \Phi(\pgvar \given b),
+   \Phi(\pgvar \given b).
 \end{align*}
-where~$\alpha^{-1}(b,\psi)$ is a scaling constant greater than one,
+The first term,~$\alpha^{-1}(b,\psi)$, is a scaling constant greater than one,
 \begin{align*}
   \alpha^{-1}(b,\psi) = 2^b \, \cosh^b(\psi) \, e^{-b|\psi|} 
   % &= 2^b \cosh^b(|\psi|) \, e^{-b|\psi|} \\
   % &= 2^b \left(\frac{(1+e^{-2|\psi|}) e^{-|\psi|}}{2e^{-|\psi|}} \right)^b \\
-  = \left(1 + e^{-2|\psi|} \right)^b \geq 1;
+  = \left(1 + e^{-2|\psi|} \right)^b \geq 1.
 \end{align*}
-where~$p_{\distInvGaussian}(\cdot)$ denotes the inverse Gaussian density,
+The second is an inverse Gaussian density,
 \begin{align*}
 p_{\distInvGaussian} \left(\pgvar \, \bigg| \, \frac{b}{|\psi|}, \, b^2 \right) 
   % &= \left( \frac{b^2}{2\pi \pgvar^3} \right)^{1/2} 
   %   \exp \left \{ - \frac{b^2 \left(\pgvar - \tfrac{b}{|\psi|} \right)^2}{2 \left(\tfrac{b}{|\psi|} \right)^2 \pgvar}   \right \} \\
   &= \frac{b}{\sqrt{2\pi \pgvar^3}}
-    \exp \left \{ - \frac{\psi^2}{2\pgvar}  \left(\pgvar - \frac{b}{|\psi|} \right)^2   \right \};
+    \exp \left \{ - \frac{\psi^2}{2\pgvar}  \left(\pgvar - \frac{b}{|\psi|} \right)^2   \right \}.
 \end{align*}
-and where we have defined~$\Phi(\pgvar \given b)$ as,
+And finally, the third term we have called~$\Phi(\pgvar \given b)$, 
 \begin{align*}
   \Phi(\pgvar \given b)  
   &= \sum_{n=0}^\infty (-1)^n \frac{\Gamma(n+b)}{\Gamma(n+1)} \frac{2n+b}{\Gamma(b+1)}
@@ -716,45 +813,78 @@ and where we have defined~$\Phi(\pgvar \given b)$ as,
 \end{figure}
 
 Figure~\ref{fig:pg_phi} plots~$\Phi(\pgvar \given b)$ for various values of~$b$.
+In all cases, we see that~$\Phi(\pgvar \given b)$ is a monotonically
+decreasing function with,
+\begin{align*}
+  \lim_{\omega \to 0} \Phi(\omega \given b) &= 1, \\
+  \text{and, }
+  \lim_{\omega \to \infty} \Phi(\omega \given b) &= 0.
+\end{align*}
 % , and shows that it is bounded to the range~$[0,1]$.
-Since~${\alpha^{-1}(b,\psi)\geq 1}$ and~${\Phi(\pgvar \given b) \in [0,1]}$,
-we are guaranteed that~${\alpha^{-1}(b,\psi)\,
+Since all three terms are non-negative, and since~${\Phi(\pgvar \given
+  b) \leq 1}$, the product~${\alpha^{-1}(b,\psi)\,
   p_{\distInvGaussian}(\pgvar \given \tfrac{b}{|\psi|}, b^2)}$
-dominates~$p_{\distJacobi}(\pgvar \given b,\psi)$.
-Thus, the
-inverse Gaussian is a natural proposal distribution for a rejection
-sampling algorithm.  To determine whether a proposed value of~$\pgvar$
-is accepted, we must sample~$u \sim \mathrm{Unif}(0,1)$, and check
+must dominate~$p_{\distJacobi}(\pgvar \given b,\psi)$.  Thus, the inverse
+Gaussian is a natural proposal distribution for a rejection sampling
+algorithm.  To determine whether a proposed value of~$\pgvar$ is
+accepted, we must sample~${u \sim \mathrm{Unif}(0,1)}$, and check
 whether~$u < \Phi(\pgvar \given b)$.
 
 The acceptance probability is~$\alpha(b,\psi)$, the inverse of the
-scaling constant. It is bounded
-between~$[\tfrac{1}{2}, 1]$ when~${b \leq 1}$.
-The lower bound (worst case) is achieved when~${\psi=0}$ and~${b=1}$.
-The upper bound (best case) is approached as~$b$ goes to zero or~$|\psi|$ goes 
-to infinity.
-This is illustrated in Figure~\ref{fig:pg_acceptance} for a 
-range of~$b$ and~$\psi$.
+scaling constant. It is bounded between~$[\tfrac{1}{2}, 1]$ when~${b
+  \leq 1}$.  The lower bound (worst case) is achieved when~${\psi=0}$
+and~${b=1}$.  The upper bound (best case) is approached as~$b$ goes to
+zero or~$|\psi|$ goes to infinity.  This is illustrated in
+Figure~\ref{fig:pg_acceptance} for a range of~$b$ and~$\psi$.
+In fact, this rejection sampling algorithm works for~$b \geq 1$ as well,
+but as~$b$ increases, the acceptance probability goes to zero. For
+this regime, the existing approaches of~\citet{windle2014sampling} are
+a better choice.
 
 \paragraph{Determining acceptance}
-In order to determine whether to accept or reject a proposed 
-value of~$\omega$, we need to compare against~${\Phi(\pgvar
-\given b)}$, for given~$\pgvar$ and~$b$. This function is not
-analytically tractable, however, it is still possible to determine
-whether or not to accept with finite computation. To do so, we use a
-slight modification of the \emph{alternating series method}
-\citep{devroye1986}.  We exploit the fact that ~$\Phi(\pgvar \given b)$
-is an alternating sum, and the absolute value of the terms is
-eventually monotonically decreasing as a function of the index~$n$ for
-all fixed values of~$b$ an~$\psi$.  Thus, after we have computed the
-increasing terms, all subsequent partial sums for even~$n$ are upper
-bounds, and all subsequent partial sums for odd~$n$ are lower bounds
-on~$\Phi(\pgvar\given b)$.  To determine acceptance of~$u$, we
-evaluate until we find an upper bound less than~$u$, at which point we
-reject, or a lower bound greater than~$u$, at which point we
-accept. This is typically done in fewer than six iterations. 
+In order to determine whether to accept or reject a proposed value
+of~$\omega$, we need to compare against~${\Phi(\pgvar \given b)}$, for
+given~$\pgvar$ and~$b$. This function is not analytically tractable,
+however, it is still possible to determine whether or not to accept
+with finite computation. To do so, we use a slight modification of the
+alternating series method \citep{devroye1986}.  We exploit the
+fact that ~$\Phi(\pgvar \given b)$ is an alternating sum, and the
+absolute value of the terms is eventually monotonically decreasing as
+a function of the index~$n$ for all fixed values of~$b$ an~$\psi$.
+Thus, after we have computed the increasing terms, all subsequent
+partial sums for even~$n$ are upper bounds, and all subsequent partial
+sums for odd~$n$ are lower bounds on~$\Phi(\pgvar\given b)$.  To
+determine acceptance of~$u$, we evaluate until we find an upper bound
+less than~$u$, at which point we reject, or a lower bound greater
+than~$u$, at which point we accept. Empirically, this rarely takes
+more than six iterations.
 
 \section{Conclusion}
+This chapter has explored various facets of modeling neural spike
+trains with switching linear dynamical systems models. This powerful
+model for nonlinear dynamical systems contains a number of simpler
+models as special cases. We have shown how a simple MCMC inference
+algorithm based on the \polyagamma augmentation provides a unified
+means of performing inference for the SLDS and its special cases.
+
+As we consider hierarchical models like these --- models constructed out of
+layers of latent structure --- we turned our attention to the
+important question of model selection. How should we justify our
+modeling choices? Marginal likelihood estimates provide one answer
+to this question. We have shown how the same \polyagamma augmentations
+translate can be applied inside annealed importance sampling algorithms,
+one of the most successful means of approximating marginal likelihoods.
+In order to make these methods work in practice, however, we needed to
+improve the efficiency of sampling the \polyagamma distribution in the
+``small shape'' regime. By leveraging a particular decomposition of the
+related Jacobi density, we derived an efficient rejection sampling algorithm.
+
+In future work, we will put these novel methods to the test on a variety
+of real world modeling problems. For now, however, we turn our attention
+to another important question. For all their structure, what can these
+models teach us about neural computation. The next chapter provides some
+initial attempts to connect the methods we have developed thus far to more
+abstract theoretical models of neural computation. 
 
 %%% Commenting out Cosyne experiment results
 \begin{comment}

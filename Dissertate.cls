@@ -36,7 +36,7 @@
 \RequirePackage[chapter, boxed]{algorithm}
 \RequirePackage{algpseudocode}
 \RequirePackage{algorithmicx}
-\floatname{algorithm}{Program}
+%\floatname{algorithm}{Program}
 
 % Theorems
 \RequirePackage{amsthm}
