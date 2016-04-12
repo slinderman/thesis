@@ -1,4 +1,4 @@
-\chapter{Continuous State Space Models with Count Observations}
+\chapter{Switching Linear Dynamical Systems with Count Observations}
 \label{chap:eight}
 
 The past two chapters have explored different notions of latent
@@ -36,7 +36,7 @@ linear Gaussian models are at our disposal.
 %In particular, we will
 %derive a block Gibbs sampling algorithm and show that it outperforms
 %alternative approaches based on Laplace approximations to the
-%nonconjugate Poisson likelihood.
+%non-conjugate Poisson likelihood.
 
 Finally, we will consider a problem that we have given little
 consideration thus far, namely, the problem of Bayesian model
@@ -131,7 +131,7 @@ The SLDS contains a number of other models as special cases:
   (${\bA_k \equiv 0}$), this reduces to factor analysis (FA).
 
 \item When (i) the state dimensionality is equal to the number of
-  neurson~($D=N$); (ii) there are no continuous dynamics (${\bA_k
+  neurons~($D=N$); (ii) there are no continuous dynamics (${\bA_k
     \equiv 0}$); and (iii) the emission matrix is the identity (${\bC
     \equiv \bI}$), the SLDS reduces to a hidden Markov model. At each
   point in time, the firing rate is determined solely
@@ -212,7 +212,7 @@ conditional distribution of~$\bx_t$ factors into,
 We will show that both of these factors are Gaussian distributions, 
 and hence their product is as well. 
 
-%To compute its paramters, we perform two steps: we \emph{predict} its
+%To compute its parameters, we perform two steps: we \emph{predict} its
 %value given preceding observations, and then we
 %\emph{condition} on the current observation. 
 
@@ -496,7 +496,7 @@ obtain the mean of the Laplace approximation,
   \log p(\bx_{1:T} \given \bs_{1:T}, \bz_{1:T}, \btheta).
 \end{align*}
 Once the mean has been found, the optimal covariance is given by
-the inverse Hessian of the log posterior evalulated at~$\bmu^*$,
+the inverse Hessian of the log posterior evaluated at~$\bmu^*$,
 \begin{align*}
   \bSigma^* &= - \left[ \nabla \nabla_{\bx_{1:T}}
       \log p(\bx_{1:T} \given \bs_{1:T}, \bz_{1:T}, \btheta) \, \Big|_{\bx_{1:T}=\bmu^*} \right]^{-1}.
@@ -547,7 +547,7 @@ have suggested a joint update for both~$\bx_{1:T}$ and~$\bz_{1:T}$
 based on an approximate filtering technique. We leave a detailed
 comparison of these two approaches to future work.
 
-From our perspective, the principal advangages of the \polyagamma
+From our perspective, the principal advantages of the \polyagamma
 augmentation are: (i) it allows for simple block Gibbs updates that
 leverage off-the-shelf code for Gaussian models; (ii) it provides an
 asymptotically unbiased estimate of the posterior distribution;
@@ -924,7 +924,7 @@ abstract theoretical models of neural computation.
     and HMM) with either Poisson (P) or negative binomial (NB)
     observations fit by our P\'{o}lya-gamma augmented Gibbs sampler to
     a population recording of hippocampal place cells. We measure
-    predictive log likelihood on a heldout subset of spike counts and
+    predictive log likelihood on a held-out subset of spike counts and
     find that negative binomial dynamical systems provide the best
     account (left). The latent state space dimensionality,~$D$, is fit
     by cross validation (center), and as the dimension increases the
@@ -952,7 +952,7 @@ We explored the effect of the latent state space dimensionality (center panel) a
 the LDS and SLDS models generalized well with 4 to 6 dimensional latent states. 
 In all cases, the negative binomial 
 observation models provided a better fit to the data, suggesting that these 
-spike counts were indeed overdispersed (i.e. had variance larger than the mean). With 
+spike counts were indeed over-dispersed (i.e. had variance larger than the mean). With 
 our framework, fitting a negative binomial model requires simply changing the 
 coefficients of the observation model.
 
