@@ -80,7 +80,7 @@ and~$z_t \in \{\textit{up}, \textit{down}\}$ denote the corresponding
 state of the neuron. The assumption that states are drawn from a coin
 flip corresponds to the prior distribution,
 ${z_t \sim \distCategorical(\bpi)}$, where~${\bpi = [\pi_{\textit{up}}, \pi_{\textit{down}}]}$
-is a non-negative vector that sums to one and specifies the
+is a nonnegative vector that sums to one and specifies the
 probability of \textit{up} and \textit{down} states.  Implicitly, we
 have assumed that~${\bpi=\big[\tfrac{1}{2}, \tfrac{1}{2} \big]}$,
 though this need not be the case.  We previously said that the neurons
@@ -304,7 +304,7 @@ real-valued number.
 
 We typically model sets of discrete events like these as realizations
 of a \emph{marked point process} \citep{daley2003introduction1}. Such a
-process is defined by its non-negative firing rates\footnote{In the
+process is defined by its nonnegative firing rates\footnote{In the
   point process literature, these firing rates are called
   \emph{conditional intensity functions}.},
 ${\{\lambda_n(t \given \mcH_t)\}_{n=1}^N}$, where $\mcH_t$ captures
@@ -514,7 +514,7 @@ Figure~\ref{fig:motifs} shows the graph structure of an autoregressive model
 in the special case that~$D=1$.
 
 Since the
-firing rates must be non-negative, the weights must be as well.  That
+firing rates must be nonnegative, the weights must be as well.  That
 is,~$w_{m \to n}^{(d)} \in \reals_+$.
 This implicitly instantiates
 the hypothesis that interactions between spikes on one neuron and
@@ -530,7 +530,7 @@ provide useful insight into the structure of neural activity.
 
 \paragraph{Nonlinear Autoregressive Models}
 In order to capture both excitatory and inhibitory autoregressive weights,
-we need to introduce a nonlinear function that ensures a non-negative firing 
+we need to introduce a nonlinear function that ensures a nonnegative firing 
 rate. Specifically, assume that,
 \begin{align*}
   \psi_{t,n} &= \sum_{m=1}^N \sum_{d=1}^D w_{m \to n}^{(d)} \cdot s_{t-d,m}, \\
@@ -538,7 +538,7 @@ rate. Specifically, assume that,
 \end{align*}
 The nonlinear
 function~${g(\cdot): \reals \to \reals_+}$ 
-maps a real valued ``activation,''~$\psi_{t,n}$, into a non-negative
+maps a real valued ``activation,''~$\psi_{t,n}$, into a nonnegative
 firing rate,~$\lambda_{t,n}$. It is common to use an exponential or a
 sigmoidal nonlinearity. In this formulation the
 weights may be either positive
@@ -553,7 +553,7 @@ Factor models generalize the discrete nature of the random variables
 with a continuous analogue. For example, consider a model in which the
 discrete variable~${z_t \in \{1, \ldots, K\}}$ is replaced by a
 discrete probability distribution~${\bpi_t \in [0,1]^K}$. The rate
-is then a non-negative combination,
+is then a nonnegative combination,
 \begin{align*}
   \lambda_{t,n} &= \sum_{k=1}^K \pi_{t,k} \cdot \lambda_{k,n}
 \end{align*}
@@ -566,7 +566,7 @@ model~\citep{blei2003latent}
 Alternatively, we may replace the discrete latent state with a continuous
 one,~$\bx_t \in \reals^K$. As in the nonlinear autoregressive model,
 we can retain the linear form and introduce an elementwise nonlinearity
-to ensure non-negative firing rates:
+to ensure nonnegative firing rates:
 \begin{align*}
   p(\bx) &= \prod_{t=1}^T \distNormal(\bx_t \given \bzero, \bSigma), \\
   \psi_{t,n} &= \sum_{k=1}^K x_{t,k} \cdot c_{k,n}, \\
@@ -898,7 +898,7 @@ the log marginal likelihood as an expectation with respect to~$q$,
   &\geq \mcL[q(\bz, \btheta; \bvartheta)].
 \end{align*}
 where~$\KL(q \barbar p)$ is the KL-divergence between distributions~$q$ and~$p$. 
-The last line follows from the fact that the KL-divergence is non-negative
+The last line follows from the fact that the KL-divergence is nonnegative
 and equal to zero if and only if the distributions are identical. Thus, 
 optimizing this functional is equivalent to minimizing the KL-divergence
 between the variational distribution and the true posterior.

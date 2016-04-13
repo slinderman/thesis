@@ -1530,7 +1530,7 @@ The synaptic weight is then a deterministic function of these two state variable
 This state-based learning rule is Hebbian in that correlated spiking
 activity leads to increases in~$\alpha_{t,m \to n}$, which in turn
 lead to larger weights (since the digamma function is increasing on
-the non-negative reals).
+the nonnegative reals).
 This is counteracted by the accrual of~$\beta_{t, m \to n}$, which
 counts pre- or post-synaptic spikes, depending on whether the
 post-synaptic neuron represents the child or parent variable, respectively.
@@ -1562,11 +1562,11 @@ Suppose,
   q_t(z_j) &\propto
   \sum_{k=1}^K \eta_{t,k}^{(j)} \, \zeta(z_j; \mu_k),
 \end{align*}
-where~$\{\eta_{t,k}^{(j)}\}_{k=1}^K$ is a set of non-negative weights that
-sum to one, ~$\zeta(z; \mu)$ is a non-negative ``kernel function''
+where~$\{\eta_{t,k}^{(j)}\}_{k=1}^K$ is a set of nonnegative weights that
+sum to one, ~$\zeta(z; \mu)$ is a nonnegative ``kernel function''
 that integrates to one and has mean~$\mu$, and~$\{\mu_k\}$ is the set of
 means at which these kernels are located. This defines a proper
-density function because~$q_t(z_j)$ is non-negative and integrates to one,
+density function because~$q_t(z_j)$ is nonnegative and integrates to one,
 \begin{align*}
   \int q_t(z_j) \, \mathrm{d}z_j &=
   \sum_{k=1}^K  \int \eta_{t,k}^{(j)} \, \zeta(z; \mu_k) \, \mathrm{d}z_j

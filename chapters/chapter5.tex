@@ -4,32 +4,32 @@
 
 The last two chapters combined network models and Hawkes processes to
 construct probabilistic models for dynamic neural spike trains. The
-key assumption of Hawkes processes, the assumption we leverage to
-derive efficient inference algorithms, is that the firing rate is the
-sum of non-negative impulse responses from preceding spikes. In other
-words, the interactions in a Hawkes process are additive and purely
-excitatory. While this leads to interpretable network models for some
+key assumption of Hawkes processes, the assumption we leveraged to
+derive efficient inference algorithms, was that the firing rate was the
+sum of nonnegative impulse responses from preceding spikes. In other
+words, the interactions in a Hawkes process were additive and purely
+excitatory. While this led to interpretable network models for some
 systems, in many cases it is more natural to expect a mix of
 excitatory and inhibitory interactions. Unfortunately, we cannot have
-inhibitory interactions with simple linear dynamics because this could
+inhibitory interactions with a simple additive model because this could
 yield negative firing rates. Instead, we need to revisit the
 assumption of linear dynamics.
 
-Chapter~\ref{chap:two} introduced a simple way to generalize the
-linear autoregressive dynamics. We retain the linear combination of
-impulse responses from preceding events, but then we apply a
-rectifying nonlinear function to obtain a firing rate.  Formally, we
-assume the following model:
+As we discussed in Chapter~\ref{chap:two}, there is a simple way to
+generalize the linear autoregressive dynamics. We retain the linear
+combination of impulse responses from preceding events, but then we
+apply a rectifying nonlinear function to obtain a firing rate.
+Formally, we assume the following model:
 \begin{align*}
   \psi_{t,n}
-  &= \psi_{0,n} + \sum_{n'=1}^N \sum_{d=1}^{D} s_{t-d, n'} \cdot h_{n' \to n}[d], \\
+  &= \psi_{n}^{(0)} + \sum_{n'=1}^N \sum_{d=1}^{D} s_{t-d, n'} \cdot h_{n' \to n}[d], \\
   \lambda_{t,n} &= g(\psi_{t,n}),
 \end{align*}
 where~$\psi_{t,n}$ is a real-valued signal called the
 \emph{activation}, and ${g: \reals \to \reals_+}$ is a rectifying
 nonlinear function that converts the activation into a firing rate.
 Once this nonlinearity has been introduced, the impulse response
-functions~$h_{n' \to n}[d]$ are free to be both positive and negative.
+functions,~$h_{n' \to n}[d]$, are free to be both positive and negative.
 
 As before, we assume the spike count is randomly drawn from a discrete
 distribution parameterized by~$\lambda_{t,n}$. In this chapter, however,
@@ -41,12 +41,12 @@ neuron-specific global parameters~$\nu_n$,
 
 This nonlinear autoregressive model is also known as a generalized
 linear model (GLM), and it is widely used in neuroscience
-\citep{Paninski-2004, Truccolo-2005, Pillow-2008}. When the spike
+\citep{Paninski-2004, Truccolo-2005, Pillow-2008}. If the spike
 counts are Poisson distributed, then under general
 conditions~\citep{Paninski-2004} the likelihood of the spike counts
 will be log concave and amenable to efficient, exact
 optimization. Unfortunately, once we introduce nontrivial prior
-distributions, like the network models we considered here, the
+distributions, like network models, the
 posterior becomes multimodal and Bayesian inference becomes more
 challenging.
 
@@ -56,12 +56,12 @@ the impulse responses that are derived from probabilistic network
 models.  Unfortunately, the augmentation scheme developed for linear
 Hawkes processes is no longer viable due to the nonlinear
 interactions. Instead, we develop an inference algorithm based on a
-recently developed scheme known as \polyagamma augmentation. The basic
-idea behind this scheme is to introduce a set of auxiliary variables
-conditioned upon which the discrete spike counts actually ``look''
-like Gaussian observations.  Once we have reduced the problem to
-inference in a linear Gaussian model, a host of efficient inference
-algorithms are at our disposal.
+recently developed scheme known as \polyagamma augmentation
+\citep{polson2013bayesian}. The basic idea behind this scheme is to
+introduce a set of auxiliary variables conditioned upon which the
+discrete spike counts actually ``look'' like Gaussian observations.
+Once we have reduced the problem to inference in a linear Gaussian
+model, a host of efficient inference algorithms are at our disposal.
 
 
 \section{Probabilistic Model}
@@ -128,17 +128,17 @@ The Bernoulli distribution is appropriate for binary spike counts,
 whereas the binomial and negative binomial have support for
 integer~$s\in \{0, \ldots, \nu\}$ and~$s \in \{0, 1, \ldots \}$,
 respectively.  Notably missing from this list is the Poisson
-distribution, which is not amenable to the augmentation schemes we
-will derive below. Nevertheless, both the binomial and negative
-binomial distributions converge to the Poisson under certain
-limits. For example, $\lim_{r \to \infty} \distNegBinomial(r,
-\sigma(\psi - \log r)) = \distPoisson(e^\psi)$. Moreover, the binomial
-and negative binomial distributions afford the added flexibility of
-modeling under- and over-dispersed spike counts. Specifically, while
-the Poisson has unit dispersion (its mean is equal to its variance),
-the binomial distribution is always under-dispersed, since its mean
-always exceeds its variance, and the negative binomial is always
-over-dispersed, with variance greater than its mean.
+distribution, which is not amenable to the \polyagamma
+augmentation. Nevertheless, both the binomial and negative binomial
+distributions converge to the Poisson under certain limits. For
+example, $\lim_{r \to \infty} \distNegBinomial(r, \sigma(\psi - \log
+r)) = \distPoisson(e^\psi)$. Moreover, the binomial and negative
+binomial distributions afford the added flexibility of modeling under-
+and over-dispersed spike counts. Specifically, while the Poisson has
+unit dispersion (its mean is equal to its variance), the binomial
+distribution is always under-dispersed, with variance less than its
+mean, and the negative binomial is always over-dispersed, with
+variance greater than its mean.
 
 \subsection{Linear Gaussian Activation Model}
 As in the Chapters~\ref{chap:three} and~\ref{chap:four}, we model the
@@ -147,14 +147,17 @@ impulse response as a weighted sum of basis functions,
 \label{eq:glm_impulse}
 h_{n' \to n}[d] &= a_{n' \to n} \sum_{b=1}^B w_{n' \to n}^{(b)} \cdot \phi_b[d].
 \end{align}
-Here, however, we combine the scalar weight and 
-the normalized basis function. In this more complicated model, the normalized 
-basis function lacks the same simple interpretation of a distribution over 
-induced spike times.  Moreover, in some cases, we may even wish to model interactions that 
-are both excitatory \emph{and} inhibitory --- for example, the effect of a
-spike may be inhibitory at short time scales and excitatory after a certain
-delay. While these types of interactions may not correspond to actual biological synapses, they 
-can still capture salient autocorrelations in neural spike trains.
+We combine the scalar weight and the normalized basis function
+because, in the nonlinear model, the normalized basis functions can no
+longer be seen as distributions over child spike times. Indeed the
+notion of ``parent'' and ``child'' spikes is no longer warranted since
+the Poisson superposition principle does not apply to nonlinear
+models.  Moreover, in some cases, we may wish to model interactions
+that are both excitatory \emph{and} inhibitory --- for example, the
+effect of a spike may be inhibitory at short time scales and
+excitatory after a delay. While these types of interactions may not
+correspond to actual biological synapses, they can still capture
+salient correlations in neural spike trains.
 
 Plugging~Eq.~\ref{eq:glm_impulse} into the activation model, we have,
 \begin{align}
@@ -168,22 +171,18 @@ Plugging~Eq.~\ref{eq:glm_impulse} into the activation model, we have,
              &= (\ba_{n} \odot \bw_n)^\trans \, \widehat{\bs}_t,
 \end{align}
 where~$\psi_n^{(0)}$ is the baseline activation of neuron~$n$,
-$\bphi_{b}$ is a basis function 
-that weights the previous spike counts for 
-offsets~${d \in \{1, \ldots, D\}}$
-, the binary variable~${a_{n' \to n} \in \{0,1\}}$ 
-indicates whether or not there exists 
-a directed connection from neuron~$n'$ to neuron~$n$,
-and~$w_{n' \to n}^{(b)}$ captures the influence that
-spikes on neuron~$n'$ exert on neuron~$n$ at
-offsets weighted by the~$b$-th basis function.  
-Since the basis function and the signal 
-are assumed to be fixed,  can precompute the inner sum, which is simply the 
-convolution of the signal with the basis function, to get~$\widehat{s}_{t,n}^{(b)}$.
-Since this is a linear function, we can combine the
-connections, weights, and filtered spike trains into
-vectors to get the linear form  in Eq.~\ref{eq:linear_activation}.
-Here, we have,
+$\bphi_{b}$ is a basis function that weights the previous spike counts
+for offsets~${d \in \{1, \ldots, D\}}$ , the binary variable~${a_{n'
+    \to n} \in \{0,1\}}$ indicates whether or not there exists a
+directed connection from neuron~$n'$ to neuron~$n$, and~$w_{n' \to
+  n}^{(b)}$ captures the influence that spikes on neuron~$n'$ exert on
+neuron~$n$ at offsets weighted by the~$b$-th basis function.  Since
+the basis function and the signal are assumed to be fixed, we
+precompute the inner sum, which is simply the convolution of the
+signal with the basis function, to get~$\widehat{s}_{t,n}^{(b)}$.
+Since this is a linear function, we combine the connections,
+weights, and filtered spike trains into vectors to get the linear form
+in~\eqref{eq:linear_activation}.  Here, we have,
 \begin{align*}
   \ba_n &=
     \bigg[
@@ -272,7 +271,7 @@ Name & $\text{dom}(\bz_n)$ & $\bmu_{n' \to n}$ & $\bSigma_{n' \to n}$\\
 \hline
 Gaussian Model & --- & $\bmu$ & $\bSigma$ \\
 Stochastic Block Model & $\{1, \ldots, K\}$ & $\bmu_{z_{n'} \to z_n}$ & $\bSigma_{z_{n'} \to z_n}$ \\
-Latent Distance Model (${B=1}$) & $\reals^K $ & $-||\bz_n - \bz_{n'}||_2^2 + \mu_0$ & $\sigma^2$
+Latent Distance Model (${B=1}$) & $\reals^K $ & $-||\bz_n - \bz_{n'}||_2^2 + \gamma_0$ & $\sigma^2$
 \end{tabular}
 \end{center}
 \caption{Gaussian Weight Models}
@@ -285,14 +284,13 @@ normal distribution,~${\bw_{n' \to n} \sim \distNormal(\bmu_{n' \to
   n}, \bSigma_{n' \to n})}$.  In the Gaussian model, all weights are
 independent and identically distributed.  The stochastic block model,
 has parameters for each pair of classes, each drawn from a normal
-inverse-Wishart prior,~${(\bmu_{k' \to k}, \bSigma_{k' \to k}) \sim
-\distNormalInvWishart(\mu_0, \kappa_0, \Sigma_0, \nu_0)}$. Finally, we
+inverse-Wishart prior. Finally, we
 consider a latent distance model, but only for the case where the
 weights are scalar, i.e.~$B=1$. In this case, the distance between
 points is inversely proportional to the mean weight.  For higher order
 weights, additional assumptions would be required in order to relate
 distance to vector weights. In this model, we assume standard normal
-priors on the parameters~$\bz_n$ and~$\mu_0$.  The variance is given
+priors on the parameters~$\bz_n$ and~$\gamma_0$.  The variance is given
 an inverse gamma prior,~$\sigma^2 \sim \distInvGamma(\alpha, \beta)$.
 
 Of course, many other models could be added to this list, and in the
@@ -333,15 +331,13 @@ patterns of connectivity. While this makes inference more challenging,
 sparse connectivity is an important feature that contributes to the
 interpretability of the model.
 
-Fortunately, we can make posterior inference of the
-network considerably more efficient by integrating over
-possible weights and sampling the binary adjacency
-matrix from its marginal distribution. 
-First, consider the Gaussian observation model.
-Since~$\psi_{t,n}$ is linear in~$\bw_n$, the likelihood
-is conjugate with the Gaussian prior, and hence the
-posterior is Gaussian as well. We can
-compute the posterior distribution in closed form:
+Fortunately, we can make posterior inference of the network
+considerably more efficient by integrating over possible weights and
+sampling the binary adjacency matrix from its marginal distribution.
+First, consider the Gaussian observation model.  Since~$\psi_{t,n}$ is
+linear in~$\bw_n$, the likelihood is conjugate with the Gaussian
+prior, and hence the posterior is Gaussian as well. We compute the
+posterior distribution in closed form:
 \begin{align}
   \nonumber
   p(\bw_n \given \bS, \ba_n, \{\bz_n\}, \bvartheta)
@@ -381,7 +377,7 @@ over each neuron~${n' \in \{1, \ldots, N\}}$ and sampling
 a new value of~$a_{n' \to n}$, fixing the values of~$a_{n'' \to n}$
 for~$n'' \neq n'$ and integrating out the value of~$\bw_n$.
 To do so, we simply evaluate the marginal probability in Eq.~\ref{eq:a_conditional}
-for both values of~$a_{n' \to n}$ and resample accordingly.
+for both values of~$a_{n' \to n}$ and sample accordingly.
 %This is a valid Gibbs step.
 Moreover, note that~$\widetilde{\bSigma}_n$ reduces to the prior
 where~${a_{n' \to n}=0}$. This will lead to~${B \times B}$ diagonal blocks
@@ -486,9 +482,9 @@ For Gaussian observations,~$\nu_n$ is the observation variance, and
 it is conjugate with an inverse gamma prior.
 Bernoulli observations have no parameters.
 In the binomial model,~$\nu_n$ corresponds to the maximum number of
-possible spikes --- this is best set a priori.
+possible spikes --- this may be treated as a hyperparameter.
 For negative binomial spike counts, the shape parameter~$\nu_n$ can
-be resampled as in~\citep{Zhou2012}.
+be sampled as in~\citep{Zhou2012}.
 
 
 \subsection{Sampling Network Variables and Parameters}
@@ -503,9 +499,9 @@ We have constructed a probabilistic model that supports a variety
 of network models, including the four adjacency models and the three
 weight models described above. How can we compare these models in
 a principled manner? We argue that the typical approach of measuring
-predictive log likelihood on held-out time bins is insufficient, since
+predictive log likelihood on held-out time bins is insufficient because
 it relies only on having accurately estimated the network,~$\bA$ and~$\bW$.
-It doesn't matter how likely that network is under the latent variable
+It does not matter how likely that network is under the latent variable
 model, predictive likelihood on held-out time bins only measures the
 quality of the network at making predictions. Instead, we advocate
 for an alternative measure based on predicting the activity of held-out
@@ -539,7 +535,7 @@ where
 \end{align*}
 The samples~$\{\bTheta^{(\ell)}\}_{\ell=1}^L$ are the posterior samples generated
 by the MCMC algorithm presented above. For each sample, we
-sample a new set of latent variables and connections for neuron~$n^*$,
+generate a new set of latent variables and connections for neuron~$n^*$,
 given the parameters included in~$\bTheta^{(\ell)}$. These, combined with
 the spike train, enable us to compute the likelihood of~$\bs_{n^*}$.
 
@@ -645,7 +641,7 @@ of our algorithm with synthetic data.
 We applied our model to simultaneously recorded multi-neuronal spike
 trains from a population of 27 primate retinal ganglion cells
 (RGCs). This dataset was previously analyzed with a standard
-generalized linear model in \citep{Pillow-2008}.  In this dataset, the
+generalized linear model in \citet{Pillow-2008}.  In this dataset, the
 population is presented with a Gaussian white noise video with pixel
 sizes tuned to approximately the width of a receptive field. We
 trained our models on one minute of spiking activity, binned at one
@@ -663,20 +659,21 @@ visual stimuli. \textit{On} cells increase their firing when light is
 shone upon their receptive field; \textit{off} cells decrease their
 firing rate in response to light in their receptive field.  Cell types
 are identified by similarity in their response properties as well as
-morphological and physiological properties~\citep{sanes2015types}. With
-knowledge of the stimulus, these cells can be clearly separated into
-their respective types by clustering the spike-triggered average
-stimulus.  This characterization in terms of latent locations and cell
-types has been validated through decades of experiments, and has been
-made possible by the relative ease with which relevant stimuli can be
-identified and controlled. To what extent can these latent
-representations be discovered from the spike trains alone?
+morphological and physiological
+properties~\citep{sanes2015types}. With knowledge of the stimulus,
+these cells can be clearly separated into their respective types by
+clustering the spike-triggered average stimulus.  This
+characterization in terms of latent locations and cell types has been
+validated through decades of experiments \citep{kuffler1953discharge},
+and has been made possible by the relative ease with which relevant
+stimuli can be identified and controlled. To what extent can these
+latent representations be discovered from the spike trains alone?
 
-\sloppy
-We fit our model to the measured spike trains for each of the twelve
-probabilistic network priors shown above --- three weight models and
-four adjacency models. Predictive likelihood comparisons on the
-held-out data reveal that the adjacency matrix, i.e. the pattern of
+\sloppy We fit our model to the measured spike trains for each of the
+twelve probabilistic network priors shown in
+Fig.~\ref{fig:network_models} --- three weight models and four
+adjacency models. Predictive likelihood comparisons on the held-out
+data reveal that the adjacency matrix, i.e. the pattern of
 connectivity, is well-characterized by a two-dimensional latent
 distance model (Fig.~\ref{fig:rgc_locs}), as expected given the
 localized receptive fields of RGCs. Moreover, the pairwise distances
@@ -917,25 +914,25 @@ methods that incur an additional~$O(N^3)$ cost per potential connection.
 
 For these analyses, we simulate a population of 200 neurons with
 structure that mimics that of the retinal ganglion cell population
-analyzed in Section~\ref{sec:rgc}. Figure~\ref{fig:synth_rgc_true_network}
+analyzed in
+Section~\ref{sec:rgc}. Figure~\ref{fig:synth_rgc_true_network}
 illustrates the underlying network. As before, we have \textit{on}
 cells and \textit{off} cells, each centered at a location in the 2D
 retinal plane. Nearby cells are more likely to be functionally
-connected, and cells of the same type will have excitatory influence
-on one another while cells of different types will inhibit one
-another. Again, these functional connections reflect correlations and
-anti-correlations between cells that arise from common input. We
-simulate 60,000 time bins and tune the network parameters such that if
-each time bin were one millisecond, the firing rates would range from 10Hz to
-70Hz with a mean of about 30Hz.  Rather than simulating an
-external white noise stimulus, here we simulate spontaneous activity
-of the network.
+connected, and cells of the same type will excite each other whereas
+cells of different types will inhibit one another. Again, these
+functional connections reflect correlations and anti-correlations
+between cells that arise from common input. We simulate $60000$ time
+bins and tune the network parameters such that if each time bin were
+one millisecond, the firing rates would range from $10$Hz to $70$Hz with a
+mean of about $30$Hz.  Rather than simulating an external white noise
+stimulus, here we simulate spontaneous activity of the network.
 
 Since we know the generative model that gave rise to the data, we can
 quantify the improvement from using our fully Bayesian approach
 rather than a standard GLM, and compare these improvements to the
 upper bound provided by the true model. Figure~\ref{fig:synth_rgc_predll}
-shows the predictive log likelihood for 10,000 bins of held-out data as
+shows the predictive log likelihood for $10000$ bins of held-out data as
 a function of the number of time bins of training data. For shorter
 training datasets, our Bayesian approach yields considerably higher
 predictive likelihood than the standard,~$L_1$-regularized GLM. As
@@ -1037,7 +1034,7 @@ latent distance model prior are shown in
 Fig.~\ref{fig:synth_rgc_mcmc_conn} and
 Fig.~\ref{fig:synth_rgc_mcmc_prob_conn}, respectively. Our MCMC
 algorithm does a good job recovering the underlying locations, which
-give rise to the diagonally banded connection probabilities, which reflect 
+give rise to the diagonally banded connection probabilities reflecting the
 distance dependence.  By
 contrast, the MAP network found via an $L_1$-regularized standard GLM
 is considerably noisier (Fig.~\ref{fig:synth_rgc_bfgs_conn}), since it
@@ -1057,12 +1054,14 @@ There are three major parameters that govern the complexity of inference:
 the number of time bins,~$T$; the number of neurons,~$N$; and the level
 of sparsity,~$\rho$. The natural unit of measure is the wall-clock time
 required to perform one iteration of our MCMC algorithm. The following
-experiments were run on a quad-core Intel i5 with 6GB of RAM. Since the
-core operations consist of parallelized sampling code and standard linear
-algebra, performance scales almost linearly in the number of cores. We
+experiments were run on a quad-core Intel i5 with 6GB of RAM.
+%Since the
+%core operations consist of parallelized sampling code and standard linear
+%algebra, performance scales almost linearly in the number of cores.
+We
 break down the wall-clock time into time spent updating the auxiliary
 variables of the observation model and time spent updating the network.
-Resampling the latent variables is a negligible cost.
+Resampling the latent variables incurs a lesser cost.
 
 The wall clock time scales linearly with~$T$, as shown in
 Figure~\ref{fig:runtime_vs_T}. Recall that the observation model
@@ -1072,7 +1071,7 @@ statistics, which involves a rectangular matrix multiplication
 costing~$O(TN^2)$ time.
 
 Since there are~$O(N^2)$ possible connections in a network of~$N$
-neurons, there is no way to circumvent at least a quadratic cost
+neurons, there is no way to avoid at least a quadratic cost
 in~$N$ (unless some connections can be ruled out \textit{a priori}).
 Figure~\ref{fig:runtime_vs_N} shows that this quadratic penalty is
 indeed evident. The cost of updating the auxiliary variables is only
@@ -1132,15 +1131,14 @@ an~$O(p^3)$ cost. Figure~\ref{fig:runtime_vs_rho} illustrates this for
 a Bernoulli network with~$N=200$ neurons. The expected number of
 incoming connections is related to the probability of connection
 by~$\bbE[p]=\rho N$. If we increased the number of neurons but kept
-the average in-degree constant, the total cost would scale only
-quadratically with~$N$.
+the average in-degree constant, the total cost would scale as~${\mcO(TN + N^2 p^3)}$.
 
 
 
 \section{Discussion}
 \label{sec:discussion}
 We have shown that the functional networks underlying
-spike trains may provide unique insight into the low-dimensional
+spike trains may provide insight into the low-dimensional
 structure of neural populations. Looking forward, there are 
 two main concerns that we would like to address.
 First, ideally we would like algorithms that scale better 
@@ -1193,7 +1191,7 @@ and while we have shown reasonable performance on recordings of
 hundreds of neurons over tens of thousands of time bins, as we scale 
 to larger recordings alternative algorithms may be preferable. 
 When the complexity is dominated by the number of time bins, 
-stochastic variational inference (SVI)~\citep{Hoffman13} provides 
+stochastic variational inference (SVI)~\citep{Hoffman-2013} provides 
 an attractive alternative. Since the time bins are conditionally 
 independent given the network, we can get unbiased estimates of 
 sufficient statistics from \textit{mini-batches} of time bins

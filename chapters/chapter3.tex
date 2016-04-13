@@ -141,10 +141,13 @@ the stability of the system, and provide some intuition on how the
 network properties affect the asymptotic behavior of the system.
 Then, in Section~\ref{sec:hawkes_inference}, we derive a Gibbs
 sampling algorithm with an elegant auxiliary variable formulation that
-allows efficient parallelism.  Finally, the remaining sections
-consider applications, first to synthetic data, and then to biological
-recordings.  While the primary emphasis is on modeling neural data, we
-also explore some applications in areas of finance and criminology.
+allows efficient parallelism. Since this is the first technical
+chapter, we go through these derivations in substantial detail. In
+later chapters we will move more quickly.  Finally, the remaining
+sections consider applications, first to synthetic data, and then to
+biological recordings.  While the primary emphasis is on modeling
+neural data, we also explore some applications in areas of finance and
+criminology.
 
 \section{Probabilistic Network Models}
 \label{sec:graph_models}
@@ -265,7 +268,7 @@ mean weight,~$\mu_{n \to n'}$. The resulting distribution is of the form,
 
 We do not specify the exact functional form of the distribution since
 this will depend on the model for neural activity. The linear
-models with non-negative weights in this chapter will use a gamma
+models with nonnegative weights in this chapter will use a gamma
 prior, whereas the nonlinear autoregressive models in Chapter~\ref{chap:five} will use a Gaussian
 distribution. Table~\ref{tab:W_models} lists some examples of weight
 models analogous to the adjacency matrix models above.
@@ -414,14 +417,15 @@ details, a brief primer on Poisson processes is in order.
 \subsection{Poisson Processes}
 \sloppy Point processes are fundamental statistical objects that yield
 random finite sets of spikes~${\{s_m\}_{m=1}^M \subset \mcV}$,
-where~$\mcV$ is a compact subset of~${\reals^D}$.  When modeling
-neural spike trains, we typically let~${\mcV}$ be the
-interval~${[0,T]}$. The Poisson process is the canonical example. It
-is governed by a nonnegative firing rate or intensity
-function,~${\lambda(t): \mcV \rightarrow\reals_+}$. The number of
-spikes in a subset~${\mcV'\subset\mcV}$ follows a Poisson distribution
-with mean~${\int_{\mcV'}\lambda(t) \, \mathrm{d}t}$. Moreover, the number
-of spikes in disjoint subsets are independent.
+where~$\mcV$ is a compact subset of~${\reals^D}$
+\citep{daley2003introduction1}.  When modeling neural spike trains, we
+typically let~${\mcV}$ be the interval~${[0,T]}$. The Poisson process
+is the canonical example. It is governed by a nonnegative firing rate
+or intensity function,~${\lambda(t): \mcV \rightarrow\reals_+}$. The
+number of spikes in a subset~${\mcV'\subset\mcV}$ follows a Poisson
+distribution with mean~${\int_{\mcV'}\lambda(t) \,
+  \mathrm{d}t}$. Moreover, the number of spikes in disjoint subsets
+are independent \citep{Kingman-1993}.
 
 We use the notation~${\{s_m\}_{m=1}^M\sim\PP(\lambda(t))}$ to indicate
 that a set of spikes~$\{s_m\}_{m=1}^M$ is drawn from a Poisson process
@@ -454,7 +458,7 @@ the likelihood of a set of spikes is given by,
 We will make use of a special property of Poisson processes called the
 \emph{Poisson superposition principle}, which states that if we have 
 sets of spikes from independent Poisson processes, then the union of spikes 
-is distributed according to a Poisson process as well.
+is distributed according to a Poisson process as well \citep{Kingman-1993}.
 Moreover, the rate of this process equals the sum of 
 rates from the individual processes. 
 Formally, suppose we are given sets of spikes drawn independently
@@ -496,23 +500,22 @@ In other words, given a set of spikes drawn from rate~$\lambda_{\mathsf{tot}}(t)
 we can attribute each spike to one of the~$K$ additive contributions
 to the rate function by sampling a categorical distribution with probabilities
 given by the relative rate at the time of the spike. This is known as
-\emph{Poisson thinning}.
+\emph{Poisson thinning} \citep{Kingman-1993}.
 
 \subsection{Including Spike History with Hawkes Processes}
-Though Poisson processes have many nice properties, they cannot
-capture interactions between spikes. For this we turn to a more
-general model known as Hawkes processes \citep{Hawkes-1971}. 
-First, consider the spike train of a single neuron,~$\{s_m\}_{m=1}^M \subset [0,T]$.
-In a Hawkes process, the firing rate at time,~$\lambda(t \given \mcH_t)$, is a function of 
-the spike history,~${\mcH_t = \{s_m: s_m < t\}}$.  The neuron has a 
-baseline firing rate,~$\lambda^{(0)}$. On top of this baseline, 
-each spike 
-adds a nonnegative impulse response,~$h(\Delta t)$, to the 
-subsequent firing rate.  This allows for spike-driven dynamics that are not possible in Poisson
-processes.  Causality and
-locality of influence are enforced by limiting the support of~$h(\Delta
-t)$ to~${\Delta t \in [0,\Delta t_{\mathsf{max}}]}$.
-The rate is thus given by,
+Though the Poisson process has many nice properties, it cannot capture
+interactions between spikes. For this we turn to a more general model
+known as the Hawkes process \citep{Hawkes-1971}.  First, consider the
+spike train of a single neuron,~${\{s_m\}_{m=1}^M \subset [0,T]}$.  In
+a Hawkes process, the firing rate,~$\lambda(t \given \mcH_t)$,
+is a function of the spike history,~${\mcH_t = \{s_m: s_m < t\}}$.
+The neuron has a baseline firing rate,~$\lambda^{(0)}$. On top of this
+baseline, each spike adds a nonnegative impulse response,~$h(\Delta
+t)$, to the subsequent firing rate.  This allows for spike-driven
+dynamics that are not possible in Poisson processes.  Causality and
+locality of influence are enforced by limiting the support
+of~$h(\Delta t)$ to~${\Delta t \in [0,\Delta t_{\mathsf{max}}]}$.  The
+rate is thus given by,
 \begin{align*}
   \lambda(t \given \mcH_t)
   &= \lambda^{(0)} + \sum_{m=1}^M h(t - s_m).
@@ -520,35 +523,34 @@ The rate is thus given by,
 When the impulse response is equal to zero, the Hawkes process
 reduces to a standard Poisson process with rate~$\lambda^{(0)}$.
 
-By the superposition theorem for Poisson processes, these additive
+By the Poisson superposition principle, these additive
 components can be considered independent processes, each giving rise
 to their own spikes.  This suggests a convenient latent variable
 representation in which each spike is attributed to either the
 background rate or the impulse response of a preceding spike.  We
-augment our data with a latent random
+augment our data with an auxiliary
 variable~${\omega_m \in\{0,\ldots, m-1\}}$ to indicate the \emph{origin} of
 the~$m$-th spike ($0$ if the spike is due to the background rate and
 ${1\ldots m-1}$ if it was spawned by a preceding spike). 
 
-This is easily extended to a population of~$N$ neurons by considering a Hawkes
-process that gives rise to sets of
-\emph{marked} spikes $\{s_m,c_m\}_{m=1}^M$,
-where~${c_m\in\{1,\ldots,N\}}$ specifies the neuron on which
-the~$m$-th spike occurred.  As in the single neuron case, 
-the rate of the~$n$-th neuron,~${\lambda_n(t\given
-  \mcH_t)}$,  depends on the spike history, but here the spike history 
-contains the spikes of all neurons through time~$t$. 
-The multi-neuronal generalization also allows for different background rates 
-for each neuron,~$\lambda^{(0)}_{n}$, and  different impulse 
-responses for each pair of neurons. For example, the impulse 
-response from neuron~$n$ to neuron~$n'$, which we now call~$h_{n \to n'}$, 
-may differ from that of the reverse connection. As before, we
-do require that the impulse responses be causal and have bounded support.
-Putting it all together, the rate of the~$n$-th neuron is,
+This is easily extended to a population of~$N$ neurons by considering
+a Hawkes process that gives rise to sets of \emph{marked} spikes
+$\{s_m,c_m\}_{m=1}^M$, where~${c_m\in\{1,\ldots,N\}}$ specifies the
+neuron on which the~$m$-th spike occurred.  As in the single neuron
+case, the rate of the~$n$-th neuron,~${\lambda_n(t\given \mcH_t)}$,
+depends on the spike history, but here the spike history contains the
+spikes of all neurons through time~$t$.  The multi-neuronal
+generalization also allows for different background rates for each
+neuron,~$\lambda^{(0)}_{n}$, and different impulse responses for each
+pair of neurons. For example, the impulse response from neuron~$n$ to
+neuron~$n'$, which we now call~$h_{n \to n'}(\Delta t)$, may differ
+from that of the reverse connection. As before, we do require that the
+impulse responses be causal and have bounded support.  Putting it all
+together, the rate of the~$n$-th neuron is,
 \begin{align}
   \label{eq:hawkes_rate}
   \lambda_n(t \given \mcH_t)
-  &= \lambda^{(0)}_{n}(t) + \sum_{m=1}^M h_{c_m \to n}(t - s_m).
+  &= \lambda^{(0)}_{n} + \sum_{m=1}^M h_{c_m \to n}(t - s_m).
 \end{align}
 
 \begin{figure}[t]
@@ -568,8 +570,8 @@ a product of Poisson process likelihoods for each background rate and
 each impulse response:
 \begin{multline*}
   p(\{(s_m,c_m,\omega_m)\}_{m=1}^M \given 
-  \{\lambda^{(0)}_{n}(t)\}, \{\{h_{n \to n'}(\Delta t)\}\}) = \\
-  \prod_{n=1}^N \PP \big(\{s_{m}: c_{m}=n \wedge \omega_{m}=0\} \given \lambda^{(0)}_{n}(t) \big) \; \times\\
+  \{\lambda^{(0)}_{n}\}, \{\{h_{n \to n'}(\Delta t)\}\}) = \\
+  \prod_{n=1}^N \PP \big(\{s_{m}: c_{m}=n \wedge \omega_{m}=0\} \given \lambda^{(0)}_{n} \big) \; \times\\
   \prod_{m=1}^M \prod_{n'=1}^N \PP \big(\{s_{m'}: c_{m'}=n' \wedge \omega_{m'}=m\} \given h_{c_m \to n'}(t-s_m) \big).
 \end{multline*}
 Combining this with 
@@ -579,9 +581,9 @@ write the augmented likelihood as,
   \label{eq:hawkes_likelihood}
   p(\{s_m, c_m, \omega_m\}_{m=1}^M \given \{\lambda^{(0)}_{n}\}, \{\{h_{n \to n'}(\Delta t)\}\}) = \\
   \prod^N_{n=1} \bigg[
-  \exp\left\{ -\int_0^T \lambda^{(0)}_{n}(t)\mathrm{d}t \right\} \,
+  \exp\left\{ -\int_0^T \lambda^{(0)}_{n}\mathrm{d}t \right\} \,
   \prod^M_{m=1}
-   \lambda^{(0)}_{n}(s_m)^{\bbI[c_m=n] \bbI[\omega_m = 0]} \bigg]\\
+   \lambda^{(0)}_{n}^{\bbI[c_m=n] \bbI[\omega_m = 0]} \bigg]\\
   \quad\times \prod_{m=1}^M \prod_{n'=1}^N \bigg[
   \exp\left\{-\int^T_{s_m} h_{c_m \to n'}(t - s_m) \mathrm{d}t \right\} \\
   \prod_{m'=1}^M h_{c_m^{~} \to c_{m'}}(s_{m'}-s_m)^{\bbI[c_{m'}=n'] \bbI[\omega_{m'}=m]}\bigg].
@@ -610,10 +612,10 @@ h_{n \to n'}(\Delta t) &= a_{n \to n'} \cdot w_{n \to n'} \cdot \hbar(\Delta t; 
 \end{align}
 Here,~$a_{n \to n'}$ is an entry in the binary adjacency
 matrix,~${\bA\in\{0,1\}^{N \times N}}$,
-and~$w_{n \to n'}$ is the corresponding entry in the non-negative
+and~$w_{n \to n'}$ is the corresponding entry in the nonnegative
 weight matrix,~${\bW \in\reals_+^{N\times N}}$. Together these specify
 the \emph{sparsity structure} and \emph{strength} of the interaction
-network, respectively. The non-negative function~${\hbar(\Delta t;
+network, respectively. The nonnegative function~${\hbar(\Delta t;
   \theta_{n \to n'})}$ captures the temporal aspect of the
 interaction. It is parameterized by~${\theta_{n \to n'}}$ and
 satisfies two properties: a) it has bounded support for~${\Delta t \in
@@ -689,8 +691,8 @@ to consider some of its theoretical properties.
 \label{sec:stability}
 
 
-Due to their recurrent, mutually-exciting nature, Hawkes processes
-an unconstrained system can easily be unstable and lead to an infinite 
+Due to their recurrent, mutually-excitatory nature, Hawkes processes
+can easily be unstable and give rise to an infinite 
 number of spikes. A stable system must satisfy \footnote{In
   this context,~${\lambda_{\mathsf{max}}}$ refers to an eigenvalue
   rather than a rate.}
@@ -810,7 +812,7 @@ and the parameters of the network,~$\{\bz_n\}$ and~$\bvartheta$.
 In order to simplify our Gibbs updates, we
 will also sample a set of parent assignments for each
 spike~$\{\omega_m\}$. Incorporating these parent variables enables
-conjugate prior distributions and simple and efficient Gibbs sampling
+conjugate prior distributions and a simple and efficient Gibbs sampling
 algorithm.
 
 \paragraph{Sampling weights $\bW$.} 
@@ -829,7 +831,7 @@ and~${c_{m'}=n'}$, so the likelihood is proportional to,
 \end{align*}
 If~${a_{n \to n'}=0}$, the impulse response is deterministically zero
 and, as a result, none of the spikes on neuron~$n'$ will be attributed to spikes
-on neuron~$n$. Thus, the likelihood reduces to the prior,~$p(w_{n \to n'})$.
+on neuron~$n$. Thus, the likelihood does not depend on~$w_{n \to n'}$.
 If~${a_{n \to n'}=1}$, the likelihood is more complicated.
 Note, however, that if~$s_m < T - \Delta t_{\mathsf{max}}$,
 \begin{align*}
@@ -841,7 +843,7 @@ Note, however, that if~$s_m < T - \Delta t_{\mathsf{max}}$,
 since~$\hbar$ is a density defined on~$[0,\Delta t_{\mathsf{max}}]$.
 In general, it is safe to ignore the impulse responses from spikes that 
 occur in the time after~$T-\Delta t_{\mathsf{max}}$ since this will be 
-quite small compared to the total recording. 
+quite small compared to the total recording duration. 
 With this approximation, the conditional distribution of~$w_{n \to n'}$
 reduces to,
 \begin{align*}
@@ -866,8 +868,8 @@ Section~\ref{sec:graph_models} the weight models specified the
 mean,~$\mu_{n \to n'}$.  For a gamma distribution,~${\mu_{n \to n'} =
   \frac{\kappa_{n \to n'}}{\nu_{n \to n'}}}$. The simplest way to
 reconcile these is to fix the shape parameter~${\kappa_{n \to n'}
-  \equiv \kappa}$, then we can compute the rate,~$\nu_{n \to n'}$
-for any given mean. 
+  \equiv \kappa}$, then we can compute the mean for any rate
+parameter,~$\nu_{n \to n'}$.
 
 Assuming~$\kappa$ and~$\nu_{n \to n'}$ are given,
 the conditional distribution of the weights is,
@@ -887,14 +889,14 @@ where
 Similarly, the likelihood of a constant background rate,
 ${\lambda^{(0)}_{n}}$, is conjugate with a gamma
 prior~${\lambda^{(0)}_{n} \sim
-  \distGamma(\alpha_{\lambda},\beta_{\lambda})}$.  The conditional
+  \distGamma(\alpha_0,\beta_0}$.  The conditional
 distribution is,
 \begin{align*}
-  p(\lambda^{(0)}_{n} \given \{s_m,c_m, \omega_m\}_{m=1}^M, \alpha_\lambda, \beta_\lambda)
+  p(\lambda^{(0)}_{n} \given \{s_m,c_m, \omega_m\}_{m=1}^M, \alpha_0, \beta_0)
   &=
   \distGamma(\lambda^{(0)}_{n} \given \widetilde{\alpha}_{0,n},  \widetilde{\beta}_{0,n}),\\
-  \widetilde{\alpha}_{0,n} &= \alpha_{\lambda} + \sum_m \bbI[c_m = n] \, \bbI[\omega_m=0] \\
-  \widetilde{\beta}_{0,n} &= \beta_\lambda + T
+  \widetilde{\alpha}_{0,n} &= \alpha_0 + \sum_m \bbI[c_m = n] \, \bbI[\omega_m=0] \\
+  \widetilde{\beta}_{0,n} &= \beta_0 + T
 \end{align*}
 
 % This conjugacy no longer holds for log Gaussian Cox process background
@@ -946,10 +948,15 @@ The parameters of the normal-gamma conditional distribution are,
 With Aldous-Hoover graph priors, the entries in the binary adjacency
 matrix~$\bA$ are conditionally independent given the parameters of the
 prior. The likelihood introduces dependencies between the rows
-of~$\bA$, but each column can be sampled in parallel. Gibbs updates
-are complicated by strong dependencies between the graph and the
-parent variables,~$\omega_m$. Specifically, if~${\omega_{m'}=m}$, then
-we must have~${a_{c_{m},c_{m'}}=1}$. To improve the mixing of our
+of~$\bA$, but each column can be sampled in parallel.
+This
+allows us to parallelize over columns and achieve an~$\mcO(N)$
+speedup.
+
+Gibbs updates
+are complicated, however, by the strong dependencies between the graph and the
+parent variables. Specifically, if~${\omega_{m'}=m}$, then
+we must have~${a_{c_{m},c_{m'}}=1}$. To improve the performance of our
 sampling algorithm, first we
 update~${\bA\given\{s_m,c_m\},\bW,\theta_{n \to n'}}$ by marginalizing
 the parent variables. By the Poisson superposition principle, the marginal
@@ -977,23 +984,16 @@ likelihood can be computed without numerical quadrature,
   &\approx \lambda^{(0)}_{n'} T + \sum_{m=1}^M a_{c_m \to n'} \cdot w_{c_m \to n'} \\
   &= \lambda^{(0)}_{n'} T + \sum_{n=1}^N a_{n \to n'} \cdot w_{n \to n'} \cdot M_{n}.
 \end{align*}
-Again, the approximation stems from spikes that occur in the final
-interval of the recording,~${(T-\Delta t_{\mathsf{max}}, T]}$.
-
-The first step in the collapsed update is to iterate over the
-entries in~$\bA$, updating one at a time according to their
-conditional distribution with the auxiliary variables,~$\bomega$,
-integrated out. To improve efficiency, note that columns of~$\bA$
-(i.e. sets of incoming connections), are conditionally
-independent of one another. This allows us to parallelize over
-columns and achieve an~$\mcO(N)$ speedup.
+Again, the approximation stems from ignoring spikes that occur in the
+final interval of the recording,~${(T-\Delta t_{\mathsf{max}}, T]}$.
+  For each column, we iterate over incoming edges,~$a_{n \to n'}$ and
+  sample from its collapsed distribution, holding all other parameters
+  fixed.
 
 Once the adjacency matrix has been resampled, the parent variables
 are updated by Poisson thinning --- that is, by sampling from their
 categorical conditional distribution. Again, these are all conditionally
 independent, so the~$M$ auxiliary variables can be sampled in parallel.
-We have implemented our inference algorithm on GPUs to capitalize
-on this parallelism.
 
 \paragraph{Sampling Network Variables and Parameters}
 Given the network and the spike train, the conditional distributions 
@@ -1051,23 +1051,27 @@ and significantly reduce the memory requirements and running time of
 our algorithm. If we could bound the maximum firing rate at~$\lambda_{\mathsf{max}}$,
 the complexity of resampling parent variables would be ${\sim M \, N \, \lambda_{\mathsf{max}} \, \Delta t_{\mathsf{max}}}$. However, these auxiliary
 variables are conditionally independent so we can save a factor of~$M$
-by parallelizing their updates, as we do in our GPU implementation.
+by parallelizing their updates, as we do in our parallel implementation.
 
 The second most computationally expensive operation is updating the
 adjacency matrix and the weights. Note, however, that the columns of
 the weighted adjacency matrix are conditionally independent. Thus,
 we can save a factor of~$N$ by using block parallel Gibbs sampling.
 In order to perform these updates, we must compute sufficient statistics
-that involve sums over~$M$ spikes. Our GPU implementation uses
-standard reductions to perform this sum in~$\mcO(\log M)$ time.
+that involve sums over~$M$ spikes.
+%Our GPU implementation uses
+%standard reductions to perform this sum in~$\mcO(\log M)$ time.
+We have implemented a multithreaded inference algorithm in Python and
+C that capitalizes on these opportunities for
+parallelism.\footnote{\url{https://github.com/slinderman/pyhawkes}}
 
 
 \section{Synthetic Results}
 \label{sec:synth}
-Our inference algorithm is first tested on synthetic data generated
-from the network Hawkes model. We perform two tests: a) a link
+First, we test our inference algorithm on synthetic data generated
+from the network Hawkes model. We perform two tests: (i) a link
 prediction task where the process identities are given and the goal is
-to simply infer whether or not an interaction exists, and b) a spike
+to simply infer whether or not an interaction exists, and (ii) a spike
 prediction task where we measure the probability of held-out spike
 sequences.
 
@@ -1079,11 +1083,11 @@ of interactions~($a_{n \to n'}\equiv 1$), but we can similarly threshold
 its inferred weight matrix to perform link prediction.
 
 Cross correlation provides a simple alternative measure of
-interaction. By summing the cross-correlation over offsets~${\Delta
-  t\in[0,\Delta t_{\mathsf{max}})}$, we get a measure of directed
-  interaction. A probabilistic alternative is offered by the
-  generalized linear model for point processes (GLM), a popular model
-  for spiking dynamics in computational neuroscience
+interaction. By binning the data and summing the cross-correlation
+over offsets~${\Delta t\in[0,\Delta t_{\mathsf{max}})}$, we obtain a
+  measure of directed interaction. A probabilistic alternative is
+  offered by the generalized linear model for point processes (GLM), a
+  popular model for spiking dynamics in computational neuroscience
   \citep{Paninski-2004}. The GLM allows for constant background rates
   and both excitatory and inhibitory interactions. Impulse responses
   are modeled with linear basis functions. Area under the impulse
@@ -1134,8 +1138,7 @@ achieves~$2.2\pm.1$ bits/spike improvement in predictive log
 likelihood over a homogeneous Poisson
 process. Figure~\ref{fig:synth_pred_ll} shows that on average the
 standard Hawkes and the GLM provide only 60\% and 72\%, respectively,
-of this predictive power. See the supplementary material for further
-analysis.
+of this predictive power. 
 
 \section{Modeling Hippocampal Place Cells}
 
@@ -1269,7 +1272,7 @@ Figure~\ref{fig:hipp_mean_and_pca_locations} (top) shows the mean
 posterior locations,~$\bbE[\widetilde{\bZ}]$, and we see that it
 is qualitatively very similar to the true locations. In contrast,
 the two dimensional PCA embedding is highly skewed.\footnote{First, we binned the
-  spikes into $250$ms bins, and then we smoothed the spike counts
+  spikes into $250$ms bins, then we smoothed the spike counts
   with a Gaussian kernel of width $1$s to estimate the firing rate.
   Finally, we applied PCA to the firing rate matrix and used the
   top two principal components as the embedding.}
@@ -1285,7 +1288,7 @@ variance in their locations. This is to be expected since large place
 fields imply imprecise coding of space and higher correlation with
 other cells.  This illustrates how Hawkes processes combined with
 latent variable models can provide interpretable portraits of complex
-datasets and find low-dimensional embeddings that recover known
+datasets and find low-dimensional embeddings that recover intuitive
 structure.
 
 % Table of hippocampal results
@@ -1365,7 +1368,7 @@ yielding a total of~${N=100}$ processes and~${M=182,037}$ spikes.
 Trading volume varies substantially over the course of the day, with
 peaks at the opening and closing of the market. Rather than attempting
 to model this background fluctuation with a constant background rate,
-here we use a log Gaussian Cox process (LGCP) with a periodic kernel
+here we use a log Gaussian Cox process (LGCP) \citep{Moller-1998} with a periodic kernel
 instead. Complete details of inference are given in
 \citet{linderman2014discovering}. We look for short-term interactions
 on top of this background rate with time scales of~${\Delta
@@ -1494,13 +1497,17 @@ We evaluate our model with a spike-prediction task, training on
 1980-1993 and testing on 1994-1995. We use a LGCP temporal background
 rate in all model variations. Our baseline is a single process with a
 uniform spatial rate for the city. Here, however, the analogous ``neurons''
-are not so clear. We consider two models:  a)~the ``community'' model, which considers each community a separate ``neuron,'' or process, and b)~the ``cluster'' model, which groups
+are not so clear. We consider two models:  (i)~the ``community'' model, which considers each community a separate ``neuron,'' or process, and (ii)~the ``cluster'' model, which groups
 communities into processes. The number of clusters is chosen by
 cross-validation (again, see \citet{linderman2014discovering}).
-For each process identity model, we compare four graph models: a)~independent LGCPs
-(\emph{empty}), b)~a standard Hawkes process with all possible
-interactions (\emph{complete}), c)~a network Hawkes model with a
-sparsity-inducing independent Bernoulli graph prior, and d)~a network Hawkes
+For each process identity model, we compare four graph models:
+(i)~independent LGCPs
+(\emph{empty}),
+(ii)~a standard Hawkes process with all possible
+interactions (\emph{complete}),
+(iii)~a network Hawkes model with a
+sparsity-inducing independent Bernoulli graph prior, and
+(iv)~a network Hawkes
 model with a latent distance model that prefers short-range
 interactions.
 
@@ -1538,7 +1545,7 @@ Figure~\ref{fig:chicago_rates} also shows a significant increase in
 the homicide rate between 1989 and 1995, consistent with reports of
 escalating gang warfare \citep{Block-1993}. In addition to this
 long-term trend, homicide rates show a pronounced seasonal effect,
-peaking in the summer and tapering in the winter. A LGCP with a
+peaking in the summer and tapering in the winter. An LGCP with a
 quadratic kernel point-wise added to a periodic kernel captures both
 effects.
 
@@ -1612,7 +1619,7 @@ interpretable latent networks in a variety of synthetic and real-world
 problems.
 
 Hawkes processes are the point process analogue of linear autoregressive
-models. The firing rate is a sum of non-negative impulse responses induced
+models. The firing rate is a sum of nonnegative impulse responses induced
 by preceding spikes. As we generalize these models in the following
 chapters, we will exploit this relationship and consider natural extensions
 like discrete time, nonlinear, and nonstationary versions of the model.

@@ -2,41 +2,43 @@
 \label{chap:four}
 
 This short chapter builds on the network Hawkes model introduced in
-the last. We introduce linear autoregressive Poisson models --- the discrete time analogue of the Hawkes process --- and we derive efficient Gibbs sampling
-and stochastic variational inference algorithms, leveraging the sample
-superposition principle as before. This chapter marks the transition
-from continuous models to the discrete time models that occupy this
-and subsequent chapters. As we will see, these discrete time formulations
-are in some ways easier to work with. We can easily extend them to non-Poisson
-spike count models, and we can interface with the diverse array of
-probabilistic matrix decomposition models. However, the discrete
-nature of spike counts still poses some serious inferential hurdles,
-which this thesis aims to overcome.
+the Chapter~\ref{chap:three}. We introduce linear autoregressive
+Poisson models --- the discrete time analogue of the Hawkes process
+--- and we derive efficient Gibbs sampling and stochastic variational
+inference algorithms, leveraging the Poisson superposition principle as
+before. This chapter marks the transition from continuous time models to
+the discrete time models that occupy this and subsequent chapters. As
+we will see, these discrete time formulations are in some ways easier
+to work with. We can easily extend them to non-Poisson spike count
+models, and we can interface with a diverse array of probabilistic
+matrix decomposition models. However, the discrete nature of spike
+counts still poses some serious inferential hurdles, which this thesis
+aims to overcome.
 
 In addition to bridging from continuous to discrete, this chapter also
-addresses issues of computational complexity. The complexity of our Hawkes process
-inference algorithm scaled, in the worst case, quadratically with the
-number of spikes, since we had to sample a ``parent'' for each spike.
-By designing block parallel Gibbs updates, we were able
-to obtain linear complexity. However, when the firing rates are high,
-this is still the bottleneck of our algorithm. Here we show that in
-some regimes we can reduce this complexity to be independent
-of the number of spikes by adopting a discrete time approach.
-Moreover, we derive efficient \emph{stochastic} variational inference
-algorithms that work with subsets of time bins in each iteration
-and thereby scale to massive datasets.
+addresses issues of computational complexity. The complexity of our
+Hawkes process inference algorithm scaled, in the worst case,
+quadratically with the number of spikes, since we had to sample a
+``parent'' for each spike.  By designing block parallel Gibbs updates,
+we were able to obtain linear complexity. However, when the firing
+rates are high, this is still the bottleneck of our algorithm. Here,
+we reduce this complexity to be independent of the number of spikes by
+adopting a discrete time approach.  Moreover, we derive efficient
+\emph{stochastic} variational inference algorithms
+\citep{Hoffman-2013} that work with subsets of time bins in each
+iteration and thereby scale to massive datasets.
 
 
 \section{Probabilistic Model}
 
 The fundamental limitation of the previously developed continuous time
-models is that the number of values that the auxiliary
-variable~$\omega_m$ can take grows with the number of events which
+models is that the domain of the auxiliary
+variable,~$\omega_m$, grows with the number of events which
 occurred before time~$s_{m}$. For datasets with high rates of
 activity, this can quickly become the limiting factor of the inference
 algorithm.  At the same time, it is often reasonable to assume that
 events do not interact on time scales faster that~$\Delta t$. This
-motivates a discrete time formulation in which we bin events in bins
+motivates a discrete time formulation in which we group events into bins
 of width~$\Delta t$ and ignore potential interactions between events
 in the same bin. Then the rate becomes,
 \begin{align}
@@ -52,13 +54,13 @@ the rate of process~$n$ at discrete time lag~${d}$. As we will show,
 under this formulation the auxiliary variables only assume a fixed set
 of values independent of the rate.
 
-As before, we introduce a network model as a prior distribution over
-the impulse response weights. Following the approach of the previous
-chapter, we decompose the impulse response function into the product
-of a binary variable that specifies whether or not a connection
-exists, a scalar weight that specifies the strength of the interaction
-if present, and a probability mass function that specifies the time
-course of interaction:
+As in the last chapter, we introduce a network model as a prior
+distribution over the impulse response weights. Following the approach
+of the previous chapter, we decompose the impulse response function
+into the product of a binary variable that specifies whether or not a
+connection exists, a scalar weight that specifies the strength of the
+interaction if present, and a probability mass function that specifies
+the time course of interaction:
 \begin{align*}
   h_{n \to n'}[d]
   &= a_{n \to n'} \cdot w_{n \to n'} \cdot \hbar[d; \, \btheta_{n \to n'}] 
@@ -202,7 +204,7 @@ advantageous, but the discrete model is vastly superior in many
 realistic settings. For example, in Chapter~\ref{chap:three} we worked with
 trades on the S\&P100, which occur tens or hundreds of times per
 second for each stock. Since the complexity of our continuous time algorithm grew
-with the number of events, we had to down-sample the data to consider only
+with the number of events, we had to downsample the data to consider only
 the times when stock prices changed significantly. However, we
 were also looking for interactions on time scales of one minute,
 very large compared to the rate of trades. Thus, it is
@@ -219,8 +221,8 @@ parents each iteration. In many cases, a subset, or ``mini-batch,'' of
 time bins can provide substantial information about the global
 parameters of the model, and rapid progress can be made by iterating
 quickly over subsets of the data. This motivates our derivation of a
-stochastic variational inference (SVI) algorithm for this discrete
-time model.
+stochastic variational inference algorithm \citep{Hoffman-2013}
+for this discrete time model.
 
 Variational methods optimize a lower bound on the marginal likelihood
 by minimizing the KL-divergence between a tractable approximating
@@ -344,7 +346,7 @@ network model can be derived, and provide access to the necessary
 expectations,~$\mathbb{E}[\ln \rho_{n \to n'}]$,
 $\mathbb{E}[\ln(1-\rho_{n \to n'})]$,~$\mathbb{E}[\nu_{n \to n'}]$ and~$\mathbb{E}[\ln \nu_{n \to n'}]$.
 
-As aforementioned, the time bin are conditionally independent given
+The time bin are conditionally independent given
 the network weights and the adjacency matrix -- a common pattern
 exploited by stochastic variational inference (SVI) algorithms
 \citep{Hoffman-2013}.  These methods optimize the variational objective
@@ -408,8 +410,8 @@ rate of the processes is~$16.7 \pm 12.0$ events per bin.  Referring to
 Figure~\ref{fig:disc_vs_cont}, this is a regime that favors the
 discrete model.  We initialized by performing MAP estimation on the
 first~$T_{\mathsf{init}}=10^4$.  Then we trained the model using Gibbs
-sampling, batch variational Bayesian inference (VB), and stochastic
-variational inference (SVI)
+sampling, batch variational Bayesian inference, and stochastic
+variational inference,
 
 We trained the models on only the first~$10^4$ time bins, the same
 that were used for initialization.  We evaluated the algorithms in
@@ -422,7 +424,7 @@ eventually match the SVI predictive likelihood after hours of
 computation.  The MAP estimate, even with cross validated
 regularization, underperforms the other competing algorithms.
 
-This trend is amplified when we consider the entire training set of
+This trend is exaggerated when we consider the entire training set of
 size~$T=10^5$.  Figure~\ref{fig:synth_pll_long} illustrates the power
 of SVI in handling these large time datasets.  Considerable
 information about the global parameters (e.g., the network) can be
@@ -546,7 +548,7 @@ heuristic methods or point estimates.
 
 \section{Conclusion}
 
-This short chapter provides a link between the ideas introduced
+This brief chapter provides a link between the ideas introduced
 in Chapter~\ref{chap:three} --- namely the combination of network
 models and point process observations --- to the discrete time
 autoregressive models of the next few chapters. We also showed
