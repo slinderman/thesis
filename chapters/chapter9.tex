@@ -7,10 +7,10 @@ types, features, and states to inform structured prior distributions over
 the dynamics of neural activity. In this chapter, we take a
 first step toward reconciling these intuitive models with the host of
 theoretical models of neural computation. From a Bayesian perspective,
-theoretical models are just prior distributions on activity ---
+theoretical models can be seen as prior distributions on activity ---
 albeit highly sophisticated ones. By connecting theory to observation
-in a hierarchical probabilistic model, we provide the crucial link
-necessary to test, evaluate, and revise our theories in a principled,
+in a hierarchical probabilistic model, we provide the link
+necessary to test, evaluate, and revise our theories in a
 data-driven fashion.
 As an exercise in meta-reasoning, the theory we test with this
 Bayesian approach is that neural populations are themselves performing
@@ -33,12 +33,12 @@ restricted class of graphical models given our representation scheme.
 A simple example of inference in a mixture model is illustrated in
 Section~\ref{sec:mixture_example}.  Finally, in
 Section~\ref{sec:reverse_engineering} we show that the dynamics of
-inference in this model are equivalent to a generalized linear model
+inference in this model are equivalent to a nonlinear autoregressive model
 with weights drawn from a stochastic block model, thus providing a
 ``top-down,'' theoretical justification for the intuitive models
 developed in Chapter~\ref{chap:five}.  With this insight, we show how
 simple probabilistic models can be reverse engineered from spike
-trains using Bayesian inference for generalized linear models and a
+trains using Bayesian inference and a
 Bayesian theory of neural computation. Section~\ref{sec:future}
 considers some important open problems and directions for future work.
 
@@ -145,8 +145,10 @@ curves~\citep{Shi2009, Ganguli2010}.
 % Exact, Belief Propagation, Variational inference, importance sampling,
 % MCMC, particle filtering
 Along with this host of representational hypotheses has come an
-equally broad set of proposed inference algorithms. Typically, these
-proposals are tied to a specific assumption about representation.  In
+equally broad set of proposed inference algorithms. 
+% Typically, these
+% proposals are tied to a specific assumption about representation.  
+In
 the simplest models, like mixture models with a single latent
 variable, inference can be performed exactly in a single step.  For
 more complicated models, some dynamic and often approximate inference 
@@ -165,7 +167,7 @@ enormous challenge in winnowing the field of contending theories.
 
 % Learning via maximization of variational lower bound, synaptic sampling
 The question of learning has received less attention; indeed, many
-theories have ignored it completely. Those that have not tend to
+theories have ignored it completely. Those that have addressed it tend to
 equate learning with synaptic plasticity. In some cases, synaptic
 plasticity rules like spike-timing dependent plasticity can be seen as
 maximizing a lower bound on the marginal log likelihood
@@ -181,7 +183,7 @@ or unsupervised means, remains largely a mystery.
 Given the breadth and depth of existing theories of neural inference,
 our intention here is not to present a radically novel
 theory. Instead, our focus is on how we may assess the viability of a
-theory of neural inference. To that end, we first provide a detailed
+theory of neural inference. To that end, we provide a detailed
 description of a distributed representation of probability, analyze
 its complexity, show how inference could be performed with this representation,
 and provide a simple example of how this representation could be
@@ -223,7 +225,7 @@ variable. The entries of these vectors are,~${\pi^{(j)}_k = \Pr(z_j=k)}$.
 In Section~\ref{sec:future}, we discuss how this representation could
 be extended to continuous probability density functions by assigning
 each neuron a basis function or tuning curve over the support of the
-distribution, as in~\citep{Barber2003, Ma2006, beck2007exact}. 
+distribution, as in~\citet{Barber2003, Ma2006, beck2007exact}. 
 
 In a \emph{distributed} representation, each variable-value
 pair,~$(z_j,k)$, is associated with a subpopulation of~$R$
@@ -245,7 +247,7 @@ value that neuron~$n$ represents.
     \centering
     \caption{}
     \vspace{-.3in}
-    \includegraphics[width=\textwidth]{figures/ch9/example_population2.pdf}
+    \includegraphics[width=\textwidth]{figures/ch9/example_population.pdf}
     \label{fig:representation_population}
   \end{subfigure}
   \begin{subfigure}[b]{1.9in}

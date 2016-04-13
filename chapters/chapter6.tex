@@ -3,7 +3,7 @@
 \label{chap:six}
 
 Synaptic plasticity is believed to be the fundamental building block
-of learning and memory in the brain. Its study is of crucial
+of learning and memory in the brain \citep{DayanAbbott}. Its study is of crucial
 importance to understanding the activity and function of neural
 circuits. With innovations in neural recording technology providing
 access to the simultaneous activity of increasingly large populations
@@ -329,12 +329,12 @@ represent the conditional distribution over weight trajectories with a
 set of discrete particles,~${\{\bW^{(p)}\}_{p=1}^P}$. Each particle
 represents a sequence of weight
 matrices,~$\bW^{(p)} \in \reals^{N \times N \times T}$, and has an
-associated nonnegative \emph{particle weight}~$v^{(p)}$. Note that the particle
+associated nonnegative \emph{particle weight}~$v_T^{(p)}$. Note that the particle
 weights are \emph{not} the same as the synaptic weights. Together,
 these define an atomic distribution over weight trajectories,
 \begin{align}
-p(\bW) &\approx \frac{\sum_{p=1}^P v_p \, \delta_{\bW^{(p)}} (\bW)}
-         {\sum_{p=1}^P v_p},
+p(\bW) &\approx \frac{\sum_{p=1}^P v_T^{(p)} \, \delta_{\bW^{(p)}} (\bW)}
+         {\sum_{p=1}^P v_T^{(p)}},
 \end{align}
 where~$\delta_{w*}(w)$ is the Dirac delta function located at~$w^*$.
 

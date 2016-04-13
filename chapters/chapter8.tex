@@ -40,23 +40,23 @@ linear Gaussian models are at our disposal.
 %non-conjugate Poisson likelihood.
 
 Finally, we will consider a problem that we have given little
-consideration thus far, namely, the problem of Bayesian model
+consideration thus far, namely, the problem of model
 comparison.  We have tacitly assumed that predictive likelihoods
 provide a sufficient means of comparing two models. In practice, this
 has led to some difficulty, as we encountered with the network model
-comparison in Chapter~\ref{chap:five}. The root cause is that
+comparison in Chapters~\ref{chap:three} and~\ref{chap:five}. The root of the problem is that
 predictive likelihood comparisons only implicitly depend on model
-complexity by relying on overfitting to implement a form of Occam's
+complexity, relying instead on overfitting to implement a form of Occam's
 razor.  In theory, the marginal likelihood --- the denominator in
 Bayes' rule --- should provide a better estimate of the trade-off
 between how well a model fits the data and the size of the hypothesis
-class.
+class  \citep{kass1995bayesian}.
 
 We will show how the fully-conjugate models derived via \polyagamma
 augmentation enable principled marginal likelihood estimation
-via annealed importance sampling (AIS) \citep{neal2001annealed}. In order
+with annealed importance sampling (AIS) \citep{neal2001annealed}. In order
 to make this practically feasible, however, we must dive into the
-guts of the \polyagamma distribution and develop a novel sampling
+inner workings of the \polyagamma distribution and develop a novel sampling
 algorithm capable of efficiently generating random variates in the
 ``small shape'' regime required by AIS. 
  
@@ -64,11 +64,11 @@ algorithm capable of efficiently generating random variates in the
 \section{A Hierarchy of Latent State Space Models}
 Consider a general class of models with a continuous latent
 state,~$\bx_t \in \reals^D$, that obeys affine, but potentially
-nonstationary, dynamics at time~$t$ governed by~$\bA_t$,~$\bb_t$, and
+nonstationary, dynamics at time~$t$ parameterized by~$\bA_t$,~$\bb_t$, and
 noise covariance,~$\bSigma_t$. Let the initial state distribution have
-mean~$\bmu_1$. Furthermore, assume that a linear activation model
+mean~$\bmu_1$. Furthermore, assume a linear activation model
 ~$\bpsi_t = \bC \bx_t$, where the mean spike count,~$s_{t,n}$ is a
-nonlinear function of~$\psi_{t,n}$ and neuron-specific
+nonlinear function of the activation,~$\psi_{t,n}$, and neuron-specific
 parameters,~$\nu_n$.  We refer to the collection of model parameters
 as,
 \begin{align*}
@@ -101,18 +101,19 @@ where
     \prod_{t=1}^T \prod_{n=1}^N p(s_{t,n} \given \psi_{t,n}, \nu_n).
 \end{align}
 
-Now consider the special case where there are only~$K$ unique dynamics
+Now consider the special case where there are only~$K<T$ unique dynamics
 and covariance matrices,~${\{\bA_k, \bb_k, \bSigma_k\}_{k=1}^K}$, and that at
 any instant in time, the chosen dynamics are specified by the
 discrete latent variable~${z_t \in \{1, \ldots, K\}}$. Moreover,
-suppose this discrete latent variable follows a Markov model,
+suppose this discrete latent variable follows a Markov model with 
+initial state distribution~$\bpi_0$ and transition probabilities~$\{\bpi_{k}\}_{k=1}^K$,
 as in the last chapter. Then the dynamics for~$\bz_{1:T}$ and~$\bx_{1:T}$
 are,
 \begin{align*}
   p(\bz_{1:T} \given \btheta) 
   &=
-    \distCategorical(z_1\given \bpi^{(0)})
-    \prod_{t=2}^T \distCategorical(z_t \given \bpi^{(z_{t-1})}).
+    \distCategorical(z_1\given \bpi_0)
+    \prod_{t=2}^T \distCategorical(z_t \given \bpi_{z_{t-1}}).
   \\
   p(\bx_{1:T} \given \bz_{1:T}, \btheta)
   &= 
@@ -140,10 +141,10 @@ The SLDS contains a number of other models as special cases:
   by~$\bb_{z_t}$.
 
 \item When the the conditions of the HMM are met \emph{and} the
-  discrete transition matrix,~$\bP$, has identical rows (${\bpi^{(k)}
-    \equiv \bpi}$), the SLDS further reduces to a simple mixture
+  discrete transition matrix,~$\bP$, has identical rows (${\bpi_k
+    \equiv \bpi_0}$), the SLDS further reduces to a simple mixture
   model. At each point in time, the discrete latent state is drawn
-  from~${z_t \sim \distCategorical(\bpi)}$.
+  from~${z_t \sim \distCategorical(\bpi_0)}$.
 \end{itemize}
 
 \begin{figure}[t]
@@ -178,7 +179,7 @@ Chapter~\ref{chap:five} enables efficient, fully-conjugate Bayesian
 inference in discrete models as well.
 
 \subsection{Block Gibbs Sampling Latent States with Gaussian Observations}
-Suppose the spike counts,~$\bs_t$ were conditionally distributed
+Suppose the spike counts,~$\bs_t$ are conditionally distributed
 according to a Gaussian distribution. Moreover, assume the
 distribution has nonstationary precision,~$\bOmega_t$, such that
 \begin{align}
@@ -329,7 +330,7 @@ case,
 \end{align*}
 Thus,~${a(s, \nu) = s}$,
 ${b(s,\nu) \equiv 1}$, and~${c(s, \nu) \equiv 1}$.
-We refer back to Table~\ref{tab:obs_models} for the formulation of
+We refer the reader back to Table~\ref{tab:obs_models} for the formulation of
 other count distributions.
 
 The augmentation is based on an integral identity
@@ -367,8 +368,7 @@ at time~$t$. As a function of~$\bx_t$, the likelihood is proportional to,
   p_{\distPolyaGamma}(\pgvar_{t,n} \given b(s_{t,n}, \nu_n), 0) \,
   \mathrm{d}\pgvar_{t,n}.
 \end{align*}
-If rather than integrating over~$\omega_{t,n}$ explicitly, we instead
-augment our data by introducing~$\omega_{t,n}$ as auxiliary variables,
+By introducing~$\omega_{t,n}$ as auxiliary variables,
 the likelihood of~$\bx_t$ is proportional to a multivariate Gaussian
 distribution,
 \begin{align}
@@ -393,8 +393,8 @@ Note the similarity between the augmented likelihood
 of~\eqref{eq:pg_likelihood} and the Gaussian likelihood
 of~\eqref{eq:gauss_lkhd}. The only difference is that, here, the
 precision is given by the auxiliary variables, and the ``effective''
-observations,~$\widehat{s}_{t,n}$, are a function of
-both~$s_{t,n}$,~$\omega_{t,n}$, and~$\nu_n$.  Thus, given a set of
+observations,~$\widehat{s}_{t,n}$, are a function 
+of~$s_{t,n}$,~$\omega_{t,n}$, and~$\nu_n$.  Thus, given a set of
 \polyagamma auxiliary variables, the block Gibbs updates in
 Algorithm~\ref{alg:ffbs_gaussian_lds} will apply equally well to the
 setting with discrete count observations.
@@ -450,16 +450,19 @@ parameters of an SLDS is summarized in Program~\ref{alg:slds}.
 
 
 \subsection{Missing Data}
-Sometimes we only have partial observations. For example, in some cases we have 
-multiple recordings from the same circuit, but each recording only provides access 
-to a subset of the population of neurons \citep{turaga2013inferring}. In other cases,
-we simply hold out some of the data for predictive likelihood comparisons. With
-Gaussian observations, we can implement this by replacing the missing data point,~$s_{t,n}$,
-with a zero mean, zero precision observation. In the discrete count model, this can 
-be implemented by setting the auxiliary variable,~$\omega_{t,n}$, to zero. Recall 
-that the \polyagamma auxiliary variables specify the precision of the effective 
-observations. By setting this to zero, and also setting the mean~$\kappa(s_{t,n}, \nu_n)$
-to zero, we can effectively remove this data point. 
+Sometimes we only have partial observations. For example, in some
+cases we have multiple recordings from the same circuit, but each
+recording only provides access to a subset of the population of
+neurons \citep{turaga2013inferring}. In other cases, we simply hold
+out some of the data for predictive likelihood comparisons. With
+Gaussian observations, we can implement this by replacing the missing
+data point,~$s_{t,n}$, with a zero mean, zero precision
+observation. In the discrete count model, this can be implemented by
+setting the auxiliary variable,~$\omega_{t,n}$, and the effective
+observation,~$\widehat{s}_{t,n}$, to zero. Recall that the \polyagamma
+auxiliary variables specify the precision of the effective
+observations. By setting this to zero, we effectively remove this data
+point.
 %In the experiments below, we will use this approach
 %to withhold a subset of spike counts during training.
 
@@ -468,15 +471,14 @@ Most alternative approaches to performing Bayesian inference in latent
 state space models with discrete observations have relied on a Laplace
 approximation \citep{tierney1986accurate} to the conditional
 distribution,~${p(\bx_{1:T} \given \bs_{1:T}, \bz_{1:T}, \btheta)}$
-\citep{Smith-2003, paninski2010new, macke2011empirical}
-\footnote{While the Laplace approximation is most common, see 
+\citep{Smith-2003, paninski2010new, macke2011empirical}.
+\footnote{While the Laplace approximation is most common, see
   \citet{buesing2012spectral} and \citet{pfau2013robust} for some
-  interesting new directions.}. Given a
-Gaussian approximation, the model parameters,~$\btheta$, can be
-optimized such that they maximize the \emph{expected} joint log
-probability under the approximate Gaussian distribution on~$\bx$. This
-constitutes an approximate expectation-maximization (EM) algorithm
-\citep{dempster1977maximum}.
+  interesting new directions.}  Given a Gaussian approximation, the
+model parameters,~$\btheta$, can be optimized such that they maximize
+the \emph{expected} joint log probability under the approximate
+Gaussian distribution on~$\bx$. This constitutes an approximate
+expectation-maximization (EM) algorithm \citep{dempster1977maximum}.
 
 \sloppy
 For completeness, we describe the fundamentals of this approach,
@@ -512,7 +514,7 @@ The mean and covariance parameterize a Gaussian approximation,
   p(\bx_{1:T} \given \bs_{1:T}, \bz_{1:T}, \btheta)
   &\approx
   q(\bx_{1:T}) =
-  \distNormal(\bx_{1:T} \given \bmu^*, \bSigma*).
+  \distNormal(\bx_{1:T} \given \bmu^*, \bSigma^*).
 \end{align*}
 Given this approximation, the parameters are updated by maximizing
 the expected log probability,
@@ -565,7 +567,7 @@ data,~$\bs$, having integrated out the latent
 variables,~$\bz$ and~$\bx$, and the parameters,~$\btheta$,
 \begin{align*}
   p(\bs) = \int p(\bs \given \bz, \bx, \btheta) \, 
-  p(\bz, \bx, \btheta) \, \mathrm{d} \bz \, \mathrm{d}\bx \, \mathrm{d}\btheta
+  p(\bz, \bx, \btheta) \, \mathrm{d} \bz \, \mathrm{d}\bx \, \mathrm{d}\btheta.
 \end{align*}
 By integrating over the latent variables and parameters, the marginal
 likelihood captures a tradeoff between a model's complexity and its
@@ -574,26 +576,26 @@ model comparison. For conjugate exponential family
 models, like linear Gaussian models with Gaussian observations,
  the marginal likelihood can be computed in closed form. 
 In these cases, marginal likelihood is often the gold-standard 
-for model selection \citep{kass1995bayes}.
+for model selection \citep{kass1995bayes, grosse2015sandwiching}.
 
 Unfortunately, minor adjustments to the model can render the
 integration over parameters and latent variables intractable.  For
-example, the marginal likelihood is intractable the SLDS models 
-with discrete observations we have just described. 
-Instead, we are forced to resort to approximate methods like annealed
-importance sampling (AIS) \citep{neal2001annealed}.  AIS is based on
-sampling from a sequence of intermediate distributions that
-\emph{anneal} between a tractable distribution and the intractable
-posterior. While AIS has proven highly effective for a variety of
-models \citep{grosse2015sandwiching}, the accuracy of the method hinges
-upon the efficiency of the Markov transition operators that target
-the intermediate distributions.  Unfortunately, these distributions
-often lack exploitable structure present in the posterior, making the
-design of efficient transition operators challenging, and ultimately
-compromising the efficacy of AIS. We will show how the \polyagamma 
-augmentation strategies above can be extended to perform efficient 
-annealed importance sampling in the class of switching linear dynamical
- systems models with count observations.
+example, the marginal likelihood is intractable in the SLDS models we
+have just described.  Instead, we must resort to approximate
+methods like annealed importance sampling (AIS)
+\citep{neal2001annealed}.  AIS is based on sampling from a sequence of
+intermediate distributions that \emph{anneal} between a tractable
+distribution and the intractable posterior. While AIS has proven
+highly effective for a variety of models
+\citep{grosse2015sandwiching}, the accuracy of the method hinges upon
+the efficiency of the Markov transition operators that target the
+intermediate distributions.  Unfortunately, these distributions often
+lack exploitable structure present in the posterior, making the design
+of efficient transition operators challenging, and ultimately
+compromising the efficacy of AIS. We will show how the \polyagamma
+augmentation strategies above can be extended to perform efficient
+annealed importance sampling in the class of switching linear
+dynamical systems models with count observations.
 
 \subsection{Annealed Importance Sampling}
 
@@ -631,11 +633,11 @@ of~$(\btheta, \bz, \bx)$ by first sampling from the prior, and then
 applying a sequence of MCMC transition operators that leave
 the intermediate distributions~$q_m$ invariant,
 \begin{align*}
-  \mcT_m(\btheta, \bz, \bx \from \btheta', \bz', \bx').
+  \mcT_m(\btheta, \bz, \bx \to \btheta', \bz', \bx').
 \end{align*}
 The result of applying these transition operators
 for~${m=1, \ldots, M}$ is a sample that is, hopefully, closer in
-distribution to the posterior. We can use this procedure as a proposal
+distribution to the posterior. AIS uses this procedure as a proposal
 distribution for importance sampling.  The importance weights are
 given by a product of ratios between~$f_m$ and~$f_{m-1}$.  Since the
 target density is the unnormalized joint distribution, the importance
@@ -678,7 +680,7 @@ increase the number of intermediate distributions; second, we can
 design rapidly mixing transition operators,~$\mcT_m$. In this section,
 we develop transition operators that are both computationally efficient,
 allowing us to run more transitions in a fixed amount of time, and more
-effective, in that they quickly reach their equilibrium distribution.
+effective, in that they reach the equilibrium distribution more quickly.
 
 With a geometric annealing path, the intermediate distributions of the 
 switching LDS are given by,
@@ -707,23 +709,30 @@ and
   &\propto p_{\distPolyaGamma}(\pgvar_{t,n} \given
   \underbrace{b(s_{t,n}, \nu_n) \cdot \beta_m}_{\text{often } < 1}, \, \psi_{t,n}).
 \end{align*}
-Thus, for this transition to be efficient, we must be able to sample
-from the \polyagamma conditional distribution in the regime
-where~${b(s_{t,n}, \nu_n) \cdot \beta_m < 1}$.  For Bernoulli
-observations,~${b(s_{t,n}, \nu_n) \equiv 1}$, so we will be in this
-regime for all~$\beta_m \in [0,1)$.  While efficient samplers exist
-  for \polyagamma distributed variables when the shape parameter is
-  greater than or equal to one \citep{windle2014sampling}, the default
-  method for this ``small shape'' is to approximate a \polyagamma
-  sample with a weighted sum of gamma random variates
-  \citep{polson2013bayesian}.  As the number of random variates in the
-  sum approaches infinity, the approximate sample converges to a true
-  draw from the \polyagamma distribution. To get a reasonably accurate
-  draw, we typically need to sample around 200 gamma random variates
-  per \polyagamma sample.  With~$TN$ auxiliary variables, this quickly
-  becomes prohibitively expensive. Next, we develop a novel sampling
-  algorithm that makes these conditional updates very efficient, and
-  renders AIS with \polyagamma augmented transitions highly effective.
+This provides some intuition into how AIS works. When~$\beta_m$
+approaches zero, the intermediate distribution reduces to the
+prior. This is equivalent to setting~$\kappa$ and~$\omega$ to
+zero. Indeed, that is what we see here. As~$b \to 0$, the density
+\polyagamma density,~$\distPolyaGamma(\omega \given b, \psi)$, approaches a
+delta function at zero.
+
+Note, however, that in order to implement~$\mcT_m$ efficiently, we
+must be able to sample from the \polyagamma conditional distribution
+in the regime where~${b(s_{t,n}, \nu_n) \cdot \beta_m < 1}$.  For
+Bernoulli observations,~${b(s_{t,n}, \nu_n) \equiv 1}$, so we will be
+in this regime for all~$\beta_m \in [0,1)$.  While efficient samplers
+exist for \polyagamma distributed variables when the shape parameter
+is greater than or equal to one \citep{windle2014sampling}, the
+default method for this ``small shape'' regime is to approximate a
+\polyagamma sample with a truncated sum of gamma random variates
+\citep{polson2013bayesian}.  As the number of random variates in the
+sum approaches infinity, the approximate sample converges to a true
+draw from the \polyagamma distribution. To get a reasonably accurate
+draw, we typically need to sample around 200 gamma random variates per
+\polyagamma sample.  With~$TN$ auxiliary variables, this quickly
+becomes prohibitively expensive. Next, we develop a novel sampling
+algorithm that makes these conditional updates very efficient, and
+renders AIS with \polyagamma augmented transitions highly effective.
 
 \section{A Novel Sampling Algorithm for the \polyagamma Distribution}
 \label{sec:pgsampling}
@@ -755,7 +764,7 @@ it is possible to accept or reject using the \emph{alternating series method} \c
 
 We take the same basic approach, but we present a novel means of
 finding an upper bound on the Jacobi density.  Massaging terms
-in~\eqref{eq:jacobi_density}, we can factor this into the product of
+in~\eqref{eq:jacobi_density}, we can factor it into the product of
 three terms:
 \begin{align*}
   % \nonumber &p_{\distJacobi}(\pgvar \given b, \psi) \\
@@ -886,11 +895,11 @@ algorithm based on the \polyagamma augmentation provides a unified
 means of performing inference for the SLDS and its special cases.
 
 As we consider hierarchical models like these --- models constructed out of
-layers of latent structure --- we turned our attention to the
+layers of latent structure --- we must turn our attention to the
 important question of model selection. How should we justify our
 modeling choices? Marginal likelihood estimates provide one answer
 to this question. We have shown how the same \polyagamma augmentations
-translate can be applied inside annealed importance sampling algorithms,
+can be applied inside annealed importance sampling algorithms,
 one of the most successful means of approximating marginal likelihoods.
 In order to make these methods work in practice, however, we needed to
 improve the efficiency of sampling the \polyagamma distribution in the

@@ -43,7 +43,8 @@ interpretability, it is desirable to incorporate an explicit penalty
 on excess states.
 
 
-Here we extend the preceding work and consider a \emph{Bayesian nonparametric} approach.  The Bayesian nonparametric approach brings
+Here we extend the preceding work and consider a \emph{Bayesian nonparametric} 
+approach \citep{orbanz2011bayesian}.  The Bayesian nonparametric approach brings
 additional flexibility to the probabilistic model, which allows us to
 model the complex structure of neural data
 \citep{Teh10,Wood08,Shalchyan14}.  Specifically, we use a hierarchical
@@ -62,8 +63,8 @@ are visited in the data.
 
 Nevertheless, inference in Bayesian nonparametric models can be
 finicky.  Hyperparameters of the HDP prior can have a strong effect,
-as can the particular choice of inference algorithm. Here we provide a
-thorough assessment of various inference approaches. We consider both
+as can the particular choice of inference algorithm. Here we provide an
+assessment of various inference approaches. We consider both
 MCMC and variational inference algorithms. For MCMC, we adapt the
 Gibbs sampling approach of \citep{Teh06}, and consider various methods
 of inferring hyperparameters.
@@ -170,7 +171,8 @@ sample from the DP via the ``stick-breaking construction''
 \citep{Sethuraman94}. First, sample the stick-breaking
 weights,~$\bbeta$,
 \begin{eqnarray}                                   
-\widetilde{\beta}_{k}\sim \distBeta(1,\gamma), \;\;\; \beta_{k}=\widetilde{\beta}_{k}\prod_{j=1}^{k-1}\Big(1-\beta_{j}\Big)
+\widetilde{\beta}_{k}\sim \distBeta(1,\gamma), \;\;\; \
+beta_{k}=\widetilde{\beta}_{k}\prod_{j=1}^{k-1}\Big(1-\widetilde{\beta}_{j}\Big)
 \label{stick1}
 \end{eqnarray}
 where~$\beta_1 = \widetilde{\beta}_1$,~$\sum_{k=1}^\infty \beta_{k}=1$.
@@ -247,7 +249,7 @@ methods work with any exponential family likelihood when the base
 measure $H$ is a conjugate prior.  Here we present the Gibbs sampling
 algorithm of~\citep{Teh06} for the HDP-HMM applied to the special case
 of independent Poisson observations, and we derive Hamiltonian Monte
-Carlo (HMC) transitions to sample the neuron-specific hyperparameters of
+Carlo (HMC)  \citep{Neal10} transitions to sample the neuron-specific hyperparameters of
 the firing rate priors.
 
 We begin by defining Gibbs updates for the neuronal firing
@@ -279,7 +281,7 @@ HDP-HMM using a {\em forward filtering, backward sampling}
 algorithm. Details of this algorithm can be found in
 \citet[e.g.]{Johnson14b}; the intuition is that in the backward pass of the
 algorithm, we have a conditional distribution over~$z_t$
-given~$\bz_{t+1:T}$. We can iteratively sample from these distributions
+given~$\bz_{t+1:T}$ and~$\bS$. We can iteratively sample from these distributions
 as we go backward in time to generate a full sample
 from~${p(\bz \given \bP, \bpi^{(0)}, \bLambda)}$. Jointly sampling
 these latent states allows us to avoid issues with mixing when
@@ -291,7 +293,7 @@ parameters~$\alpha_0$ and~$\gamma$ can be updated as
 in~\citep{Teh06}. A single iteration of the final algorithm consists
 of an update for each parameter of the model. The aforementioned
 updates are based upon previous work; one novel direction that we
-explore in this work is the sampling of the hyperparameters of the
+explore in this chapter is the sampling of the hyperparameters of the
 gamma firing rate priors.
 
 \subsection{Setting firing rate hyperparameters} 
@@ -423,7 +425,7 @@ to
 q(\bz) &= \mathrm{HMM}(\widetilde{\bP}, \widetilde{\bpi}^{(0)}, \widetilde{\bLambda}), \\
 \widetilde{\bP} &= \exp\left\{\mathbb{E}_q[\ln \bP]\right\}, \\
 \widetilde{\bpi}^{(0)} &= \exp\left\{\mathbb{E}_q[\ln \bpi^{(0)}]\right\}, \\
-\widetilde{\bLambda} &= \exp\left\{\mathbb{E}_q[\ln p(\bS \given \bLambda)]\right\}.
+\widetilde{\bLambda} &= \exp\left\{\mathbb{E}_q[\ln p( \bS \given \bLambda)]\right\}.
 \end{align*}
 Expectations~${\mathbb{E}_q[z_t=k]}$ can then be computed using
 standard message-passing algorithms for HMMs.
@@ -450,7 +452,7 @@ the fully conjugate approach of \citep{Hoffman-2013}, however, this
 results in extra bookkeeping and the duplication of states. Instead,
 following \citep{Johnson14, Bryant12, Liang07}, we use a point
 estimate for this parameter by setting~${q(\bbeta)=\delta_{\bbeta^*}}(\bbeta)$
-and use gradient ascent with backtracking line search to update this
+and use gradient ascent to update this
 parameter during inference.
 
 There are a number of hyperparameters to set for the variational
@@ -466,7 +468,7 @@ test data, we draw multiple samples,~$\{\btheta^{(\ell)}\}_{\ell=1}^L$
 for~$\btheta=(\bLambda, \bz, \bP, \bpi^{(0)}, \bbeta)$, from the
 variational posterior,~$q$, and approximate the predictive log likelihood as
 \begin{align*}
-  \ln p(\bS_{\mathsf{test}} \given \bS_{1:T}) 
+  \ln p(\bS_{\mathsf{test}} \given \bS) 
   &\approx \ln \mathbb{E}_q\left[p(\bS_{\mathsf{test}} \given \btheta)\right] \\
   &\approx \ln \frac{1}{L} \sum_{\ell=1}^L p(\bS_{\mathsf{test}} \given \btheta^{(\ell)}).
 \end{align*}
@@ -741,26 +743,12 @@ the number of inferred states decrease with bin size.
 
 Next, we apply the proposed methods to experimental data of the rat
 hippocampus. This is the same dataset studied in previous chapters, but
-here we applied additional preprocessing.
-The experiments were conducted under the supervision of the
-Massachusetts Institute of Technology (MIT) Committee on Animal Care
-and followed the NIH guidelines.  The micro-drive arrays containing
-multiple tetrodes were implanted above the right dorsal hippocampus of
-male Long-Evans rats. The tetrodes were slowly lowered into the brain
-reaching the cell layer of CA$1$ two to four weeks following the date of
-surgery. Recorded spikes were manually clustered and sorted to obtain
-single units using a custom software (XClust, M.A.W.).
-
-
-For demonstration purpose, an ensemble spike train recording
-of~${N=47}$ cells was collected from a single rat for a duration of
-$9.8$ minutes.  Once stable hippocampal units were obtained, the rat was
-allowed to freely forage in an approximately circular open field
-environment (radius: $\sim60$ cm).  We bin the ensemble spike activity
+here we applied additional preprocessing. We bin the ensemble spike activity
 with a bin size of $250$ ms and obtain the population vector $\bz$ in
 time.  To identify the period of rodent locomotion during spatial
 navigation, we use a velocity threshold ($>10$ cm/s) to select the RUN
-epochs and merge them together.  One animal's RUN trajectory and
+epochs and merge them together.  The result is a recording that is 
+$9.8$ minutes in duration. One animal's RUN trajectory and
 spatial occupancy are shown in Fig.~\ref{fig4} (left and right panels,
 respectively). The empirical probability of a location,~${p(\ell)}$,
 is determined by dividing the arena into $220$ bins of equal area ($11$
@@ -1033,7 +1021,7 @@ models \citep{linderman2015dependent}.
 This chapter explored the idea of dynamic latent states underlying
 neural activity. Specifically, we developed Bayesian nonparametric
 hidden Markov models (HDP-HMMs) and corresponding MCMC and variational
-inference algorithms. Since these models are notoriously sensitive to
+inference algorithms. Since these models can be quite sensitive to
 hyperparameter settings, we performed a thorough assessment of
 inference results on both synthetic data and real recordings from rat
 hippocampal place cells.  In the next chapter, we will build on these
