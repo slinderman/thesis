@@ -11,7 +11,7 @@ words, the interactions in a Hawkes process were additive and purely
 excitatory. While this led to interpretable network models for some
 systems, in many cases it is more natural to expect a mix of
 excitatory and inhibitory interactions. Unfortunately, we cannot have
-inhibitory interactions with a simple additive model because this could
+inhibitory interactions within a simple additive model because this could
 yield negative firing rates. Instead, we need to revisit the
 assumption of linear dynamics.
 
@@ -293,13 +293,12 @@ distance to vector weights. In this model, we assume standard normal
 priors on the parameters~$\bz_n$ and~$\gamma_0$.  The variance is given
 an inverse gamma prior,~$\sigma^2 \sim \distInvGamma(\alpha, \beta)$.
 
-Of course, many other models could be added to this list, and in the
-discussion we will consider various extensions. An attractive feature
-of this approach is that we may indeed draw on an extensive literature
-of network models. For the purposes of this paper, we restrict our
-attention to these models, based on latent classes and locations,
-which are particularly interpretable and easily visualized.
-
+% Of course, many other models could be added to this list, and in the
+% discussion we will consider various extensions. An attractive feature
+% of this approach is that we may indeed draw on an extensive literature
+% of network models. For the purposes of this paper, we restrict our
+% attention to these models, based on latent classes and locations,
+% which are particularly interpretable and easily visualized.
 
 \section{Inference via Gibbs Sampling}
 Inference is the process of evaluating the posterior distribution over
@@ -786,23 +785,14 @@ stimulus-response correlations are less valuable.
 \end{figure}
 
 We also applied our framework to simultaneously recorded
-multi-neuronal spike trains from the hippocampus of freely moving rats
-in a circular arena.
-% Experiments were conducted under the supervision of the
-% Massachusetts Institute of Technology (MIT) Committee on Animal Care
-% and followed the NIH guidelines.  The micro-drive arrays containing
-% multiple tetrodes were implanted above the right dorsal hippocampus
-% of male Long-Evans rats.  The tetrodes were slowly lowered into the
-% brain reaching the cell layer of CA1 two to four weeks following the
-% date of surgery.  Recorded spikes were manually clustered and
-% sorted.
-This dataset consists of~$N=25$ neurons recorded for a duration of
-almost ten minutes and binned in 250ms time bins.  The rat is freely
-foraging in an open field environment roughly 120cm in diameter.
-% Since place cells are primarily active during location, the spike
-% train is segmented into individual running epochs by discarding bins
-% in which the velocity is less than 10cm/s.  This results in a
-% dataset that is approximately 2000 time bins in length.
+multi-neuronal spike trains from the hippocampal recordings studied in 
+Chapter~\ref{chap:three}. Here, however, we preprocess the data by 
+binning the spikes into $250$ms time bins. Furthermore, we only consider the 
+spike counts from time bins in which the rat was moving at 
+a velocity of at least~$10$cm/s, since these hippocampal place cells 
+fire primarily during locomotion. The resulting dataset is almost ten
+minutes long. Finally, we only consider the $25$ neurons with the most 
+precise place fields. 
 
 As in the retina, we have strong intuitions about the latent structure
 underlying hippocampal place cell activity, namely, we expect cells
@@ -818,7 +808,7 @@ highest predictive likelihood (Fig.~\ref{fig:hipp_pll}). The
 stochastic block model yields the highest predictive likelihood, but
 upon further investigation we find that almost all neurons are
 connected in this model. There is one outlier, neuron \#$1$, which is
-only sparsely connected. The SBM assigns 24 neurons are assigned to
+only sparsely connected. The SBM assigns $24$ neurons are assigned to
 one cluster, and assigns neuron \#$1$ to its own group.  Thus, the
 stochastic block model is quite similar to an independent Bernoulli
 model, as is evident from the similar predictive likelihood of these
@@ -833,17 +823,18 @@ the pairwise distances between inferred locations against the pairwise
 distances between place field centers. The latent distance model's
 pairwise distances are highly correlated with the ground truth,
 whereas distances between PCA embeddings are very uncorrelated
-(Fig.~\ref{fig:hipp_distances}). For further comparison, we fit a
-Poisson linear dynamical system (PLDS) \citep{macke2011empirical} with
-a two dimensional latent state space, and used the rows of the
-~$N \times 2$ emission matrix as the locations of the neurons. This
-sophisticated model, which captures temporal dynamics of the neural
-population, yields pairwise distances that are quite correlated with
-the true distances, but we find that the variance of this fit grows
-with the true distance.  This reflects the fact that the PLDS does not
-explicitly parameterize interaction as a function of distance, but
-rather induces correlation due to similarity in the emission matrix as
-well as shared dynamics.
+(Fig.~\ref{fig:hipp_distances}). 
+
+For further comparison, we fit a Poisson linear dynamical system
+(PLDS) \citep{macke2011empirical} with a two dimensional latent state
+space, and used the rows of the ~$N \times 2$ emission matrix as the
+locations of the neurons. Chapter~\ref{chap:eight} will discuss this
+class of models in more detail. The PLDS yields pairwise distances
+that are quite correlated with the true distances, but we find that
+the variance of this fit grows with the true distance.  This reflects
+the fact that the PLDS does not explicitly parameterize interaction as
+a function of distance, but rather induces correlation due to
+similarity in the emission matrix as well as shared dynamics.
 
 Finally, we investigated the expected network under the posterior and 
 found that upon sorting the neurons by their inferred locations, an
@@ -1033,8 +1024,8 @@ and connection probabilities from our fully Bayesian method with a
 latent distance model prior are shown in
 Fig.~\ref{fig:synth_rgc_mcmc_conn} and
 Fig.~\ref{fig:synth_rgc_mcmc_prob_conn}, respectively. Our MCMC
-algorithm does a good job recovering the underlying locations, which
-give rise to the diagonally banded connection probabilities reflecting the
+algorithm does a good job recovering the underlying locations, 
+as shown by the diagonally banded connection probabilities reflecting the
 distance dependence.  By
 contrast, the MAP network found via an $L_1$-regularized standard GLM
 is considerably noisier (Fig.~\ref{fig:synth_rgc_bfgs_conn}), since it
@@ -1216,7 +1207,7 @@ ${\bY = \{\by_t\}}$, into the model is via a linear term in the
 activation. That is, let,
 \begin{align*}
   \psi_{t,n} &\triangleq \psi_n^{(0)}  +
-  \bu^\trans \by_t + (\ba_{n} \odot \bw_n)^\trans \, \widehat{\bs}_t,
+  \bu_n^\trans \by_t + (\ba_{n} \odot \bw_n)^\trans \, \widehat{\bs}_t,
 \end{align*}
 where~$\bu_n$ is the ``stimulus filter.''
 Just as we modeled~$\ba_n$ and~$\bw_n$ with hierarchical network models,
@@ -1233,13 +1224,14 @@ fruitfully applied to more enigmatic circuits as well.
 
 \section{Conclusion}
 This chapter extended the linear autoregressive models of previous
-chapters to the setting where we have both excitatory and inhibitory
-interactions linked by a nonlinear function to the firing rate. We have
-shown how the \polyagamma augmentation makes it possible to perform
-efficient, fully-conjugate Gibbs sampling, integrating out the weights
-in order to sample sparsity patterns. This leads to dramatic improvements
-in performance and allows us to discover interesting structure in a
-variety of real and synthetic datasets.
+chapters to include both excitatory and inhibitory interactions by
+developing a nonlinear firing rate model.  We derived an efficient,
+fully-conjugate Gibbs sampling algorithm that integrate out the
+weights in order to sample sparsity patterns. The key was the
+\polyagamma augmentation, which makes discrete observations appear as
+Gaussian likelihoods.This led to dramatic improvements in performance
+and allowed us to discover interesting structure in a variety of real
+and synthetic datasets.
 
 Nevertheless, these methods are still limited in that they are
 parameterized in terms of stationary network. There is no aspect of

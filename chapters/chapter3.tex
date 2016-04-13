@@ -583,7 +583,7 @@ write the augmented likelihood as,
   \prod^N_{n=1} \bigg[
   \exp\left\{ -\int_0^T \lambda^{(0)}_{n}\mathrm{d}t \right\} \,
   \prod^M_{m=1}
-   \lambda^{(0)}_{n}^{\bbI[c_m=n] \bbI[\omega_m = 0]} \bigg]\\
+   (\lambda^{(0)}_{n})^{\bbI[c_m=n] \bbI[\omega_m = 0]} \bigg]\\
   \quad\times \prod_{m=1}^M \prod_{n'=1}^N \bigg[
   \exp\left\{-\int^T_{s_m} h_{c_m \to n'}(t - s_m) \mathrm{d}t \right\} \\
   \prod_{m'=1}^M h_{c_m^{~} \to c_{m'}}(s_{m'}-s_m)^{\bbI[c_{m'}=n'] \bbI[\omega_{m'}=m]}\bigg].
@@ -720,7 +720,7 @@ In the simple case of~${w_{n \to n'}\sim \distGamma(\kappa,\nu)}$
 and~${a_{n \to n'}\sim\distBernoulli(\rho)}$, we have
 ${\mu = \rho \kappa/\nu}$ and
 ${\sigma=\sqrt{\rho((1-\rho)\kappa^2+\kappa)}/\nu}$. We are using the 
-rate parameterization of the gamma distribution, 
+rate parameterization of the gamma density, 
 \begin{align*}
 \distGamma(w \given \kappa, \nu) &= \frac{\nu^{\kappa}}{\Gamma(\kappa)}w^{\kappa- 1} e^{-\nu w}.
 \end{align*}
@@ -1215,15 +1215,23 @@ of this predictive power.
 Our first real dataset consists of a simultaneously recorded
 population of~$49$ hippocampal place cells from a rat freely foraging
 in a circular arena roughly $120$cm in diameter. The data is courtesy
-of the lab of Prof. Matthew Wilson at MIT. The recording duration was
-roughly~$25$ minutes. The first~$20$ minutes were used for model
+of the lab of Prof. Matthew Wilson at MIT.\footnote{ The experiments
+  were conducted under the supervision of the Massachusetts Institute
+  of Technology (MIT) Committee on Animal Care and followed the NIH
+  guidelines.  The micro-drive arrays containing multiple tetrodes
+  were implanted above the right dorsal hippocampus of male Long-Evans
+  rats. The tetrodes were slowly lowered into the brain reaching the
+  cell layer of CA$1$ two to four weeks following the date of
+  surgery. Recorded spikes were manually clustered and sorted to
+  obtain single units using custom software.}  The recording duration
+was roughly~$25$ minutes. The first~$20$ minutes were used for model
 fitting and the last~$5$ were reserved for predictive tests. Over the
 entire $25$ minute recording, each neuron fired on
 average~$1979\pm4117$ spikes (min:~$48$, max:~$27572$) for a total
-of~$97000$ spikes. This corresponds to a firing rate of~$1.35 \pm
-2.82$Hz (min:~$0.32$Hz, max:~$18.88$Hz). The rat's location,~$\bx(t)$,
-was recorded along with the corresponding spike times. From this, the
-place field of the~$n$-th neuron is computed as,
+of~$97000$ spikes. This corresponds to a firing rate
+of~$1.35 \pm 2.82$Hz (min:~$0.32$Hz, max:~$18.88$Hz). The rat's
+location,~$\bx(t)$, was recorded along with the corresponding spike
+times. From this, the place field of the~$n$-th neuron is computed as,
 \begin{align*}
   \bar{\bx}_n &= \frac{1}{M_n} \sum_{m=1}^M \bx(s_m) \cdot \bbI[c_m=n],
 \end{align*}
@@ -1549,7 +1557,7 @@ peaking in the summer and tapering in the winter. An LGCP with a
 quadratic kernel point-wise added to a periodic kernel captures both
 effects.
 
-\section{Discussion}
+\section{Related Work}
 Hawkes processes and latent network discovery have been a subject
 of recent interest in the machine learning community. Much of this
 interest stems from the growth of social networking applications
@@ -1604,6 +1612,9 @@ excitatory and inhibitory interactions, but, as we have shown, when
 the data consists of purely excitatory interactions, Hawkes processes
 outperform GLMs in link- and spike-prediction tests. We will discuss
 these models in Chapter~\ref{chap:five}
+
+
+\section{Conclusion}
 
 This chapter developed a framework for discovering latent network
 structure from spiking data with mutually excitatory interactions. Our
