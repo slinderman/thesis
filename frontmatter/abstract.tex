@@ -4,8 +4,8 @@ thousands of neurons in organisms performing complex behaviors.  Such
 recordings offer an unprecedented opportunity to glean insight into
 the mechanistic underpinnings of intelligence, but they also present
 extraordinary statistical and computational challenges: how do we make
-sense of these large scale recordings and turn data into
-understanding? This thesis develops a suite of tools that instantiate
+sense of these large scale recordings?
+This thesis develops a suite of tools that instantiate
 hypotheses about neural computation in the form of
 probabilistic models and a corresponding set of Bayesian inference
 algorithms that efficiently fit these models to neural spike trains.
@@ -34,22 +34,22 @@ inference algorithms.
 In the latter chapters, we shift our focus from autoregressive models
 to latent state space models of neural activity. We provide an
 empirical study of Bayesian nonparametric methods for hidden Markov
-models of neural spike trains and an efficient MCMC algorithm for
-switching linear dynamical systems with discrete observations, again
-leveraging the \polyagamma augmentation. In pursuit of a principled
-means of Bayesian model comparison, we develop a novel \polyagamma
-sampling algorithm that enables an efficient annealed
-importance sampling algorithm for estimating the marginal likelihood of
-these models.
+models of neural spike trains. Then, we leverage the \polyagamma
+augmentation to develop an efficient MCMC algorithm for switching
+linear dynamical systems with discrete observations.  In pursuit of a
+principled means of Bayesian model comparison, we develop a novel
+sampling algorithm for the \polyagamma distribution. This enables an
+efficient annealed importance sampling method for estimating the
+marginal likelihood of complex models.
 
-In closing, we consider the ``Bayesian brain'' hypothesis --- the
+Finally, we consider the ``Bayesian brain'' hypothesis --- the
 hypothesis that neural circuits are themselves performing Bayesian
 inference.  We show how one particular implementation of this
 hypothesis implies autoregressive dynamics of the form studied
-in early chapters, thereby providing a theoretical interpretation of
-the autoregressive network models we started with.  This closes the
+in earlier chapters, thereby providing a theoretical interpretation of
+our probabilistic models.  This closes the
 loop, connecting top-down theory with bottom-up inferences, and
-suggests a path toward translating large scale neural recording
+suggests a path toward translating large scale recording
 capabilities into new insights about neural computation.
 
 

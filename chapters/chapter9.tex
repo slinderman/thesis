@@ -321,7 +321,7 @@ assumption:
   which emit spikes according to a Poisson distribution.
   Spikes are integrated over the subpopulation and over an integration
   time window,~$T_I$, to get an unnormalized probability for the
-  variable-value pair. By normalizing across subpopulations, we can decode
+  variable-value pair. By normalizing across subpopulations, they decode
   the probability distribution. 
 \end{assumption}
 
@@ -498,7 +498,7 @@ First, consider the probability that a particular entry differs from its mean by
    +\Pr \left(S_{t, k} < \bbE[S_{t,k} \given S_t] \left(1-\frac{\epsilon}{\pi_{ k}} \right) \right)
 \end{align*}
 As in Lemma~\ref{lem:consistency}, we have used the fact
-that~$S_{t, k} \given S_t \sim \distBinomial(S_t, \pi_{ k})$,
+that~$S_{t, k} \given S_t \sim \distBinomial(S_t, \pi_{ k})$
 and hence has expectation~$S_t \pi_{ k}$. 
 The probability of this binomial random variable exceeding its mean 
 by a multiplicative constant is a decreasing function of the 
@@ -589,7 +589,8 @@ we only observe a fraction of the population, as a neuron in a
 downstream population might? Assume each neuron in the population is 
 ``observed'' with probability~$\rho$. The expected number of observed 
 neurons for a given variable-value pair is~$R\rho$, and if we see 
-exactly the expected number of neurons for each value, the estimated 
+exactly the expected number of neurons 
+for each value (assume it is an integer), the estimated 
 probability distribution will have the correct expectation. However, 
 in practice we will incur some bias from seeing a different number of 
 neurons for each value. Bounding the error theoretically is challenging 
@@ -621,15 +622,14 @@ corollary.
 
 Corollary~\ref{cor:sparse_bounds} provides theoretical connection
 between the fidelity of the representation, measured in terms of the
-error~$\epsilon$ and confidence~$\delta$ for a given number of
-values~$K$, and parameters of the neural implementation, namely the
-maximum firing rate, the integration time, the connection probability,
-and the representation size.  The expected spike count is the product
-of the effective number of neurons,~$\rho R$, and the expected number
-of spikes per neuron,~$\lambdamax T_I$.  Together, these allow us to
-deduce a manifold of trade-offs between population size and
-integration time that will achieve a desired error level and
-confidence. 
+error~$\epsilon$ and confidence~$\delta$, for a given domain size~$K$,
+maximum firing rate~$\lambda_{\mathsf{max}}$, integration time~$T_I$,
+connection probability~$\rho$, and representation size~$R$.  The
+expected spike count is the product of the effective number of
+neurons,~$\rho R$, and the expected number of spikes per
+neuron,~$\lambdamax T_I$.  Together, these allow us to deduce a
+manifold of trade-offs between population size and integration time
+that will achieve a desired error level and confidence.
 
 
 % Figure: Theoretical bounds on error and physiological parameters
@@ -734,8 +734,8 @@ to achieve a desired expected spike count.
 
 Figure~\ref{fig:complexity} shows the results of an empirical 
 assessment of this theory under a variety of parameter regimes.
-For each regime, we show the results for discrete distributions over
-~$K=2$ values (left column) and~$K=10$ values (right column). We 
+For each regime, we present results for discrete distributions
+over~$K=2$ values (left column) and~$K=10$ values (right column). We 
 sample~$1000$ discrete distributions from a Dirichlet 
 prior,~${\bpi \sim \distDirichlet(\bone_K)}$, and then we encode each true 
 distribution with Poisson spiking neurons and measure the total 
@@ -886,7 +886,7 @@ subsequently.
 
 For discrete random variables, the variational factors are simply
 vectors specifying the posterior probability of each variable,~$z_j$.
-Under the direct representation described above, these instantaneous
+Under the direct representation described above, the instantaneous
 values of these factors are encoded in the relative spike counts of
 populations of neurons,
 \begin{align*}
@@ -911,17 +911,24 @@ Explicitly writing the additive constant,~$-\log \nu_t^{(j)}$, we have,
   \hspace{4em} + \sum_{i \in \neigh(j)} \sum_{k'=1}^K
   \bigg[\log \phi(z_{i}=k', z_j=k \given \btheta) \,\cdot  \widehat{\pi}_{t-1,k'}^{(i)} \bigg] \\
   \nonumber
-  &= -\log \nu_t^{(j)} + \psi_{t,k}^{(j)}.
+  &= -\log \nu_t^{(j)} + \psi_{t,k}^{(j)},
 \end{align}
-where we have combined the terms from the unary and pairwise factors
-into the activation,~$\psi_{t,k}^{(j)}$.
+where
+\begin{align*}
+  \psi_{t,k}^{(j)} &=
+  \log \phi(z_j=k \given \btheta)
+  + \sum_{i \in \neigh(j)} \sum_{k'=1}^K
+  \log \phi(z_{i}=k', z_j=k \given \btheta) \,\cdot  \widehat{\pi}_{t-1,k'}^{(i)}.
+\end{align*}
+%where we have combined the terms from the unary and pairwise factors
+%into the activation,~$\psi_{t,k}^{(j)}$.
 
-Since~$\widehat{\bpi}_{t}^{(j)}$ is a probability distribution, we
+Since~$\widehat{\bpi}_{t}^{(j)}$ is a probability distribution, 
  the additive constant must be set to it is normalized.  Thus,
 \begin{align*}
   \widehat{\pi}_{t,k}^{(j)} &=
-  \exp \left \{\psi_{t,k}^{(j)} -\log \nu_{t}^{(j)} \right \},
-  & & &
+  \exp \left \{\psi_{t,k}^{(j)} -\log \nu_{t}^{(j)} \right \} \\
+  \implies
   \nu_t^{(j)} &= \sum_{k'} \exp \left \{\psi_{t,k'}^{(j)} \right \}.
 \end{align*}
 
@@ -956,8 +963,8 @@ input from. However, these can be used to estimate the desired probabilities.
 This motivates our next assumptions,
 
 \begin{assumption}
-  Neurons are sparsely connected to one another. For each directed
-  pair of neurons, $(n,m)$, the variable~$a_{m \to n} \in \{0,1\}$
+  Neurons are sparsely connected to one another. For each ordered
+  pair of neurons, $(m,n)$, the variable~$a_{m \to n} \in \{0,1\}$
   indicates whether or not there exists a synaptic connection from
   neuron~$m$ to neuron~$n$. These connections are modeled as
   independent and identically distributed Bernoulli random variables,
@@ -1011,6 +1018,11 @@ and
     0 & \text{o.w.}
   \end{cases}
 \end{align*}
+Thus, the theory provides a normative interpretation of synaptic
+weights: they reflect the conditional log probabilities for the
+variable-value pairs represented by the pre- and post-synaptic
+neurons.
+
 
 The last step is to compute the normalizing input,~$\nu_t^{(j)}$.
 This requires summing the instantaneous rates of all neurons representing the
@@ -1029,14 +1041,11 @@ and set the control input to,
 \begin{align*}
   \nu_{t}^{(j)} &= \frac{\widehat{\lambda}_{t}^{(j)}}{\lambdamax T_G R}.
 \end{align*}
-The time scale of the gain controller is typically set to be
+The time scale of the gain controller is typically
 less than the time scale of inference, that is~$T_G < T_I$.
 
-
-This theory provides a normative interpretation of synaptic weights.
-Here, synaptic weights reflect the conditional log probabilities
-for the variable-value pairs represented by the pre- and post-synaptic
-neurons.
+Having shown that variational inference is theoretically plausible,
+we consider a simple example.
 
 \section{Example of a Simple Mixture Model}
 \label{sec:mixture_example}
@@ -1077,26 +1086,26 @@ neurons.
 \end{figure}
 
 
-First, we consider a simple mixture model with a single
+Consider a simple mixture model with a single
 latent variable denoting the mixture component,~${z \in \{1, \ldots, K\}}$,
 and a set of conditionally independent observations,~$\{x_j\}_{j=1}^J$.
 In this example, we let the observations be Bernoulli
 random variables. The model is parameterized by a marginal
 class probability vector,~$\balpha$, which we assume is uniform,
 and class-conditional probabilities for each observation,
-${\rho_{j,k} = \Pr(x_j=1 \given z=k)}$. Together, these
+${p_{j,k} = \Pr(x_j=1 \given z=k)}$. Together, these
 specify the probabilistic model,
 \begin{align*}
   \balpha &= \tfrac{1}{K} \bone, & & &
-    z &\sim \distCategorical(\balpha), \\
-  \rho_{j,k} &\sim \distBeta(\tfrac{1}{2},\tfrac{1}{2}),  & & &
-  x_j &\sim \distBernoulli(\rho_{j,z}).  
+  z &\sim \distCategorical(\balpha), \\
+  p_{j,k} &\sim \distBeta(\tfrac{1}{2},\tfrac{1}{2}),  & & &
+  x_j &\sim \distBernoulli(p_{j,z}).  
 \end{align*}
-This can be easily transformed into a factor graph with,
+This corresponds to a factor graph with,
 \begin{align*}
   \phi(z=k) &= \alpha_k, \\
-  \phi(x_j=1, z=k) &= \rho_{j,k}, \\
-  \phi(x_j=0, z=k) &= 1-\rho_{j,k}.
+  \phi(x_j=1, z=k) &= p_{j,k}, \\
+  \phi(x_j=0, z=k) &= 1-p_{j,k}.
 \end{align*}
 
 We simulate inference in this model with a population of neurons.
@@ -1171,7 +1180,7 @@ average weight between each pair of clusters:
 \begin{align*}
   c_n & \sim \distCategorical(\alpha \bone), \\
   \mu_{c \to c'} &\sim \distGaussian(0, \sigma_0^2), \\
-  w_{m \to n} &\sim \distGaussian(\mu_{c_n \from c_m}, \sigma^2).
+  w_{m \to n} &\sim \distGaussian(\mu_{c_m \to c_n}, \sigma^2).
 \end{align*}
 By performing Bayesian inference in this model, we recover a posterior
 distribution over biases,~$\{b_n\}_{n=1}^N$; weighted adjacency
@@ -1260,7 +1269,7 @@ the pairwise log probabilities of the mixture model.
 
 Figure~\ref{fig:mixture_cocluster} shows the inferred posterior probability
 of two neurons belonging to the same cluster. While the true model has
-13 clusters, we allowed our model to use as many as 20 clusters.
+$13$ clusters, we allowed our model to use as many as $20$ clusters.
 If the variable-value subpopulations
 were recovered perfectly, this matrix would be block diagonal. We
 see that it is nearly so; only a handful of neurons are misclassified
@@ -1336,7 +1345,7 @@ we will only consider learning in a subset of models that can
 formulated as directed graphical models.
 
 \begin{assumption}
-  The following learning algorithm assumes that the probabilistic
+  The following unsupervised learning algorithm assumes that the probabilistic
   model not only factors into the product of unary and pairwise
   potentials, but that this factorization corresponds to a directed
   graphical model in which the variables have at most one ``parent''
@@ -1345,7 +1354,7 @@ formulated as directed graphical models.
   \begin{align*}
     p(\bz, \btheta) &= p(\btheta) \prod_{j=1}^J p(z_j \given \pa(z_j), \btheta),
   \end{align*}
-  where~$\pa(z_j) \in \{z_1, \ldots, z_{j-1}\} \cup \varnothing$.
+  where~$\pa(z_j) \in \{\varnothing, z_1, \ldots, z_{j-1}\}$.
   Each conditional distribution in this product is properly normalized,
   which implies that the joint distribution is normalized as well.
 \end{assumption}
@@ -1361,7 +1370,7 @@ rules.
 Since we are assuming the variables
 are discrete, the parameters~$\btheta$ specify either the marginal
 probability of~$z_j$ (if~$\pa(z_j)=\varnothing$) or the rows of a
-conditional probability table (if~$\pa(z_j) \in \{z_1, \ldots, z_{j-1}\}$).
+conditional probability table (if~${\pa(z_j) \in \{z_1, \ldots, z_{j-1}\}}$).
 We
 make this explicit with the following notation,
 \begin{align*}
@@ -1524,7 +1533,6 @@ represents the parent variable. Then,\footnote{Here, the synaptic state
 %\end{align*}
 %The difference is in whether the second state counts pre- or post-synaptic
 %spikes. 
-
 The synaptic weight is then a deterministic function of these two state variables,
 \begin{align*}
   w_{t, m \to n} &= \psi(\alpha_{t, m \to n}) - \psi(\beta_{t, m \to n}).
@@ -1572,7 +1580,7 @@ density function because~$q_t(z_j)$ is nonnegative and integrates to one,
 \begin{align*}
   \int q_t(z_j) \, \mathrm{d}z_j &=
   \sum_{k=1}^K  \int \eta_{t,k}^{(j)} \, \zeta(z; \mu_k) \, \mathrm{d}z_j
-  = \sum_{k=1}^K \eta_{t,k} = 1.
+  = \sum_{k=1}^K \eta_{t,k}^{(j)} = 1.
 \end{align*}
 To implement this with a distributed population of neurons, let
 \begin{align*}
