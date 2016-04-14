@@ -513,18 +513,21 @@ the past~$D$ time bins, allowing delayed interactions.
 Figure~\ref{fig:motifs} shows the graph structure of an autoregressive model
 in the special case that~$D=1$.
 
-Since the
-firing rates must be nonnegative, the weights must be as well.  That
-is,~$w_{m \to n}^{(d)} \in \reals_+$.
-This implicitly instantiates
-the hypothesis that interactions between spikes on one neuron and
-the rate of another is always excitatory~---~a spike can never
-decrease the future firing rate. While this is not the most
+In continuous time, autoregressive interactions like these are the
+basis of the Hawkes process \citep{Hawkes-1971}, a mutually-excitatory
+point process. Chapter~\ref{chap:three} will study these models 
+in great detail, and Chapter~\ref{chap:four} will extend the Hawkes
+process inference algorithms to their discrete time counterparts.
+
+Since the firing rates must be nonnegative, the weights must be as
+well.  That is,~$w_{m \to n}^{(d)} \in \reals_+$.  This implicitly
+instantiates the hypothesis that interactions between spikes on one
+neuron and the rate of another is always excitatory~---~a spike can
+never decrease the future firing rate.  While this is not the most
 biologically realistic model given our knowledge of excitatory and
 inhibitory synapses, it is important to remember that this is simply a
 descriptive model of firing rate dynamics, and it does not necessarily
-map onto physical synaptic connections. As we will see in
-Chapters~\ref{chap:three} and~\ref{chap:four}, the weights
+map onto physical synaptic connections. As we will show, the weights
 inferred by this type of excitatory autoregressive model can still
 provide useful insight into the structure of neural activity.
 
@@ -536,15 +539,19 @@ rate. Specifically, assume that,
   \psi_{t,n} &= \sum_{m=1}^N \sum_{d=1}^D w_{m \to n}^{(d)} \cdot s_{t-d,m}, \\
   \lambda_{t,n} &= g \left( \psi_{t,n} \right).
 \end{align*}
-The nonlinear
-function~${g(\cdot): \reals \to \reals_+}$ 
-maps a real valued ``activation,''~$\psi_{t,n}$, into a nonnegative
-firing rate,~$\lambda_{t,n}$. It is common to use an exponential or a
-sigmoidal nonlinearity. In this formulation the
-weights may be either positive
-or negative to reflect either excitatory or inhibitory interactions,
-respectively. Chapter~\ref{chap:five} derives efficient
-inference algorithms for nonlinear autoregressive models like these.
+The nonlinear function~${g(\cdot): \reals \to \reals_+}$ maps a real
+valued ``activation,''~$\psi_{t,n}$, into a nonnegative firing
+rate,~$\lambda_{t,n}$. It is common to use an exponential or a
+sigmoidal nonlinearity. In this formulation, the weights may be either
+positive or negative to reflect either excitatory or inhibitory
+interactions, respectively.  In computational neuroscience, this is
+often called a generalized linear model (GLM) \citep{Paninski-2004,
+  Truccolo-2005, Pillow-2008}, since the linear-nonlinear cascade
+that links spike history to firing rate is an instance of the
+GLM commonly used in statistics \citep{nelder1972generalized}.
+Chapter~\ref{chap:five} combines these nonlinear autoregressive models
+with prior distributions on the underlying network and derives
+efficient Bayesian inference algorithms to fit them to data.
 
 \paragraph{Factor Models}
 HMM's introduced dynamics to the mixture model and nonlinear
@@ -580,7 +587,7 @@ observations are discrete spike counts rather than Gaussian
 observations.
 
 \paragraph{Linear Dynamical Systems}
-In the same way that HMM's extended mixture models with temporal
+In the same way that HMM's extend mixture models with temporal
 dynamics, linear dynamical systems (LDSs) extend factor models with
 linear autoregressive dynamics in the latent state.  We simply replace
 the prior on~$\bx$ with a model of the form,
@@ -602,7 +609,7 @@ constructing probabilistic models for spike trains. Atop this foundation
 we may layer additional random variables reflecting hypotheses about shared 
 structure. For example, a switching linear dynamical system, shown in Figure~\ref{fig:motifs}
 and studied in Chapter~\ref{chap:eight},
-combines discrete \emph{and} continuous latent states. 
+combines discrete \emph{and} continuous latent states \citep{murphy2012probabilistic, fox2009bayesian}. 
 Likewise, Chapters~\ref{chap:three}, \ref{chap:four},
 and~\ref{chap:five} consider structured prior distributions on 
 the weights of autoregressive models, and Chapter~\ref{chap:seven} considers 
@@ -622,7 +629,7 @@ of the model.
 \label{sec:inference_algorithms}
 Given an observed spike train, our goal is to compute the posterior
 distribution over latent variables,~$\bz$, and parameters,~$\btheta$,
-of the model.  For example, in an LDS the latent variables are just
+of the model.  For example, in an HMM the latent variables are just
 the dynamic latent states, and the parameters
 are~${\btheta = \{\bP, \blambda\}}$, the transition matrix and the
 firing rates for each latent state. Bayes' rule relates the posterior

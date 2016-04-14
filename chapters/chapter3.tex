@@ -728,46 +728,51 @@ For a
 given~$N$,~$\kappa$ and~$\nu$, we can tune the sparsity
 parameter~$\rho$ to achieve stability with high probability. We simply
 set~$\rho$ such that the minimum of~$\sigma\sqrt{N}$ and,
-say,~${\mu N + 3\sigma}$, equals one. Figures~\ref{fig:stability_p_w}
-and~\ref{fig:stability_max_rho} show a variety of weight distributions
+say,~${\mu N + 3\sigma}$, equals one. Figures~\ref{fig:stability}a
+and~\ref{fig:stability}b show a variety of weight distributions
 and the maximum stable~$\rho$. Increasing the network size, the mean,
 or the variance will require a concomitant increase in sparsity.
 
 \begin{figure}[t]
 \vspace{-.5em}
 \begin{center}
-\begin{subfigure}[b]{.22\textwidth}
-\caption{}
-\label{fig:stability_p_w}
-%\vspace{-.9em}
-\includegraphics[height=1.25in]{figures/ch3/stability_p_w} 
-\end{subfigure}
-~
-\begin{subfigure}[b]{.22\textwidth}
-\caption{}
-%\vspace{-1em}
-\label{fig:stability_max_rho}
-\includegraphics[height=1.25in]{figures/ch3/stability_max_rho} 
-\end{subfigure}
-~
-\hspace{1em}
-\begin{subfigure}[b]{.22\textwidth}
-\caption{}
-\label{fig:stability_1_5}
-%\vspace{-.5em}
-%\vspace{.8em}
-\includegraphics[height=1.2in]{figures/ch3/stability_1_5} 
-\end{subfigure}
-~
-\begin{subfigure}[b]{.22\textwidth}
-%\vspace{.7em}
-\caption{}
-\label{fig:stability_8_12}
-%\vspace{-.5em}
-\includegraphics[height=1.2in]{figures/ch3/stability_8_12} 
+\begin{subfigure}[b]{5.5in}
+  \includegraphics[width=\textwidth]{figures/ch3/stability} 
 \end{subfigure}
 \end{center}
 \vspace{-1em}
+% \begin{subfigure}[b]{.22\textwidth}
+% \caption{}
+% \label{fig:stability_p_w}
+% %\vspace{-.9em}
+% \includegraphics[height=1.25in]{figures/ch3/stability_p_w} 
+% \end{subfigure}
+% ~
+% \begin{subfigure}[b]{.22\textwidth}
+% \caption{}
+% %\vspace{-1em}
+% \label{fig:stability_max_rho}
+% \includegraphics[height=1.25in]{figures/ch3/stability_max_rho} 
+% \end{subfigure}
+% ~
+% \hspace{1em}
+% \begin{subfigure}[b]{.22\textwidth}
+% \caption{}
+% \label{fig:stability_1_5}
+% %\vspace{-.5em}
+% %\vspace{.8em}
+% \includegraphics[height=1.2in]{figures/ch3/stability_1_5} 
+% \end{subfigure}
+% ~
+% \begin{subfigure}[b]{.22\textwidth}
+% %\vspace{.7em}
+% \caption{}
+% \label{fig:stability_8_12}
+% %\vspace{-.5em}
+% \includegraphics[height=1.2in]{figures/ch3/stability_8_12} 
+% \end{subfigure}
+% \end{center}
+% \vspace{-1em}
 \caption[Distribution of the maximum eigenvalue for
   i.i.d. random graphs]{Empirical and theoretical distribution of the maximum
   eigenvalue for independent Bernoulli graphs with gamma weights. (a)
@@ -787,15 +792,15 @@ unclear how quickly the spectra of random matrices will converge to
 this distribution. To test this, we computed the empirical eigenvalue
 distribution for random matrices of various size, mean, and
 variance. We generated~$10^4$ random matrices for each weight
-distribution in Figure~\ref{fig:stability_p_w} with sizes~$N=4$,~$64$,
+distribution in Figure~\ref{fig:stability}a with sizes~$N=4$,~$64$,
 and~$1024$, and~$\rho$ set to the theoretical maximum indicated by
-dots in Figure~\ref{fig:stability_max_rho}. The theoretical and
+dots in Figure~\ref{fig:stability}b. The theoretical and
 empirical distributions of the maximum eigenvalue are shown in
-Figures~\ref{fig:stability_1_5} and~\ref{fig:stability_8_12}. We find
+Figures~\ref{fig:stability}c and~\ref{fig:stability}d. We find
 that for small mean and variance weights, for
-example~$\distGamma(1,5)$ in the Figure~\ref{fig:stability_1_5}, the
+example~$\distGamma(1,5)$ in the Figure~\ref{fig:stability}c, the
 empirical results closely match the theory. As the weights grow
-larger, as in~${\distGamma(8,12)}$ in~\ref{fig:stability_8_12}, the
+larger, as in~${\distGamma(8,12)}$ in~\ref{fig:stability}d, the
 empirical eigenvalue distributions have increased variance and lead to
 a greater than expected probability of unstable matrices for the range
 of network sizes tested here. We conclude that networks with strong
