@@ -41,14 +41,37 @@ neuron-specific global parameters~$\nu_n$,
 
 This nonlinear autoregressive model is also known as a generalized
 linear model (GLM), and it is widely used in neuroscience
-\citep{Paninski-2004, Truccolo-2005, Pillow-2008}. If the spike
+\citep{Paninski-2004, Truccolo-2005}. For example, these models have
+proven useful in elucidating correlated patterns of activity in
+simultaneously recorded populations of retinal ganglion cells (RGCs)
+\citep{Pillow-2008}.  By elaborating upon the basic generalized linear
+model, more sophisticated structure of the underlying bipolar cells
+has been revealed from RGC activity \citep{freeman2015mapping}.  While the weights of
+the GLM cannot typically be interpreted as synaptic connections
+\citep{vidne2012modeling}, these models have nevertheless had some
+success extracting underlying synaptic connectivity from spike trains
+\citep{Gerhard-2013, fletcher2011neural, soudry2015efficient}.  As we
+move toward larger and more complete recordings of neural circuits,
+generalized linear models are likely to play a major role in guiding our
+understanding of neural systems.
+
+% References for inference
+If the spike
 counts are Poisson distributed, then under general
 conditions~\citep{Paninski-2004} the likelihood of the spike counts
 will be log concave and amenable to efficient, exact
-optimization. Unfortunately, once we introduce nontrivial prior
+\emph{maximum a posteriori} (MAP) estimation. 
+Moreover, fully Bayesian estimation procedures based on 
+expectation-propagation \citep{gerwinn2008bayesian}
+and Hamiltonian Monte Carlo \citep{ahmadian2011efficient}
+have given some insight into the posterior distribution of 
+network weights. 
+Unfortunately, once we introduce nontrivial prior
 distributions, like network models, the
 posterior becomes multimodal and Bayesian inference becomes more
-challenging.
+challenging.\footnote{However, see \citet{soudry2015efficient} for 
+some recent advances in approximate MAP estimation in models that combine 
+network priors and generalized linear models of spike trains.}
 
 This chapter develops efficient MCMC algorithms for approximating the
 posterior distribution of weights in a GLM with prior distributions on
@@ -473,7 +496,7 @@ distribution,
 These auxiliary variables are conditionally independent and hence can
 be updated in parallel. Moreover, efficient algorithms are available
 to generate \polyagamma random variates~\citep{windle2014sampling}, and
-we have ported these to Python\footnote{\url{https://github.com/slinderman/pypolyagamma}}.
+we have ported these to Python.\footnote{\url{https://github.com/slinderman/pypolyagamma}}
 
 \subsection{Observation Parameter Updates}
 The observation parameter updates depend on the particular distribution.
