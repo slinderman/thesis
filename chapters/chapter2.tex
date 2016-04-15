@@ -38,7 +38,7 @@ characterize the instantaneous \emph{firing rate} of a neuron --- the
 probability that a neuron spikes at any moment in time. 
 
 As a simple illustration, consider the following generative
-process. Suppose a neuron has two states, an \emph{up} state and an
+process. Suppose a neuron has two states, an \emph{up} state and a
 \emph{down} state. In the \emph{up} state, it spikes at a high
 rate, say 100Hz, and in the \emph{down} state it fires less frequently, say at 10Hz.
 Assume that every 50ms the neuron flips a coin to decide its new state
@@ -319,7 +319,7 @@ interpretable conditional intensity
 functions. 
 
 The limiting perspective on the conditional intensity functions
-suggestions an alternative, discrete-time representation.  Rather than
+suggests an alternative, discrete-time representation.  Rather than
 modeling a set of continuous spike times and conditional firing rates,
 we may instead represent a spike count matrix,~$\bS$, and the
 corresponding rate matrix,~$\bLambda$, where,
@@ -423,9 +423,9 @@ state. We can easily extend this to populations of neurons and
 mixtures of more than two states.  Suppose there are now~$K$ states,
 such that~${z_t \in \{1, \ldots, K\}}$. Furthermore, we generalize the
 rates~$\lambda_{\textit{up}}$ and~$\lambda_{\textit{down}}$, to
-vectors of rates, one for each neuron and state.  In a slight abuse 
-of notation, let~${\blambda_k = [\lambda_{k,1}, \ldots, \lambda_{k,N}]}$denote a vector
-of rates where $\lambda_{k,n}$ is the firing rate of
+vectors of rates, one for each neuron and state.  In a slight abuse of
+notation, let~${\blambda_k = [\lambda_{k,1}, \ldots, \lambda_{k,N}]}$
+denote a vector of rates where $\lambda_{k,n}$ is the firing rate of
 the~${n\text{-th}}$ neuron in state~$k$.
 
 In a mixture model, the latent states are discrete, the time bins are
@@ -483,12 +483,13 @@ initial states, and
           \text{---} &  \bpi^{(K)}  & \text{---}
         \end{bmatrix},
 \end{align*}
-is a~${K \times K}$ transition matrix where the row,~${\bpi^{(k)} \in
-  [0,1]^K}$, specifies a discrete conditional distribution over~$z_t$
-given~${z_{t-1}=k}$.  This is known as a hidden Markov model (HMM),
-and the corresponding graphical model is shown in
-Figure~\ref{fig:motifs}. Chapter~\ref{chap:seven} studies some of the
-challenges involved in selecting the number of states,~$K$, in a
+is a~${K \times K}$ transition matrix where the
+row,~${\bpi^{(k)} \in [0,1]^K}$, specifies a discrete conditional
+distribution over~$z_t$ given~${z_{t-1}=k}$.  This is known as a
+hidden Markov model (HMM) \citep{baum1966statistical,
+  rabiner1989tutorial}, and the corresponding graphical model is shown
+in Figure~\ref{fig:motifs}. Chapter~\ref{chap:seven} studies some of
+the challenges involved in selecting the number of states,~$K$, in a
 nonparametric way.
 
 \paragraph{Autoregressive Models}

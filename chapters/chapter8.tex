@@ -907,6 +907,44 @@ less than~$u$, at which point we reject, or a lower bound greater
 than~$u$, at which point we accept. 
 %Empirically, this rarely takes more than six iterations.
 
+\begin{center}
+  \begin{minipage}{.85\textwidth}
+    \vskip-2em
+    \singlespacing
+    \begin{algorithm}[H]
+      \sffamily
+      \begin{algorithmic}
+        \Require $b$,~$\psi$
+        \State accept $\from$ False
+        \While {not accept}
+          \State $\omega \sim \distInvGaussian \left(\frac{b}{|\psi/2|}, b^2 \right)$ \Comment{Inv. Gaussian proposal}
+          \State $u \sim \distUniform(0,1)$
+          \State $\phi_0 = 1$
+          \State $\Phi = \phi_0$
+          \For {$n=1$ to~$\infty$}
+            \State $\Phi \from \Phi + \phi_n$
+            \If {$\phi_n < \phi_{n-1}$}
+              \If {$n$ odd and $u < \Phi$}
+                \State accept $\from$ True
+                \State break
+                \EndIf
+              \If {$n$ even and~$u > \Phi$}
+                \State break
+              \EndIf
+            \EndIf
+          \EndFor
+        \EndWhile
+        \\
+        \Return {$\frac{1}{4} \omega$}
+      \end{algorithmic}
+      \caption{A rejection sampling algorithm for the \polyagamma distribution in the ``small-shape'' regime.}
+      \label{alg:pg_sampling}
+    \end{algorithm}
+    \vspace{.5em}
+  \end{minipage}
+\end{center}
+
+
 \section{Conclusion}
 This chapter has explored various facets of modeling neural spike
 trains with switching linear dynamical systems models. This powerful
