@@ -580,7 +580,7 @@ By integrating over the latent variables and parameters, the marginal
 likelihood captures a tradeoff between a model's complexity and its
 ability to explain the data.  As such, it is a natural criterion for
 model comparison. In some cases, like linear Gaussian models with Gaussian observations,
- the marginal likelihood can be computed in closed form. 
+ the marginal likelihood can be computed exactly. 
 In these cases, marginal likelihood is often the gold-standard 
 for model selection \citep{kass1995bayes, grosse2015sandwiching}.
 
@@ -633,11 +633,12 @@ average of the prior and the joint:
   \Big[ p(\btheta, \bz, \bx, \bs) \Big]^{\beta_m} \\
   &= p(\btheta, \bz, \bx) \, p(\bs \given \btheta, \bz, \bx)^{\beta_m},
 \end{align*}
-with~$\beta_m$ monotonically increasing from~${\beta_1=0}$ to~${\beta_M=1}$.
-As we anneal between~${\beta=0}$ and~${\beta=1}$, the intermediate distributions 
-interpolate between the prior and the unnormalized posterior.
-This geometric path is most common, but any path that starts with a tractable
-distribution and ends with the posterior will suffice \citep[e.g.][]{grosse2013annealing}.
+with~$\beta_m$ monotonically increasing from~${\beta_1=0}$
+to~${\beta_M=1}$.  As we anneal between~${\beta=0}$ and~${\beta=1}$,
+the intermediate distributions interpolate between the prior and the
+posterior.  This geometric path is most common, but any path that
+starts with a tractable distribution and ends with the posterior will
+suffice \citep[e.g.][]{grosse2013annealing}.
 
 % This sequence of geometric averages is analogous to progressively lowering the 
 % ``temperature'' of the likelihood. We start with a high temperature (high entropy) prior 
@@ -826,7 +827,13 @@ p_{\distInvGaussian} \left(\pgvar \, \bigg| \, \frac{b}{|\psi|}, \, b^2 \right)
   &= \frac{b}{\sqrt{2\pi \pgvar^3}}
     \exp \left \{ - \frac{\psi^2}{2\pgvar}  \left(\pgvar - \frac{b}{|\psi|} \right)^2   \right \}.
 \end{align*}
-And finally, the third term we have called~$\Phi(\pgvar \given b)$, 
+When~$\psi=0$, the inverse Gaussian
+density reduces to an inverse gamma density,
+\begin{align*}
+  p_{\distInvGamma}(\omega \given \tfrac{1}{2}, \tfrac{b^2}{2}) &=
+  \frac{b}{\sqrt{2 \pi \omega^3}} \exp \left \{- \frac{b^2}{2\omega} \right \}.
+\end{align*}
+Finally, the third term we have called~$\Phi(\pgvar \given b)$, 
 \begin{align*}
   \Phi(\pgvar \given b)  
   &= \sum_{n=0}^\infty (-1)^n \phi_n(\omega \given b) \\ 
@@ -835,7 +842,8 @@ And finally, the third term we have called~$\Phi(\pgvar \given b)$,
   \frac{\Gamma(n+b)}{\Gamma(n+1)} \frac{2n+b}{\Gamma(b+1)}
     \exp\left\{- \frac{2n(n+b)}{\pgvar} \right\},
 \end{align*}
-where each term,~$\phi_n(\omega \given b)$, is nonnegative, and~$\phi_0(\omega \given b)=1$.
+where each term,~$\phi_n(\omega \given b)$, is nonnegative,
+and~$\phi_0(\omega \given b)=1$. 
 
 \begin{figure}
 \centering
@@ -873,7 +881,7 @@ We formalize this as a conjecture:
   For all~$b>0$, $\Phi(\pgvar \given b)$ is a
   monotonically decreasing function of~$\omega$ with,
   \begin{align*}
-    \lim_{\omega \to 0} \Phi(\omega \given b) &= 1, \\
+    \lim_{0 \from \omega} \Phi(\omega \given b) &= 1, \\
     \text{and, }
     \lim_{\omega \to \infty} \Phi(\omega \given b) &= 0.
   \end{align*}
@@ -903,8 +911,8 @@ a better choice.
 
 \paragraph{Determining acceptance}
 In order to determine whether to accept or reject a proposed value
-of~$\omega$, we need to compare against~${\Phi(\pgvar \given b)}$, for
-given~$\pgvar$ and~$b$. This function is not analytically tractable;
+of~$\omega$, we need to compare against~${\Phi(\pgvar \given b)}$.
+This function is not analytically tractable;
 however, it is still possible to determine whether or not to accept
 with finite computation. To do so, we use a slight modification of the
 alternating series method \citep{devroye1986}.  We exploit the
@@ -978,13 +986,13 @@ final rejection sampling algorithm.
           \State $u \sim \distUniform(0,1)$ \Comment{Sample acceptance variable}
           \State $\Phi = 1$  \Comment{Initialize partial sum with first term}
           \For {$n=1$ to~$\infty$}
-            \State $\Phi \from \Phi + (-1)^n \phi_n(\omega, b)$ \Comment{Update partial sum}
-            \If {$\phi_n < \phi_{n-1}$}  \Comment{Check if terms are decreasing}
-              \If {$n$ odd and $u \leq \Phi$}  \Comment{Compare to lower bound}
+            \State $\Phi \from \Phi + (-1)^n \phi_n(\omega \given b)$ \Comment{Update partial sum}
+            \If {$\phi_n(\omega \given b) < \phi_{n-1}(\omega \given b)$}  \Comment{Check if terms are decreasing}
+              \If {$n$ odd \textbf{and} $u \leq \Phi$}  \Comment{Compare to lower bound}
                 \State accept $\from$ True  \Comment{Accept and return}
                 \State \textbf{break}
                 \EndIf
-              \If {$n$ even and~$u > \Phi$}  \Comment{Compare to upper bound}
+              \If {$n$ even \textbf{and}~$u > \Phi$}  \Comment{Compare to upper bound}
                 \State \textbf{break}  \Comment{Reject and make new proposal}
               \EndIf
             \EndIf
@@ -1019,7 +1027,8 @@ one of the most successful means of approximating marginal likelihoods.
 In order to make these methods work in practice, however, we needed to
 improve the efficiency of sampling the \polyagamma distribution in the
 ``small shape'' regime. By leveraging a particular decomposition of the
-related Jacobi density, we derived an efficient rejection sampling algorithm.
+related Jacobi density, we derived a novel rejection sampling algorithm
+with acceptance probability of at least one half.
 
 % In future work, we will put these novel methods to the test on a variety
 % of real world modeling problems. 
