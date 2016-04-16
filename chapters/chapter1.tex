@@ -205,17 +205,20 @@ network itself can often be summarized in terms of latent types and
 features of nodes that govern how likely any pair of nodes is to be
 connected \citep{Goldenberg-2010}.
 
-We often use networks to represent the dynamics of systems.
-For example, an edge in the network may represent the influence that activity
-on one node exerts on the subsequent activity of another. In this way,
-networks provide a simple summary of complex dynamics. Much of this 
-thesis is devoted to learning network representations from neural 
-spike trains. In these models, nodes correspond to the individual 
-neurons in our dataset, and the edges represent a probabilistic 
-relationship between the spiking activity of one neuron and the 
-future firing rate of its downstream neighbors.  By combining 
-latent variable models for the nodes with dynamics models for its edges, 
-we can construct sophisticated models for dynamical spike trains.
+We often use networks to represent the dynamics of systems.  For
+example, an edge in the network may represent the influence that
+activity on one node exerts on the subsequent activity of another. In
+this way, networks provide a simple summary of complex dynamics. Much
+of this thesis is devoted to learning network representations from
+neural spike trains, building on a rich body of existing work on
+generalized linear models for neural spike trains
+\citep{Paninski-2004, Truccolo-2005, Pillow-2008}.  In these models,
+nodes correspond to the individual neurons in our dataset, and the
+edges represent a probabilistic relationship between the spiking
+activity of one neuron and the future firing rate of its downstream
+neighbors.  By combining latent variable models for the network with
+dynamics models for its edges, this thesis will construct
+sophisticated, hierarchical models for dynamical spike trains.
 
 
 % Networks play a central role in modern neuroscience: they distill
@@ -302,7 +305,7 @@ ensuring that these models admit efficient inference algorithms. To
 achieve this balance, we often look for model-specific structure that
 we can exploit during inference.  This thesis is largely dedicated to
 developing algorithms that capitalize on the properties of models in
-order to efficiently scale to large scale recordings.
+order to efficiently scale to large recordings.
 
 
 \begin{figure}[t]
@@ -378,12 +381,12 @@ Chapter \ref{chap:three} introduces our first probabilistic model for
 neural spike trains --- a combination of continuous time Hawkes
 processes and probabilistic network models. This is based on
 \citet{linderman2014discovering}. However, since this is the first
-model of the chapter, we provide a more thorough discussion of network
+model of the thesis, we provide a more thorough discussion of network
 models, Hawkes processes, and the steps in deriving an efficient
 Markov chain Monte Carlo (MCMC) inference algorithm.  This is also the
 only chapter that will apply these techniques to spike trains from
-domains other than neuroscience, specifically, from social network
-analysis and criminology.
+domains other than neuroscience, specifically, from finance and
+criminology.
 
 Chapter \ref{chap:four} continues the focus on Hawkes processes and
 networks, but here we break from the continuous time models of

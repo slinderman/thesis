@@ -46,6 +46,7 @@
 \newtheorem{corollary}{Corollary}
 \newtheorem{definition}{Definition}
 \newtheorem{assumption}{Assumption}
+\newtheorem{conjecture}{Conjecture}
 
 %\RequirePackage{gensymb}
 \RequirePackage{macros}
