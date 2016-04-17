@@ -78,7 +78,7 @@ fundamentally discrete events in time.  That is, in a short enough
 window of time, a neuron either does or does not fire an action
 potential.  Much progress has been made in understanding how sensory
 neurons digitize continuous signals and how the activity of motor
-neurons innervates muscles and drives behavior, yet how internal
+neurons innervates muscles and drives behavior \citep{rieke1999spikes}, yet how internal
 states, plans, goals, decisions, and thoughts are encoded remains
 largely a mystery.
 
@@ -262,15 +262,16 @@ sophisticated, hierarchical models for dynamical spike trains.
 
 \subsection{Latent States of Neural Populations}
 Networks model dynamic data in terms of relationships between nodes,
-which we typically associate with individual neurons. In some cases,
-however, it is more natural to think about neural dynamics in terms of
-a latent state that evolves over time but cannot be directly
-observed. For example, population activity might reflect a
-low-dimensional, continuous latent state with smooth \citep{Yu09} or
-linear \citep{Smith-2003, paninski2010new} dynamics, or a discrete
-latent state with Markovian dynamics \citep[e.g.][]{jones2007natural,
-  latimer2015single}.  In these models, the firing rates of individual
-neurons are a function of the underlying latent state.
+which are typically associated with individual neurons in the
+generalized linear model. In some cases, however, it is more natural
+to think about neural dynamics in terms of a latent state that evolves
+over time but cannot be directly observed. For example, population
+activity might reflect a low-dimensional, continuous latent state with
+smooth \citep{Yu09} or linear \citep{Smith-2003, paninski2010new}
+dynamics, or a discrete latent state with Markovian dynamics
+\citep[e.g.][]{jones2007natural, latimer2015single}.  In these models,
+the firing rates of individual neurons are a function of the
+underlying latent state.
 
 By combining these simple building blocks --- latent types and features, 
 networks, and dynamic latent states --- we can express sophisticated 
