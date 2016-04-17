@@ -401,7 +401,8 @@ distribution,
 \end{align}
 where
 \begin{align*}
-  \widehat{\bs}_t &= \bOmega_t^{-1} \kappa(\bs_t, \nu_n) \\
+  \bkappa_t &= \left[\kappa(s_{t,1}, \nu_1), \ldots, \kappa(s_{t,N}, \nu_N) \right]^\trans \\
+  \widehat{\bs}_t &= \bOmega_t^{-1} \bkappa_t \\
   \bOmega_t &= \diag \left( \left[ \omega_{t,1}, \ldots, \omega_{t,N} \right] \right).
 \end{align*}
 Note the similarity between the augmented likelihood
@@ -492,7 +493,7 @@ distribution,~${p(\bx_{1:T} \given \bs_{1:T}, \bz_{1:T}, \btheta)}$
   interesting new directions.}  Given a Gaussian approximation, the
 model parameters,~$\btheta$, can be optimized such that they maximize
 the \emph{expected} joint log probability under the approximate
-Gaussian distribution on~$\bx$. This constitutes an approximate
+Gaussian distribution on~$\bx_{1:T}$. This constitutes an approximate
 expectation-maximization (EM) algorithm \citep{dempster1977maximum}.
 
 \sloppy
@@ -680,7 +681,7 @@ Algorithm~\ref{alg:ais}.
       \begin{algorithmic}
         %\Require $\bs_{1:T}$
         \For {$\ell=1$ to~$L$}
-          \State $w^{(k)} \from \mcZ_1$
+          \State $w^{(\ell)} \from \mcZ_1$
           \State Sample $\btheta^{(1)}, \bz^{(1)}, \bx^{(1)} \sim q_1(\btheta, \bz, \bx)$
           \For {$m=2$ to~$M$}
             \State 
@@ -755,7 +756,7 @@ default method for this ``small shape'' regime is to approximate a
 \citep{polson2013bayesian}.  As the number of random variates in the
 sum approaches infinity, the approximate sample converges to a true
 draw from the \polyagamma distribution. To get a reasonably accurate
-draw, we typically need to sample around 200 gamma random variates per
+draw, we typically need to sample around $200$ gamma random variates per
 \polyagamma sample.  With~$TN$ auxiliary variables, this quickly
 becomes prohibitively expensive. Next, we develop a novel sampling
 algorithm that makes these conditional updates very efficient, and
@@ -1042,7 +1043,7 @@ with acceptance probability of at least one half.
 % For now, however, 
 Next, we turn our attention
 to another important question. For all their structure, what can these
-models teach us about neural computation. The next chapter provides some
+models teach us about neural computation? The next chapter provides some
 initial attempts to connect the methods we have developed thus far to more
 abstract theoretical models of neural computation. 
 

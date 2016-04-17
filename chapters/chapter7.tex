@@ -45,8 +45,7 @@ on excess states.
 
 Here we extend the preceding work and consider a \emph{Bayesian nonparametric} 
 approach \citep{orbanz2011bayesian}.  The Bayesian nonparametric approach brings
-additional flexibility to the probabilistic model, which allows us to
-model the complex structure of neural data
+additional flexibility to the probabilistic model
 \citep{Teh10,Wood08,Shalchyan14}.  Specifically, we use a hierarchical
 Dirichlet process hidden Markov model (HDP-HMM) \citep{Teh06}, which
 extends the finite-state HMM with an HDP prior that theoretically
@@ -88,7 +87,7 @@ case with a countably infinite number of latent states.
 Consider a finite $K$-state HMM applied to population spiking activity
 from a population of $N$ neurons. We assume that the discrete latent
 state follows a first-order Markov chain ${\bz = \left[ z_1, \ldots,
-    z_T\right]}$ with~$z_t \in \{1, \ldots, K\}$, and second, the
+    z_T\right]}$ with~$z_t \in \{1, \ldots, K\}$, and that the
 spike counts of individual neurons at time $t$ follow a Poisson
 distribution whose rate depends on the latent state,~$z_t$. This is
 summarized in the following probabilistic model:
@@ -114,7 +113,7 @@ initial states, and
         \end{bmatrix},
 \end{align*}
 is a~${K \times K}$ transition matrix where the row,~${\bpi^{(k)} \in
-  [0,1]^K}$, specify a discrete conditional distribution over~$z_t$
+  [0,1]^K}$, specifies a discrete conditional distribution over~$z_t$
 given that~${z_{t-1}=k}$. 
 The state-conditional firing rates are collected in the matrix,
 \begin{align*}
@@ -139,7 +138,7 @@ The state-conditional firing rates are collected in the matrix,
 % missing data, ${\bS}$ as the observed (incomplete) data, and
 % their combination $\{\bS, \bz\}$ as the complete data.
 
-In a Bayesian version of this model,  we introduce prior distributions over
+In a Bayesian HMM,  we introduce prior distributions over
 the parameters. We use the following prior distributions,
 \begin{align*}
   \alpha_0 &\sim \distGamma(a_{\alpha_0}, 1.0) \\
@@ -148,7 +147,7 @@ the parameters. We use the following prior distributions,
   \lambda_{k,n} &\sim \distGamma(\kappa_n,\nu_n).
 \end{align*}
 where gamma prior on firing rates has neuron-specific shape parameters,
-$\kappa_n$, and scale parameters, $\nu_n$.
+$\kappa_n$, and scale parameters,~$\nu_n$.
 
 \subsection{Nonparametric Hidden Markov Models}
 
@@ -165,8 +164,8 @@ Specifically, we sample a distribution over latent states,~$G_0$, from
 a Dirichlet process (DP) \citep{Ferguson73}
 prior,~${G_0\sim \DP(\gamma,H)}$, where~$\gamma$ is the
 concentration parameter and~$H$ is the base measure.  Moreover, we
-place a prior distribution over the concentration parameter,~$\gamma
-\sim \distGamma(a_{\gamma}, 1.0)$.  Given the concentration, one may
+place a prior distribution over the concentration parameter,~${\gamma
+\sim \distGamma(a_{\gamma}, 1.0)}$.  Given the concentration, one may
 sample from the DP via the ``stick-breaking construction''
 \citep{Sethuraman94}. First, sample the stick-breaking
 weights,~$\bbeta$,
@@ -223,7 +222,7 @@ states for the HMM.
 
 Several MCMC-based inference methods have been developed for the
 HDP-HMM \citep{Teh06,van08}. Some of these previous works use a
-collapsed Gibbs sampler in which the transition matrix~$P$ and the
+collapsed Gibbs sampler in which the transition matrix~$\bP$ and the
 observation parameters~$\bLambda$ are integrated out
 \citep{Teh06,van08}. In this work, however, we use a ``weak limit''
 approximation in which the DP prior is approximated with a symmetric
@@ -236,7 +235,7 @@ Dirichlet prior. Specifically, we let
 \nonumber \bpi^{(0)} \given \alpha_0, \bbeta &\sim \distDirichlet(\alpha_0 \beta_1, \ldots, \alpha_0 \beta_{K_{\mathsf{max}}}), \\
 \nonumber \bpi^{(k)} \given \alpha_0, \bbeta &\sim \distDirichlet(\alpha_0 \beta_1, \ldots, \alpha_0 \beta_{K_{\mathsf{max}}}).
 \end{align}
-where $K_{\mathsf{max}}$ denotes a truncation level for approximating the infinity.  It can be
+where $K_{\mathsf{max}}$ denotes a truncation level.  It can be
 shown that this prior will weakly converge to the DP prior as the
 dimensionality of the Dirichlet distribution approaches infinity
 \citep{Johnson14, Ishwaran02}. With this approximation we can
@@ -290,7 +289,7 @@ these latent states allows us to avoid issues with mixing when
 individually sampling states that are highly correlated with one
 another. We provide a brief overview of this algorithm here.
 Complete details of this algorithm can be found in,
-for example, \citep{Johnson14b}. 
+for example, \citet{Johnson14b}. 
 
 % NEW STUFF
 First, we ``filter'' the data to get the marginal distribution
