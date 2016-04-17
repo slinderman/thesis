@@ -7,11 +7,11 @@ construct probabilistic models for dynamic neural spike trains. The
 key assumption of Hawkes processes, the assumption we leveraged to
 derive efficient inference algorithms, was that the firing rate was the
 sum of nonnegative impulse responses from preceding spikes. In other
-words, the interactions in a Hawkes process were additive and purely
+words, the interactions in Hawkes processes were additive and purely
 excitatory. While this led to interpretable network models for some
 systems, in many cases it is more natural to expect a mix of
 excitatory and inhibitory interactions. Unfortunately, we cannot have
-inhibitory interactions within a simple additive model because this could
+inhibitory interactions within a simple additive model because they could
 yield negative firing rates. Instead, we need to revisit the
 assumption of linear dynamics.
 
@@ -69,9 +69,9 @@ network weights.
 Unfortunately, once we introduce nontrivial prior
 distributions, like network models, the
 posterior becomes multimodal and Bayesian inference becomes more
-challenging.\footnote{However, see \citet{soudry2015efficient} for 
+challenging. However, see \citet{soudry2015efficient} for 
 some recent advances in approximate MAP estimation in models that combine 
-network priors and generalized linear models of spike trains.}
+network priors and generalized linear models of spike trains.
 
 This chapter develops efficient MCMC algorithms for approximating the
 posterior distribution of weights in a GLM with prior distributions on
@@ -80,7 +80,10 @@ models.  Unfortunately, the augmentation scheme developed for linear
 Hawkes processes is no longer viable due to the nonlinear
 interactions. Instead, we develop an inference algorithm based on a
 recently developed scheme known as \polyagamma augmentation
-\citep{polson2013bayesian}. The basic idea behind this scheme is to
+\citep{polson2013bayesian}. A recent application of these methods to 
+factor analysis models for neural spike trains provided the 
+motivation for the work in this chapter \citep{Pillow2012}.
+The basic idea behind the \polyagamma augmentation is to
 introduce a set of auxiliary variables conditioned upon which the
 discrete spike counts actually ``look'' like Gaussian observations.
 Once we have reduced the problem to inference in a linear Gaussian
@@ -144,7 +147,7 @@ binomial, and negative binomial distributions are all natural choices.
 % as well. 
 While the Gaussian distribution is not a proper model for discrete
 spike counts, we include it in our list since our inference procedure will 
-reduce the other models to a Gaussian. Table~\ref{tab:obs_models} 
+reduce the other models to the Gaussian case. Table~\ref{tab:obs_models} 
 lists the basic properties of these observation distributions.
 
 The Bernoulli distribution is appropriate for binary spike counts,
@@ -170,7 +173,7 @@ impulse response as a weighted sum of basis functions,
 \label{eq:glm_impulse}
 h_{n' \to n}[d] &= a_{n' \to n} \sum_{b=1}^B w_{n' \to n}^{(b)} \cdot \phi_b[d].
 \end{align}
-We combine the scalar weight and the normalized basis function
+We dispense with the normalized basis function,~$\hbar[d]$,
 because, in the nonlinear model, the normalized basis functions can no
 longer be seen as distributions over child spike times. Indeed the
 notion of ``parent'' and ``child'' spikes is no longer warranted since
@@ -487,8 +490,8 @@ where
 Having introduced auxiliary variables, we must now also derive
 Markov transitions to update them as well. Fortunately, the
 \polyagamma distribution is designed such that the conditional
-distribution of the auxiliary variables is just a ``tilted'' \polyagamma
-distribution,
+density of the auxiliary variables is just a ``tilted'' \polyagamma
+density,
 \begin{align*}
   p(\omega_{t,n} \given s_{t,n}, \nu_n, \psi_{t,n})
   &= p_{\mathrm{PG}}(\omega_{t,n} \given b(s_{t,n}, \nu_n), \, \psi_{t,n}).
@@ -663,7 +666,7 @@ of our algorithm with synthetic data.
 We applied our model to simultaneously recorded multi-neuronal spike
 trains from a population of 27 primate retinal ganglion cells
 (RGCs). This dataset was previously analyzed with a standard
-generalized linear model in \citet{Pillow-2008}.  In this dataset, the
+generalized linear model by \citet{Pillow-2008}.  In this dataset, the
 population is presented with a Gaussian white noise video with pixel
 sizes tuned to approximately the width of a receptive field. We
 trained our models on one minute of spiking activity, binned at one
@@ -973,7 +976,7 @@ probability, whereas the standard GLM finds a single network that does
 not account for prior beliefs about structure underlying the network.
 In this example, subsequently fitting a latent distance model to the
 adjacency matrix of a thresholded GLM network finds an embedding that
-is considerably worse than the embedding found by our Bayesian
+differs considerably from the embedding found by our Bayesian
 approach. This is illustrated by the decreased correlation between
 true and inferred pairwise distances under the standard GLM compared
 to that of our joint, Bayesian approach, as shown in
@@ -1252,7 +1255,7 @@ developing a nonlinear firing rate model.  We derived an efficient,
 fully-conjugate Gibbs sampling algorithm that integrate out the
 weights in order to sample sparsity patterns. The key was the
 \polyagamma augmentation, which makes discrete observations appear as
-Gaussian likelihoods.This led to dramatic improvements in performance
+Gaussian likelihoods. This led to dramatic improvements in performance
 and allowed us to discover interesting structure in a variety of real
 and synthetic datasets.
 

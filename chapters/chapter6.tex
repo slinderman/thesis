@@ -34,7 +34,7 @@ In doing so, we imbue the weights with a biophysical interpretation
 that we explicitly avoided in previous chapters. We discuss when this
 interpretive leap is warranted. 
 
-To perform inference in this model, we use particle Markov Chain Monte
+To perform inference in this model, we use particle Markov chain Monte
 Carlo (pMCMC) \citep{Andrieu-2010}, a recently developed inference
 technique for time series with nonlinear dynamics.  We use this new
 modeling framework to examine the problem of using recorded data to
@@ -82,7 +82,7 @@ neuron~$n'$ induce on the membrane potential of neuron~$n$ at lag~$d$.
     synaptic weights are changing over time. Here, the neurons have
     inhibitory self connections to mimic refractory effects, and are
     connected via a chain of excitatory synapses, as indicated by the
-    nonzero entries~$A_{1\to 2}$,~$A_{2 \to 3}$, and~$A_{3\to 4}$. The
+    nonzero entries~$a_{1\to 2}$,~$a_{2 \to 3}$, and~$a_{3\to 4}$. The
     corresponding weights of these synapses are strengthening over time
     (darker entries in~$\bW$), leading to larger impulse responses in
     the firing rates and a greater number of induced post-synaptic
@@ -134,7 +134,7 @@ effectively performing inference in these models have been limited.
 \section{A Sparse Time-Varying Generalized Linear Model}
 In order to capture the time-varying nature of synaptic weights, we
 extend the standard GLM by first factoring the impulse responses in
-the firing rate of Eq.~\ref{eqn:glm_rate} into a product of three
+the firing rate of~\eqref{eqn:glm_rate} into a product of three
 terms:
 \begin{align}
 \label{eqn:tvwglm_ir}
@@ -150,7 +150,7 @@ i.e. ~${\sum_{d=1}^D \hbar_{n' \to n}[d] \cdot \Delta t =
 meaning to the synaptic weights: otherwise~$w$ would only be defined
 up to a scaling factor. For simplicity, we assume~$\hbar[d]$ does
 not change over time, that is, only the amplitude and not the duration
-of the PSPs are time-varying. This restriction could be adapted in
+of the PSPs is time-varying. This restriction could be adapted in
 future work.
 
 As in previous chapters, we model the normalized impulse responses as
@@ -593,12 +593,12 @@ developed a parallel implementation of our algorithm to capitalize on
 conditional independencies across neurons, i.e. for the additive and
 multiplicative STDP rules we can sample the weights~${\bW_{*\to n}}$
 independently of the weights~${\bW_{*\to n'}}$. On the two neuron
-examples we achieve upward of 2 iterations per second (sampling all
-variables in the model), and we run our model for 1000
+examples we achieve upward of $2$ iterations per second (sampling all
+variables in the model), and we run our model for $1000$
 iterations. Convergence of the Markov chain is assessed by analyzing
 the log posterior of the samples, and typically stabilizes after a few
 hundred iterations. As we scale to networks of ten neurons, our
-running time quickly increases to roughly 20 seconds per iteration,
+running time quickly increases to roughly $20$ seconds per iteration,
 which is mostly dominated by slice sampling the learning rule
 parameters. In order to evaluate the conditional probability of a
 learning rule parameter, we need to sample the weight trajectories for
@@ -608,7 +608,7 @@ study of synaptic plasticity.
 
 \subsection{Biophysical simulations}
 Using the biophysical simulator NEURON, we performed two
-experiments. First, we considered a network of 10 sparsely
+experiments. First, we considered a network of $10$ sparsely
 interconnected neurons ($28$ excitatory synapses) undergoing synaptic
 plasticity according to an additive STDP rule. Each neuron was driven
 independently by a hidden population of $13$ excitatory neurons and $5$

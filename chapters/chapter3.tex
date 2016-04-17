@@ -30,7 +30,7 @@ statistics like ``betweenness'' and the number of connected triangles
 probabilistic modeling.  For example, we may look for clusters or
 features of nodes that have similar patterns of connectivity.  Other
 analyses are more supervised in nature; in a ``link prediction'' task
-we want to predict whether or not a pair of nodes is connected, given
+we seek to predict whether or not a pair of nodes is connected, given
 partial observations of the network \citep{Liben-2007}.
 Traditionally, network analysis has focused on \emph{explicit network}
 problems in which the network itself is considered to be the observed
@@ -121,10 +121,10 @@ modeled with Hawkes processes.
      strength of those connections. In this example, nearby neurons of the same 
      type are most likely to connect.
      \textbf{(b)} The network parameterizes an autoregressive model 
-     with a time-varying activation, which specifies the instantaneous probability 
+     with a time-varying firing rate, which specifies the instantaneous probability 
      of an action potential.
      \textbf{(c)} Spikes are randomly generated according to the 
-     activation. Each spike induces an impulse response on the activation 
+     firing rate. Each spike induces an impulse response on the firing rate 
      of downstream neurons.}
   \label{fig:fig1}
 \end{figure}
@@ -225,7 +225,7 @@ below:
   class,~$z_n$.  The probability of connection depends on the class of
   the two neurons.  This is the network equivalent of a mixture model.
   In a Bayesian framework, we assume the class assignments are drawn
-  from a categorical prior,~${z_n \sim \distDiscrete(\bpi)}$, and
+  from a discrete prior,~${z_n \sim \distDiscrete(\bpi)}$, and
   the class weights are given a conjugate, symmetric Dirichlet
   prior,~${\bpi \sim \distDirichlet(\alpha \bone_K)}$. The connection
   probabilities are given a conjugate beta prior,~${\beta_{k \to k'}
@@ -465,7 +465,7 @@ Formally, suppose we are given sets of spikes drawn independently
 from ~$K$ Poisson processes with rates~${\lambda_1(t), \ldots,
   \lambda_K(t)}$.  Call the union of the spikes~${\{s_m,
   \omega_m\}}$, where~${s_m \in \mcV}$ is the location of the spike
-and~${\omega_m \in \{1, \ldots, K\}}$ says which process it came
+and~${\omega_m \in \{1, \ldots, K\}}$ denotes which process it came
 from. Let~${\lambda_{\mathsf{tot}}(t) = \sum_{k=1}^K \lambda_k(t)}$.
 The likelihood of the full set of spikes is,
 \begin{align*}
@@ -478,10 +478,9 @@ The likelihood of the full set of spikes is,
   \prod_{m=1}^M \prod_{k=1}^K \lambda_k(s_m)^{\bbI[\omega_m = k]}.
 \end{align*}
 
-The Poisson superposition principle says that the marginal distribution
+The Poisson superposition principle states that the marginal distribution,
 summing over all possible process assignments,~$\{\omega_m\}$, is a Poisson
-process with rate~$\lambda_{\mathsf{tot}}(t)$. To show this, we sum over
-the process assignments to get,
+process with rate~$\lambda_{\mathsf{tot}}(t)$. That is,
 \begin{align*}
   p(\{s_m\}_{m=1}^M \given \{\lambda_k(t)\}_{k=1}^K)
   &= \sum_{\omega_1=1}^K \cdots \sum_{\omega_M=1}^K p(\{s_m, \omega_m\}_{m=1}^M \given \{\lambda_k(t)\}_{k=1}^K) \\
@@ -498,7 +497,7 @@ Furthermore, the conditional distribution of~$\omega_m$ is,
 \end{align*}
 In other words, given a set of spikes drawn from rate~$\lambda_{\mathsf{tot}}(t)$,
 we can attribute each spike to one of the~$K$ additive contributions
-to the rate function by sampling a categorical distribution with probabilities
+to the rate function by sampling a discrete distribution with probabilities
 given by the relative rate at the time of the spike. This is known as
 \emph{Poisson thinning} \citep{Kingman-1993}.
 
@@ -641,13 +640,13 @@ tractable conjugate priors.
 We can now write down the joint probability of the probabilistic model,
 \begin{multline}
 \label{eq:hawkes_complete_model}
-p(\{s_m, c_m, \omega_m\}, \bA, \bW, \{\{\theta_{n \to n'}\}\}, \{\lambda^{(0)}_{n}\}, \{\bz_n\}, \bvartheta \given \boldeta) 
+p(\{s_m, c_m, \omega_m\}, \bA, \bW, \{\{\theta_{n \to n'}\}\}, \{\lambda^{(0)}_{n}\}, \{\bz_n\}, \bvartheta) 
 =  \\
-p(\bvartheta \given \boldeta)
-\times \overbrace{p(\{\bz_n\} \given \bvartheta, \boldeta)}^\text{latent variables}
-\times \overbrace{p(\bA, \bW \given \{\bz_{n}\}, \bvartheta, \boldeta)}^\text{network} 
-\times \overbrace{p(\{\lambda^{(0)}_{n}\} \given \boldeta)}^\text{background}
-\times \overbrace{p(\{\theta_{n\to n'}\} \given \boldeta)}^\text{impulses} \\
+p(\bvartheta)
+\times \overbrace{p(\{\bz_n\} \given \bvartheta)}^\text{latent variables}
+\times \overbrace{p(\bA, \bW \given \{\bz_{n}\}, \bvartheta)}^\text{network} 
+\times \overbrace{p(\{\lambda^{(0)}_{n}\})}^\text{background}
+\times \overbrace{p(\{\theta_{n\to n'}\})}^\text{impulses} \\
 \times \overbrace{  p \left(\{s_m, c_m, \omega_m\} \given \bA, \bW, \{\theta_{n \to n'}\}, \{\lambda^{(0)}_{n}\} \right) }^\text{augmented likelihood}.
 \end{multline}
 Before deriving inference algorithms for this model, however, we pause 
@@ -822,7 +821,7 @@ algorithm.
 
 \paragraph{Sampling weights $\bW$.} 
 To derive the updates for weights, recall from
-Equation~\ref{eq:ir_decomp} that~${w_{n \to n'}}$ only
+\eqref{eq:ir_decomp} that~${w_{n \to n'}}$ only
 appears in the impulse responses for which~${c_m=n}$
 and~${c_{m'}=n'}$, so the likelihood is proportional to,
 \begin{align*}
@@ -838,7 +837,7 @@ If~${a_{n \to n'}=0}$, the impulse response is deterministically zero
 and, as a result, none of the spikes on neuron~$n'$ will be attributed to spikes
 on neuron~$n$. Thus, the likelihood does not depend on~$w_{n \to n'}$.
 If~${a_{n \to n'}=1}$, the likelihood is more complicated.
-Note, however, that if~$s_m < T - \Delta t_{\mathsf{max}}$,
+Note, however, that if~${s_m < T - \Delta t_{\mathsf{max}}}$,
 \begin{align*}
   -\int^T_{s_m} a_{n \to n'} \cdot w_{n \to n'} \cdot
   \hbar(t - s_m; \theta_{n \to n'}) \, \mathrm{d}t
@@ -894,7 +893,7 @@ where
 Similarly, the likelihood of a constant background rate,
 ${\lambda^{(0)}_{n}}$, is conjugate with a gamma
 prior~${\lambda^{(0)}_{n} \sim
-  \distGamma(\alpha_0,\beta_0}$.  The conditional
+  \distGamma(\alpha_0,\beta_0)}$.  The conditional
 distribution is,
 \begin{align*}
   p(\lambda^{(0)}_{n} \given \{s_m,c_m, \omega_m\}_{m=1}^M, \alpha_0, \beta_0)
@@ -932,8 +931,8 @@ x_{m \to m'} &\triangleq \ln(s_{m'}-s_m)-\ln(t_{\sf{max}}-(s_{m'}-s_m)), \\
 \bar{x}_{n \to n'} &= \frac{1}{M_{n \to n'}} \sum_{m=1}^M \sum_{m'=1}^M \bbI[c_m=n] \, \bbI[c_{m'}=n'] \, \bbI[\omega_{m'}=m] \,x_{m \to m'}, \\
 v_{n \to n'} &= \sum_{m=1}^M \sum_{m'=1}^M \bbI[c_m=n] \, \bbI[c_{m'}=n'] \, \bbI[\omega_{m'}=m] \, (x_{m \to m'} - \bar{x})^2.
 \end{align*}
-Intuitively, these correspond to the number of spikes caused by an
-interaction and the mean and variance of their (transformed) delays.
+Intuitively, these correspond to the number of spikes attributed to a
+connection and the mean and variance of their (transformed) delays.
 %The conditional distribution is,
 %\begin{align*}
 %  \mu_{n \to n'},\tau_{n \to n'} \given \{s_m,c_m, \omega_m\}_{m=1}^M) &\sim
@@ -967,18 +966,18 @@ update~${\bA\given\{s_m,c_m\},\bW,\theta_{n \to n'}}$ by marginalizing
 the parent variables. By the Poisson superposition principle, the marginal
 distribution is still a Poisson process:
 \begin{align*}
-  p(a_{n \to n'} \given \{s_m, c_m\}, &\bA_{\neg n \to n'}, \bW, \btheta) 
-  %\\
+  p(a_{n \to n'} \given \{s_m, c_m\}, &\bA_{\neg n \to n'}, \bW, \btheta, \{\bz_n\}, \bvartheta) 
+  \\
   %&\propto p(\{s_m, c_m\}, \bA, \bW, \btheta)  \\
   %&= \sum_{\omega_1} \cdots \sum_{\omega_M} p(\{s_m, c_m, \omega_m\}, \bA, \bW, \btheta) \\
-  \propto \PP \big(\{s_m: c_m=n'\} \, \big| \, \lambda_{n'}(t \given \mcH_t)\big)
-  \times p(a_{n \to n'}) \\
+  &\propto \PP \big(\{s_m: c_m=n'\} \, \big| \, \lambda_{n'}(t \given \mcH_t)\big)
+  \times p(a_{n \to n'} \given \bz_n, \bz_{n'}, \bvartheta) \\
   &= \exp \left \{ -\int_0^T \lambda_{n'}(t \given \mcH_t) \, \mathrm{d}t \right\}
   \prod_{m=1}^M \left[ \lambda_{n'}(s_m \given \mcH_t)^{\bbI[c_m=n']} \right]
-  p(a_{n \to n'}),
+  p(a_{n \to n'}  \given \bz_n, \bz_{n'}, \bvartheta),
 \end{align*}
 where~$\lambda_{n'}(t \given \mcH_t)$ depends on~$\bA$,~$\bW$, and~$\btheta$
-through Eq.~\ref{eq:hawkes_rate}.
+through~\eqref{eq:hawkes_rate}.
 Importantly, the integral of the rate function appearing in the
 likelihood can be computed without numerical quadrature,
 \begin{align*}
@@ -995,9 +994,9 @@ final interval of the recording,~${(T-\Delta t_{\mathsf{max}}, T]}$.
   sample from its collapsed distribution, holding all other parameters
   fixed.
 
-Once the adjacency matrix has been resampled, the parent variables
+Once the adjacency matrix has been updated, the parent variables
 are updated by Poisson thinning --- that is, by sampling from their
-categorical conditional distribution. Again, these are all conditionally
+discrete conditional distribution. Again, these are all conditionally
 independent, so the~$M$ auxiliary variables can be sampled in parallel.
 
 \paragraph{Sampling Network Variables and Parameters}
@@ -1081,8 +1080,8 @@ prediction task where we measure the probability of held-out spike
 sequences.
 
 The network Hawkes model can be used for link prediction by
-considering the posterior probability of interactions~$\Pr(a_{n \to
-  n'}\given \{s_m,c_m\})$. By thresholding at varying probabilities we
+considering the posterior probability of interactions~${p(a_{n \to
+  n'}\given \{s_m,c_m\})}$. By thresholding at varying probabilities we
 compute a ROC curve. A standard Hawkes process assumes a complete set
 of interactions~($a_{n \to n'}\equiv 1$), but we can similarly threshold
 its inferred weight matrix to perform link prediction.
@@ -1293,7 +1292,7 @@ the two dimensional PCA embedding is highly skewed.\footnote{First, we binned th
 Finally, panels (e-g) show the samples from the posterior distribution
 of ~$\widetilde{\bZ}$. Since this is difficult to visualize, we show
 the marginal distribution of four neurons at a time. The true location
-of the four neurons is identified in the upper panel, and the sampled
+of the four place fields is identified in the upper panel, and the sampled
 locations are scattered in the lower panel. Importantly, the relative
 arrangement of locations is well preserved in the inferred locations.
 Moreover, cells with larger place fields tend to have larger posterior
@@ -1591,7 +1590,7 @@ model (GMM) for process identities, but did not explore structured
 network priors. We experimented with this process identity model but
 found that it suffers in predictive log likelihood tests.
 
-Recently, \citet{Iwata-2013} developed a stochastic EM algorithm for
+\citet{Iwata-2013} developed a stochastic EM algorithm for
 Hawkes processes, leveraging similar conjugacy properties, but without
 network priors. \citet{Zhou-2013} have developed a promising
 optimization-based approach to discovering low-rank networks in Hawkes

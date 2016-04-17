@@ -1,0 +1,57 @@
+Neuroscience is entering an exciting new age.  Modern recording
+technologies enable us to simultaneously measure the activity of
+thousands of neurons in organisms performing complex behaviors.  Such
+recordings offer an unprecedented opportunity to glean insight into
+the mechanistic underpinnings of intelligence, but they also present
+extraordinary statistical and computational challenges: how do we make
+sense of these large scale recordings?
+This thesis develops a suite of tools that instantiate
+hypotheses about neural computation in the form of
+probabilistic models and a corresponding set of Bayesian inference
+algorithms that efficiently fit these models to neural spike trains.
+From the posterior distribution of model parameters and variables,
+we seek to advance our understanding of how the brain works. 
+
+At the core of these probabilistic models is a collection of
+structural motifs, the recurring design patterns from which we
+construct interpretable models. These include random network models,
+which connect latent types and features of neurons to the dynamics of
+spike trains, and state space models, which capture the dynamics of
+neural data in terms of a latent state that evolves over time.  The
+persistent challenge lies in reconciling these models with the
+discrete nature of neural spike trains.  Our principal tools for
+connecting structure and spike trains is the Hawkes process --- a
+multivariate generalization of the Poisson process --- and its
+discrete time analogue, the linear autoregressive Poisson model.  By
+leveraging the linear nature of these models and the Poisson
+superposition principle, we derive elegant auxiliary variable
+formulations and efficient inference algorithms. We then generalize
+these to nonlinear and nonstationary models of neural spike trains and
+take advantage of the \polyagamma augmentation to develop novel
+Markov chain Monte Carlo (MCMC) inference algorithms.
+
+In the latter chapters, we shift our focus from autoregressive models
+to latent state space models of neural activity. We provide an
+empirical study of Bayesian nonparametric methods for hidden Markov
+models of neural spike trains. Then, we leverage the \polyagamma
+augmentation to develop an efficient MCMC algorithm for switching
+linear dynamical systems with discrete observations.  In pursuit of a
+principled means of Bayesian model comparison, we develop an annealed
+importance sampling method for estimating the marginal likelihood of 
+complex spike train models. To make this method work in practice, 
+we devise a novel sampling algorithm for the 
+\polyagamma distribution. With this development, we can compare 
+many of the models presented in this thesis in a rigorous, Bayesian
+manner.
+
+Finally, we consider the ``Bayesian brain'' hypothesis --- the
+hypothesis that neural circuits are themselves performing Bayesian
+inference.  We show how one particular implementation of this
+hypothesis implies autoregressive dynamics of the form studied
+in earlier chapters, thereby providing a theoretical interpretation of
+our probabilistic models.  This closes the
+loop, connecting top-down theory with bottom-up inferences, and
+suggests a path toward translating large scale recording
+capabilities into new insights about neural computation.
+
+
