@@ -252,11 +252,11 @@
 	\pagestyle{fancy}
 	\lhead{Thesis advisors: Professors \@advisor} \rhead{\@author}
 	\renewcommand{\headrulewidth}{0.0pt}
-	\vspace*{30pt}
+	\vspace*{20pt}
 	\begin{center}
 	  %\Large \textcolor{SchoolColor}{\@title} \normalsize \\
           \Large \textcolor{SchoolColor}{Bayesian Methods for Discovering Structure in \\ Neural Spike Trains} \normalsize \\
-	\vspace*{20pt}
+	\vspace*{10pt}
 	\scshape Abstract \\ \rm
 	\end{center}
 	\input{frontmatter/abstract}
