@@ -225,7 +225,7 @@ below:
   class,~$z_n$.  The probability of connection depends on the class of
   the two neurons.  This is the network equivalent of a mixture model.
   In a Bayesian framework, we assume the class assignments are drawn
-  from a categorical prior,~${z_n \sim \distCategorical(\bpi)}$, and
+  from a categorical prior,~${z_n \sim \distDiscrete(\bpi)}$, and
   the class weights are given a conjugate, symmetric Dirichlet
   prior,~${\bpi \sim \distDirichlet(\alpha \bone_K)}$. The connection
   probabilities are given a conjugate beta prior,~${\beta_{k \to k'}

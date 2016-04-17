@@ -383,7 +383,7 @@ To counteract this effect, we often introduce a fourth step in which we
 \begin{enumerate}
 \item[4.] Sample new particle indices with replacement according to the current weights, 
   \begin{align*}
-    p' &\sim \distCategorical \left(
+    p' &\sim \distDiscrete \left(
          \left[ \frac{v_t^{(1)}}{\sum_{p} v_t^{(p)}}, \ldots,
          \frac{v_t^{(P)}}{\sum_{p} v_t^{(p)}} \right] \right),
   \end{align*}

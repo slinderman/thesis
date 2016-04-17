@@ -119,8 +119,8 @@ are,
 \begin{align*}
   p(\bz_{1:T} \given \btheta) 
   &=
-    \distCategorical(z_1\given \bpi_0)
-    \prod_{t=2}^T \distCategorical(z_t \given \bpi_{z_{t-1}}).
+    \distDiscrete(z_1\given \bpi_0)
+    \prod_{t=2}^T \distDiscrete(z_t \given \bpi_{z_{t-1}}).
   \\
   p(\bx_{1:T} \given \bz_{1:T}, \btheta)
   &= 
@@ -152,7 +152,7 @@ The SLDS contains a number of other models as special cases:
   discrete transition matrix,~$\bP$, has identical rows (${\bpi_k
     \equiv \bpi_0}$), the SLDS further reduces to a simple mixture
   model. At each point in time, the discrete latent state is drawn
-  from~${z_t \sim \distCategorical(\bpi_0)}$.
+  from~${z_t \sim \distDiscrete(\bpi_0)}$.
 \end{itemize}
 
 \begin{figure}[t]
@@ -198,22 +198,29 @@ distribution has nonstationary precision,~$\bOmega_t$, such that
 \end{align}
 In this case, the conditional density over continuous latent
 states,~${p(\bx_{1:T} \given \bs_{1:T}, \bz_{1:T}, \btheta)}$, is
-jointly Gaussian as well.  The marginal ``filtered'' distribution
+jointly Gaussian as well. We perform a block Gibbs update for the
+entire latent state sequence,~$\bx_{1:T}$, using a
+forward filtering-backward sampling algorithm, just as we did for the
+HMM in Section~\ref{sec:block_gibbs_hmm}.
+
+The marginal ``filtered'' distribution
 given observations up to time~$t$ is a Gaussian, which we will denote
 by,
 \begin{align*}
   p(\bx_t \given \bs_{1:t}, \bz_{1:t}, \btheta) &= \distNormal(\bx_t \given \bbm_t, \bV_t),
 \end{align*}
 where~$\bbm_t$ and~$\bV_t$ are the filtered mean and covariance, respectively.
-
-Kalman filtering is an iterative algorithm for computing these filtered means 
-and variances. 
-Here, we follow the presentation of
-\citet[Chapter 18]{murphy2012probabilistic}.  Kalman filtering consists
-of iterating forward in time from~${t=1}$ to~${t=T}$. Assume that at iteration~$t$ we
-have already computed~$\bbm_{t-1}$ and~$\bV_{t-1}$. Given the
-Markovian structure of the probabilistic model, the
-conditional distribution of~$\bx_t$ factors into,
+Kalman filtering is an iterative for computing the filtered
+means and variances of a Gaussian linear dynamical system, and it
+is analogous to the HMM filtering algorithms of the previous chapter.
+Here, we
+follow the presentation of \citet[Chapter
+  18]{murphy2012probabilistic}.  Kalman filtering consists of
+iterating forward in time from~${t=1}$ to~${t=T}$. Assume that at
+iteration~$t$ we have already computed~$\bbm_{t-1}$
+and~$\bV_{t-1}$. As with the HMM, given the Markovian structure of the
+probabilistic model, the conditional distribution of~$\bx_t$ factors
+into,
 \begin{align*}
   p(\bx_t \given \bs_{1:t}, \bz_{1:t}, \btheta)
   &\propto
@@ -291,7 +298,7 @@ algorithm for block Gibbs sampling the continuous latent states,~$\bx_{1:T}$.
           \State Sample~$\bx_t \given \bx_{t+1}, \bbm_t, \bV_t, \btheta$ \Comment{Eq.~\ref{eq:bkwd_sample}}
         \EndFor
       \end{algorithmic}
-      \caption{Forward filtering, backward sampling algorithm for the Gaussian linear dynamical system.}
+      \caption{Forward filtering-backward sampling (FFBS) algorithm for the Gaussian linear dynamical system. Note the similarity to the FFBS algorithm for HMMs in Alg.~\ref{alg:ffbs_hmm}.}
       \label{alg:ffbs_gaussian_lds}
     \end{algorithm}
   \end{minipage}
@@ -307,14 +314,14 @@ algorithm for block Gibbs sampling the continuous latent states,~$\bx_{1:T}$.
 % regression model once we have conditioned on~$\bz$,~$\bx$, and~$\bs$.
 
 \subsection{\polyagamma Augmentation for Discrete Observations}
-The conditional distribution of the latent states is only Gaussian
-if the observations are as well. Fortunately, the observations become
-conditionally Gaussian after augmenting the
-data with \polyagamma auxiliary variables. 
-Recall from Chapter~\ref{chap:five} that the \polyagamma augmentation
-is an auxiliary variable scheme that applies to models with logistic
-link functions \citep{polson2013bayesian}.  This augmentation can be
-used to develop Gibbs for models with likelihoods of the form,
+The conditional distribution of the latent states is only Gaussian if
+the observations are as well. Fortunately, the observations become
+conditionally Gaussian after augmenting the data with \polyagamma
+auxiliary variables.  Recall from Chapter~\ref{chap:five} that the
+\polyagamma augmentation is an auxiliary variable scheme that applies
+to models with logistic link functions \citep{polson2013bayesian}.
+Specifically, this augmentation can be used to develop Gibbs for
+models with likelihoods of the form,
 \begin{align*}
   \nonumber  p(s \given \psi, \nu)
   &= c(s, \nu) \, \sigma(\psi)^{a(s, \nu)} \,
@@ -343,7 +350,7 @@ other count distributions.
 
 The augmentation is based on an integral identity
 derived from the Laplace transform of the \polyagamma density.
-Specifically, if $p_{\distPolyaGamma}(\pgvar\given b, 0)$ is the
+If $p_{\distPolyaGamma}(\pgvar\given b, 0)$ is the
 density of the \polyagamma distribution,~${\distPolyaGamma(b, 0)}$,
 then,
 \begin{align}
@@ -439,7 +446,7 @@ parameters of an SLDS is summarized in Algorithm~\ref{alg:slds}.
         \Require $\bs_{1:T}$ and $\bz_{1:T}$, $\bx_{1:T}$, and $\btheta$ from previous iteration
         \State Sample $\btheta \given \bz_{1:T}, \bx_{1:T}, \bs_{1:T}$
         \State Sample $\bz_{1:T} \given \bx_{1:T}, \btheta$ 
-        \Comment{HMM update}
+        \Comment{Algorithm~\ref{alg:ffbs_hmm}}
         \For {$t = 1, \ldots, T$} \Comment{In parallel}
           \For {$n = 1, \ldots, N$}  \Comment{In parallel}
             \State Sample $\omega_{t,n} \given s_{t,n}, \bx_t, \btheta$ 
@@ -450,7 +457,7 @@ parameters of an SLDS is summarized in Algorithm~\ref{alg:slds}.
         \State Sample $\bx_{1:T} \given \widehat{\bs}_{1:T}, \bz_{1:T}, \bOmega_{1:T}, \btheta$ 
         \Comment{Algorithm~\ref{alg:ffbs_gaussian_lds}}
       \end{algorithmic}
-      \caption{Single iteration of Gibbs sampler for an switching LDS with discrete count observations}
+      \caption{Single iteration of Gibbs sampler for an switching LDS with discrete count observations.}
       \label{alg:slds}
     \end{algorithm}
   \end{minipage}

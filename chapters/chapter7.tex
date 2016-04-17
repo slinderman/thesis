@@ -99,8 +99,8 @@ summarized in the following probabilistic model:
 \end{align}
 where
 \begin{align*}
-  p(z_1 \given \bpi^{(0)}) &= \distCategorical(z_1 \given \bpi^{(0)}), \\
-  p(z_t \given z_{t-1}, \bP) &= \distCategorical(z_t \given \bpi^{(z_{t-1})}), \\
+  p(z_1 \given \bpi^{(0)}) &= \distDiscrete(z_1 \given \bpi^{(0)}), \\
+  p(z_t \given z_{t-1}, \bP) &= \distDiscrete(z_t \given \bpi^{(z_{t-1})}), \\
   p(\bs_t \given z_t, \bLambda) &= \prod_{n=1}^N \distPoisson(s_{t,n} \given \lambda_{z_t,n}).
 \end{align*}
 Here,~$\bpi^{(0)} \in [0,1]^K$ is a discrete probability distribution over
@@ -171,8 +171,8 @@ sample from the DP via the ``stick-breaking construction''
 \citep{Sethuraman94}. First, sample the stick-breaking
 weights,~$\bbeta$,
 \begin{eqnarray}                                   
-\widetilde{\beta}_{k}\sim \distBeta(1,\gamma), \;\;\; \
-beta_{k}=\widetilde{\beta}_{k}\prod_{j=1}^{k-1}\Big(1-\widetilde{\beta}_{j}\Big)
+\widetilde{\beta}_{k}\sim \distBeta(1,\gamma), \;\;\; 
+\beta_{k}=\widetilde{\beta}_{k}\prod_{j=1}^{k-1}\Big(1-\widetilde{\beta}_{j}\Big)
 \label{stick1}
 \end{eqnarray}
 where~$\beta_1 = \widetilde{\beta}_1$,~$\sum_{k=1}^\infty \beta_{k}=1$.
@@ -275,22 +275,112 @@ these parameters as well. They take the form:
 \end{align*}
 where~$\bone_k$ is a unit vector with a one in the~$k$-th entry.
 
+The Dirichlet parameters~$\bbeta$ and the concentration
+parameters~$\alpha_0$ and~$\gamma$ can be updated as
+in~\citep{Teh06}. 
+
+\subsection{Block Gibbs updates for the latent states}
+\label{sec:block_gibbs_hmm}
 Conditioned upon the firing rates, the initial state distribution, and
-the transition matrix, we can jointly update the latent states of the
-HDP-HMM using a {\em forward filtering, backward sampling}
-algorithm. Details of this algorithm can be found in
-\citet[e.g.]{Johnson14b}; the intuition is that in the backward pass of the
-algorithm, we have a conditional distribution over~$z_t$
-given~$\bz_{t+1:T}$ and~$\bS$. We can iteratively sample from these distributions
-as we go backward in time to generate a full sample
-from~${p(\bz \given \bP, \bpi^{(0)}, \bLambda)}$. Jointly sampling
+the transition matrix, which we collectively refer to as~$\btheta$,
+we can jointly update the latent states of the
+HDP-HMM using a \emph{forward filtering, backward sampling}
+algorithm. Jointly sampling
 these latent states allows us to avoid issues with mixing when
 individually sampling states that are highly correlated with one
-another.
+another. We provide a brief overview of this algorithm here.
+Complete details of this algorithm can be found in,
+for example, \citep{Johnson14b}. 
 
-Finally, the Dirichlet parameters~$\bbeta$ and the concentration
-parameters~$\alpha_0$ and~$\gamma$ can be updated as
-in~\citep{Teh06}. A single iteration of the final algorithm consists
+% NEW STUFF
+First, we ``filter'' the data to get the marginal distribution
+over~$z_t$ given the observations up to time~$t$. We use ``Matlab''
+notation to refer to a set of variables,~${\bs_{1:t}=\{\bs_1, \ldots, \bs_t\}}$.
+Since~$z_t$ is discrete, its filtered distribution is parameterized by a
+probability vector, which we call~$\bbm_{t}$.
+
+We compute these filtered probability distributions iteratively.
+Assume that at iteration~$t$ we
+have already computed~$\bbm_{t-1}$. Given the
+Markovian structure of the probabilistic model, the
+conditional distribution of~$z_t$ factors into,
+\begin{align*}
+  p(z_t \given \bs_{1:t}, \btheta)
+  &\propto
+  \underbrace{p(\bs_t \given z_t, \btheta)}_{\text{condition}} \,
+  \underbrace{p(z_{t} \given \bs_{1:t-1}, \btheta)}_{\text{predict}}.
+\end{align*}
+
+%To compute its parameters, we perform two steps: we \emph{predict} its
+%value given preceding observations, and then we
+%\emph{condition} on the current observation. 
+
+The \emph{prediction} step involves a marginalization over the
+previous latent state,~$z_{t-1}$,
+\begin{align*}
+  p(z_t \given \bs_{1:t-1} \btheta)
+  &\propto  \sum_{k=1}^K p(z_t \given z_{t-1}=k, \btheta) \, 
+    p(z_{t-1}=k \given \bs_{1:t-1}, \btheta) \\
+  &= \distDiscrete(z_t \given \bbm_{t|t-1}),
+\end{align*}
+where
+\begin{align*}
+  m_{t|t-1, k} &\propto \sum_{j=1}^K p(z_t=k \given z_{t-1}=j, \btheta) \cdot m_{t-1,j}
+\end{align*}
+Then, we \emph{condition} on the current observations,~$\bs_t$, to get the
+parameters of the filtered distribution,
+\begin{align}
+  \label{eq:fwd_filter_hmm}
+  m_{t,k} &\propto p(\bs_t \given z_t=k, \btheta) \cdot m_{t|t-1,k}.
+\end{align}
+
+Once we have computed the filtered distributions for all
+time bins, we can sample from the joint distribution over~$\bz_{1:T}$
+by applying the chain rule,
+\begin{align*}
+  p(\bz_{1:T} \given \bs_{1:T}, \btheta)
+  &= p(z_T \given \bs_{1:T}, \btheta)
+  \prod_{t} p(z_{t} \given \bz_{t+1:T}, \bs_{1:T}, \btheta) \\
+  &\propto p(z_T \given \bs_{1:T}, \btheta)
+  \prod_{t} p(z_t \given \bs_{1:t}, \btheta) \, 
+    p(z_{t+1} \given z_{t}, \btheta).
+\end{align*}
+Thus, we can sample in reverse order, starting with~$z_T$ and ending
+with~$z_1$. The conditional distribution of~${z_t}$ is,
+\begin{align}
+  p(z_t \given \bz_{t+1:T}, \bs_{1:T}, \btheta)
+  &\propto
+  p(z_t \given \bbm_t) \,
+  p(z_{t+1} \given z_t, \btheta),
+    \label{eq:bkwd_sample_hmm}
+\end{align}
+which is another discrete distribution. The final algorithm for block
+Gibbs sampling~$\bz_{1:T}$ is:
+
+\begin{center}
+  \begin{minipage}{.75\textwidth}
+    \vskip-2em
+    \singlespacing
+    \begin{algorithm}[H]
+      \sffamily
+      \begin{algorithmic}
+        \Require $\bs_{1:T}$, $\btheta$ 
+        \For {$t = 1, \ldots, T$}
+          \State Compute~$\bbm_t$ \Comment{Eq.~\ref{eq:fwd_filter_hmm}}
+        \EndFor
+        \For {$t = T, \ldots, 1$}
+          \State Sample~$z_t \given z_{t+1}, \bbm_t, \btheta$ \Comment{Eq.~\ref{eq:bkwd_sample_hmm}}
+        \EndFor
+      \end{algorithmic}
+      \caption{Forward filtering, backward sampling algorithm for the hidden Markov model.}
+      \label{alg:ffbs_hmm}
+    \end{algorithm}
+  \end{minipage}
+\end{center}
+
+
+% END NEW STUFF
+A single iteration of the comple Gibbs sampling algorithm consists
 of an update for each parameter of the model. The aforementioned
 updates are based upon previous work; one novel direction that we
 explore in this chapter is the sampling of the hyperparameters of the
@@ -420,7 +510,8 @@ level~$K_{\mathsf{max}}$ is chosen {\it a priori} and~$q(\bz)$ is limited to
 support only states~${z_t\in\{1,\ldots, K_{\mathsf{max}}\}}$. The advantage of this
 approximation is that conjugacy is retained with~$\bLambda$,~$\bP$,
 and~$\bpi^{(0)}$, and the variational approximation~$q(\bz)$ reduces
-to
+to\footnote{In a slight abuse of notation,~$\widetilde{\bLambda}$ refers
+  to the expected observation likelihood for each latent state. That is,~$\widetilde{\bLambda}$ is a matrix where~$\widetilde{\Lambda}_{t,k}=\exp\{\bbE_{q(\bLambda)}[\ln p(\bs_t \given z_t=k, \bLambda]\}$. }
 \begin{align*}
 q(\bz) &= \mathrm{HMM}(\widetilde{\bP}, \widetilde{\bpi}^{(0)}, \widetilde{\bLambda}), \\
 \widetilde{\bP} &= \exp\left\{\mathbb{E}_q[\ln \bP]\right\}, \\

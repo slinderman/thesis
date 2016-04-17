@@ -1097,7 +1097,7 @@ ${p_{j,k} = \Pr(x_j=1 \given z=k)}$. Together, these
 specify the probabilistic model,
 \begin{align*}
   \balpha &= \tfrac{1}{K} \bone, & & &
-  z &\sim \distCategorical(\balpha), \\
+  z &\sim \distDiscrete(\balpha), \\
   p_{j,k} &\sim \distBeta(\tfrac{1}{2},\tfrac{1}{2}),  & & &
   x_j &\sim \distBernoulli(p_{j,z}).  
 \end{align*}
@@ -1178,7 +1178,7 @@ weight matrix. The SBM has latent variables for each neuron that
 indicate the cluster assignment, and parameters that specify the
 average weight between each pair of clusters:
 \begin{align*}
-  c_n & \sim \distCategorical(\alpha \bone), \\
+  c_n & \sim \distDiscrete(\alpha \bone), \\
   \mu_{c \to c'} &\sim \distGaussian(0, \sigma_0^2), \\
   w_{m \to n} &\sim \distGaussian(\mu_{c_m \to c_n}, \sigma^2).
 \end{align*}
@@ -1374,8 +1374,8 @@ conditional probability table (if~${\pa(z_j) \in \{z_1, \ldots, z_{j-1}\}}$).
 We
 make this explicit with the following notation,
 \begin{align*}
-  p(z_j \given \pa(z_j)=\varnothing, \btheta) &= \distCategorical(\btheta^{(j)}), \\
-  p(z_j \given \pa(z_{j})=z_{j'}=k, \btheta) &=  \distCategorical(\btheta^{(j,k)}).
+  p(z_j \given \pa(z_j)=\varnothing, \btheta) &= \distDiscrete(\btheta^{(j)}), \\
+  p(z_j \given \pa(z_{j})=z_{j'}=k, \btheta) &=  \distDiscrete(\btheta^{(j,k)}).
 \end{align*}
 In words, if the variable~$z_j$ has no parent, it is marginally distributed
 according to a categorical distribution with parameter~$\btheta^{(j)}$.

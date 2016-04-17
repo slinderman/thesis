@@ -1,0 +1,120 @@
+\chapter{Common Distributions}
+\label{app:A}
+
+This thesis makes use of a number of common distributions.  The
+notation~${z \sim \mathrm{P}(\theta)}$ means that the random
+variable~$z$ is sampled from (or distributed according to) the
+distribution~$\mathrm{P}$, which is parameterized by~$\theta$. When we
+write~${\mathrm{P}(z \given \theta)}$ we refer to the density
+(assuming it exists) of~$\mathrm{P}$ evaluated at~$z$.  Here, we
+provide a summary of common distributions and their parametric
+densities or mass functions.
+
+\section*{Bernoulli}
+For a binary random variable~$x \in \{0,1\}$ with~$\rho \in [0,1]$,
+\begin{align*}
+  \distBernoulli(x \given \rho) &= \rho^x (1-\rho)^{1-x}.
+\end{align*}
+
+\section*{Beta}
+For a continuous random variable~$\rho \in [0,1]$ with~$a>0$ and~$b>0$,
+\begin{align*}
+  \distBeta(\rho \given a, b)
+  &= \frac{ \Gamma(a+b)}{\Gamma(a) \Gamma(b)} \rho^{a-1} (1-\rho)^{b-1}.
+\end{align*}
+The beta distribution is a conjugate prior for the Bernoulli,
+binomial, and negative binomial distributions.
+
+\section*{Binomial}
+For an integer-valued random variable~$x \in \{1, \ldots, N \}$
+with~$N \in \naturals$ and~$\rho \in [0,1]$,
+\begin{align*}
+  \distBinomial(x \given N, \rho)
+  &= {N \choose x} \rho^x (1-\rho)^{N-x}.
+\end{align*}
+
+
+\section*{Dirichlet}
+For a probability vector~${\bpi \in [0,1]^K}$ such that
+${\pi_k \geq 0}$ and~${\sum_k \pi_k = 1}$, and
+parameter~${\balpha \in \reals_+^K}$,
+\begin{align*}
+  \distDirichlet(\bpi \given \balpha)
+  &= \frac{\Gamma \big(\sum_{k=1}^K \alpha_k \big)}{\prod_{k=1}^K \Gamma(\alpha_k)}
+  \prod_{k=1}^K \pi_k^{\alpha_k-1}.
+\end{align*}
+The Dirichlet distribution is a conjugate prior to the discrete and
+multinomial distributions.
+
+\section*{Discrete}
+For a discrete random variable~$x \in \{1, \ldots, K\}$ with~$K$ distinct
+outcomes, and a probability vector~$\bpi \in [0,1]^K$ that is nonnegative
+and sums to one,
+\begin{align*}
+  \distDiscrete(x \given \bpi) &= \prod_{k=1}^K \pi_k^{\bbI[x=k]}.
+\end{align*}
+
+\section*{Gamma}
+For a nonnegative random variable~$\lambda \in \reals_+$ with
+shape parameter~$a >0$ and rate parameter~$b>0$,
+\begin{align*}
+  \distGamma(\lambda \given a, b) &= \frac{b^a}{\Gamma(a)} \lambda^{a-1} e^{-b\lambda}.
+\end{align*}
+The gamma distribution is the conjugate prior to the Poisson
+distribution, as well as to the rate parameter of the gamma
+distribution. The gamma distribution may also be parameterized in
+terms of a scale parameter,~$\theta = b^{-1}$, but we do not use
+that parameterization in this thesis.
+
+\section*{Gaussian}
+For a random variable~$\bx \in \reals^D$ with mean~$\bmu \in \reals^D$ and
+positive semidefinite covariance matrix~$\bSigma \in \reals^{D \times D}$,
+\begin{align*}
+  \distNormal(\bx \given \bmu, \bSigma)
+  &= (2 \pi)^{-D/2} |\bSigma|^{-1/2}
+  \exp \left \{ -\frac{1}{2} (\bx - \bmu)^\trans \bSigma^{-1} (\bx - \bmu) \right\}.
+\end{align*}
+
+\section*{Multinomial}
+For a vector of discrete counts~${\bx \in \naturals^K}$ with~${\sum_k x_k = N}$
+and a probability vector~${\bpi \in [0,1]^K}$,
+\begin{align*}
+  \distMultinomial(\bx \given N, \bpi)
+  &= {N \choose x_1, x_2, \ldots x_K}
+  \prod_{k=1}^K \pi_k^{x_k},
+\end{align*}
+where
+\begin{align*}
+  {N \choose x_1, x_2, \ldots x_K}
+  &= \frac{N!}{x_1! \ldots x_K!}.
+\end{align*}
+
+\section*{Negative Binomial}
+For an integer-valued random variable~${x \in \naturals}$
+with shape parameters~${\nu \in \reals_+}$
+and probability~${\rho \in [0,1]}$,
+\begin{align*}
+  \distNegBinomial(x \given \nu, \rho)
+  &= {x + \nu - 1 \choose x} \rho^x (1-\rho)^{\nu}.
+\end{align*}
+
+
+\section*{Poisson}
+For an integer random variable~$x \in \naturals$ and a
+nonnegative rate parameters~$\lambda \in \reals_+$,
+\begin{align*}
+  \distPoisson(x \given \lambda)
+  &= \frac{1}{x!} \lambda^x e^{-\lambda}.
+\end{align*}
+
+\section*{Uniform}
+For a continuous random variable~$x \in \reals$,
+\begin{align*}
+  \distUniform(x \given a, b)
+  &=
+  \begin{cases}
+    \frac{1}{b-a} & \text{if } a < x < b, \\
+    0 & \text{o.w.}.
+  \end{cases}
+\end{align*}
+

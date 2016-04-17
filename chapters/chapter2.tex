@@ -75,21 +75,27 @@ in actual experiments \citep{cowan1994spontaneous, shu2003turning}.
 \sloppy We can formalize this generative story with a probabilistic
 model that specifies a distribution over latent states and observed
 spike counts. Let~$s_t \in \naturals$ denote the number of spikes
-counted in the~$t$-th time bin,
-and~$z_t \in \{\textit{up}, \textit{down}\}$ denote the corresponding
-state of the neuron. The assumption that states are drawn from a coin
-flip corresponds to the prior distribution,
-${z_t \sim \distCategorical(\bpi)}$, where~${\bpi = [\pi_{\textit{up}}, \pi_{\textit{down}}]}$
-is a nonnegative vector that sums to one and specifies the
-probability of \textit{up} and \textit{down} states.  Implicitly, we
-have assumed that~${\bpi=\big[\tfrac{1}{2}, \tfrac{1}{2} \big]}$,
-though this need not be the case.  We previously said that the neurons
-fire a random number of spikes according to their state-dependent
-firing rate; now we will formalize this by
-assuming,~${s_{t} \sim \distPoisson(\lambda_{z_t} \cdot \Delta t)}$,
-where ${\Delta t = 0.05\text{s}}$,
-${\lambda_{\textit{up}} = 100\,\text{spikes/s}}$, and
-${\lambda_{\textit{down}} = 10\,\text{spike/s}}$.
+counted in the~$t$-th time bin, and~$z_t \in \{\textit{up},
+\textit{down}\}$ denote the corresponding state of the neuron. The
+assumption that states are drawn from a coin flip corresponds to the
+prior distribution, ${z_t \sim \distDiscrete(\bpi)}$, where~${\bpi =
+  [\pi_{\textit{up}}, \pi_{\textit{down}}]}$ is a nonnegative vector
+that sums to one and specifies the probability of \textit{up} and
+\textit{down} states.\footnote{The notation~${z \sim
+    \mathrm{P}(\theta)}$ means that the random variable~$z$ is sampled
+  from (or distributed according to) the distribution~$P$, which is
+  parameterized by~$\theta$. When we write~${\mathrm{P}(z \given
+    \theta)}$ we refer to the density (assuming it exists)
+  of~$\mathrm{P}$ evaluated at~$z$.  A list of commonly used
+  distributions and their densities is given in Appendix~\ref{app:A}}
+Implicitly, we have assumed that~${\bpi=\big[\tfrac{1}{2},
+    \tfrac{1}{2} \big]}$, though this need not be the case.  We
+previously said that the neurons fire a random number of spikes
+according to their state-dependent firing rate; now we will formalize
+this by assuming,~${s_{t} \sim \distPoisson(\lambda_{z_t} \cdot \Delta
+  t)}$, where ${\Delta t = 0.05\text{s}}$, ${\lambda_{\textit{up}} =
+  100\,\text{spikes/s}}$, and ${\lambda_{\textit{down}} =
+  10\,\text{spike/s}}$.
 
 Figure~\ref{fig:updown} shows a neural spike train sampled from this
 generative model. The time bins are colored blue or yellow depending
@@ -113,7 +119,7 @@ and firing rates are given. We have,
   \label{eq:lkhd_factorized}
   &= \prod_{t=1}^T p(z_t \given \bpi) \, p(s_t \given \lambda_{z_t}) \\
   \label{eq:lkhd_factorized_forms}
-  &= \prod_{t=1}^T \distCategorical(z_t \given \bpi) \, \distPoisson(s_t \given \lambda_{z_t} \cdot \Delta t).
+  &= \prod_{t=1}^T \distDiscrete(z_t \given \bpi) \, \distPoisson(s_t \given \lambda_{z_t} \cdot \Delta t).
 \end{align}
 Since~$\Delta t$ is a constant, we do not include it as a random
 variable in the joint distribution or explicitly condition on it.
@@ -222,7 +228,7 @@ on~$\bs$ and ~$\bz$ through simple \emph{sufficient
   statistics},~$s_{\textit{up}}$ and~$t_{\textit{up}}$. A Dirichlet
 prior distribution on the state probability, ~${\distDirichlet(\bpi
   \given \gamma)}$, is similarly conjugate with the
-product-of-Categorical likelihood that links~$\bpi$ and~$\bz$.  In
+product of discrete densities in the likelihood that links~$\bpi$ and~$\bz$.  In
 fact, conjugate priors exist for all likelihoods in the
 \emph{exponential family}. These ideas are thoroughly discussed in
 standard Bayesian statistics and machine learning textbooks
@@ -471,7 +477,7 @@ neural data. Instead, a simple hypothesis is that the states have
 Markovian dynamics,
 \begin{align*}
   p(\bz \given \bpi^{(0)}, \bP) &= p(z_1 \given \bpi^{(0)}) \prod_{t=2}^T p(z_t \given z_{t-1}, \bP) \\ 
-  &= \distCategorical(z_1 \given \bpi^{(0)}) \prod_{t=2}^T \distCategorical(z_t \given \bpi^{(z_{t-1})}),
+  &= \distDiscrete(z_1 \given \bpi^{(0)}) \prod_{t=2}^T \distDiscrete(z_t \given \bpi^{(z_{t-1})}),
 \end{align*}
 where~$\bpi^{(0)} \in [0,1]^K$ is a discrete probability distribution over
 initial states, and

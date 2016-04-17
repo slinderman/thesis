@@ -99,9 +99,9 @@ Chapter~\ref{chap:seven} are equivalent to the following program:
         \Require $\bpi^{(0)}$,~$\bP$,~$\bLambda$
         \For {$t = 1, \ldots, T$}
           \If {$t=1$}
-            \State $z_t \sim \distCategorical(\bpi^{(0)})$
+            \State $z_t \sim \distDiscrete(\bpi^{(0)})$
           \Else
-            \State $z_t \sim \distCategorical(\bpi^{(z_{t-1})})$
+            \State $z_t \sim \distDiscrete(\bpi^{(z_{t-1})})$
           \EndIf
           \For {$n = 1, \ldots, N$}
             \State $s_{t,n} \sim \distPoisson(\lambda_{z_{t},n})$
