@@ -189,10 +189,10 @@ Plugging~Eq.~\ref{eq:glm_impulse} into the activation model, we have,
 \begin{align}
   \nonumber
   \psi_{t,n} &\triangleq \psi_n^{(0)}  +                 
-               \sum_{n'=0}^N  \sum_{b=1}^B a_{n' \to n}Â \, w_{n' \to n}^{(b)}
+               \sum_{n'=0}^N  \sum_{b=1}^B a_{n' \to n} \, w_{n' \to n}^{(b)}
                \left( \sum_{d=1}^{D} \phi_{b}[d] \cdot s_{t-d, n'} \right) \\
   \nonumber
-             &= \psi_n^{(0)}  + \sum_{n'=0}^N \sum_{b=1}^B a_{n' \to n}Â \, w_{n' \to n}^{(b)} \, \widehat{s}_{t,n'}^{(b)} \\
+             &= \psi_n^{(0)}  + \sum_{n'=0}^N \sum_{b=1}^B a_{n' \to n} \, w_{n' \to n}^{(b)} \, \widehat{s}_{t,n'}^{(b)} \\
   \label{eq:linear_activation}
              &= (\ba_{n} \odot \bw_n)^\trans \, \widehat{\bs}_t,
 \end{align}
