@@ -259,7 +259,7 @@
 	\vspace*{10pt}
 	\scshape Abstract \\ \rm
 	\end{center}
-	\input{frontmatter/abstract}
+	\input{frontmatter/abstract.long}
 	\vspace*{\fill}
 	\newpage \lhead{} \rhead{}
 	\cfoot{\thepage}
