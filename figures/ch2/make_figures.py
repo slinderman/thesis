@@ -1,6 +1,8 @@
 import numpy as np
 np.random.seed(123)
 
+from scipy.misc import logsumexp
+
 import matplotlib
 matplotlib.rcParams.update({'font.sans-serif' : 'Helvetica',
                             'axes.labelsize': 10,
@@ -28,17 +30,16 @@ sns.set(style="white", palette=sns.xkcd_palette(color_names))
 from hips.plotting.colormaps import harvard_colors, gradient_cmap
 #colors = harvard_colors()
 
-def make_figure_1():
+T = 1000
+D = 50
+n = T // D
+
+def sample_mixture_model(lmbda, p):
     """
     Simple mixture model example
     """
-    T = 1000
-    D = 50
-    n = T // D
-    lmbda = np.array([100, 10])
-
     # Simulate latent states
-    z = np.random.rand(n) < 0.5
+    z = np.random.rand(n) < p
     
     # Simulate real valued spike times
     Ss = []
@@ -50,6 +51,9 @@ def make_figure_1():
 
     Ss = np.concatenate(Ss)
 
+    return Ns, Ss, z
+                             
+def draw_mixture_figure(Ns, Ss, z, lmbda, filename="figure1.png", saveargs=dict(dpi=300)):
     fig = create_figure((5.5, 2.7))
     ax = create_axis_at_location(fig, .75, .5, 4., 1.375)
     ymax = 105
@@ -108,48 +112,50 @@ def make_figure_1():
     ax.set_ylabel("${z_t}$", rotation=0,  verticalalignment='center')
 
     
-    fig.savefig("figure1.pdf")
-    fig.savefig("figure1.png", dpi=300)
+    #fig.savefig(filename + ".pdf")
+    fig.savefig(filename, **saveargs)
+
+    plt.close(fig)
+    #plt.show()
+
+def make_mcmc_figures(Ns, Ss, z0, lmbda0, p=0.5, a_lmbda=1, b_lmbda=1, N_iter=100):
+
+    def _poisson_ll(s, l):
+        return -l + s*np.log(l)
     
-    plt.show()
+    def _resample():
+        # Resample latent states given lmbda
+        for i in xrange(n):
+            lp0 = _poisson_ll(Ns[i], lmbda[0]) + np.log(p)
+            lp1 = _poisson_ll(Ns[i], lmbda[1]) + np.log(1-p)
+            p_0 = np.exp(lp0 - logsumexp([lp0, lp1]))
+            z[i] = np.random.rand() < 1-p_0
 
-def make_figure_2():
-    # Make a figure of probabilistic models for matrix factorization
-    T = 50
-    N = 25
-    K = 5
-    ht = 1.25
+        # Resample lmbda given z
+        for k in [0,1]:
+            Nk = (z==k).sum()
+            Sk = Ns[z==k].sum()
+            a_post = a_lmbda + Sk
+            b_post = b_lmbda + Nk
+            lmbda[k] = np.random.gamma(a_post, 1./b_post)
 
-    cmap = gradient_cmap([colors[1], np.ones(3), colors[0]])
-    kr = 20
-    
-    # Mixture model
-    zint = np.random.randint(K, size=(T,))
-    Z = np.zeros((T,K))
-    Z[np.arange(T), zint] = 1
-    mu = .2*np.random.randn(K) 
-    C = mu[:,None] + np.random.randn(K,N)
-    
-    fig = create_figure((1.8, 1.8))
-    ax = create_axis_at_location(fig, .25, .25, .5, ht)
-    ax.imshow(np.kron(Z, np.ones((kr,kr))), cmap="Greys", interpolation="none")
-    plt.yticks([(T-1)*kr], ["$T$"])
-    plt.xticks([(K-1)*kr], ["$K$"])
-    ax.set_ylabel("$Z$", rotation=0)
-    
-
-    ax = create_axis_at_location(fig, .7, 1.2, ht*(float(N)/T), .5)
-    ax.imshow(np.kron(C, np.ones((kr,kr))), cmap=cmap, interpolation="none",
-              vmin=-abs(C).max(), vmax=abs(C).max())
-    ax.yaxis.tick_right()
-    ax.set_title("$C^{\\mathsf{T}}$")
-    plt.yticks([(K-1)*kr], ["$K$"])
-    plt.xticks([(N-1)*kr], ["$N$"])
-
-    fig.savefig("figure2a.pdf")
-
-    
-    plt.show()
-
+    # Now run the Gibbs sampler and save out images
+    lmbda = lmbda0.copy()
+    z = z0.copy()
+    for itr in range(N_iter):
+        print "Iteration ", itr
+        draw_mixture_figure(Ns, Ss, z, lmbda/0.05, filename="itr_%d.jpg" % itr)
+        _resample()
+                        
 if __name__ == "__main__":
-    make_figure_1()
+    # Sample data
+    lmbda = np.array([100, 10])
+    p = 0.5
+    Ns, Ss, z = sample_mixture_model(lmbda, p)
+    draw_mixture_figure(Ns, Ss, z, lmbda)
+    
+    z0 = np.random.rand(n) < 0.5
+    #z0 = np.zeros(n, dtype=np.bool)
+    lmbda0 = np.random.gamma(1,1,size=2)
+    #lmbda0 = 1 * np.ones(2)
+    make_mcmc_figures(Ns, Ss, z0, lmbda0)
