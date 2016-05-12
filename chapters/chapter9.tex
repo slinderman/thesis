@@ -456,101 +456,128 @@ then~$\bbE[\widehat{\pi}_{t,k}] = \pi_{k}$.
   Thus, this procedure is unbiased.
 \end{proof}
 
-While this stochastic representation may have the correct expectation, we
-would like to characterize the probability that it is ``close'' to its
-mean. As we hypothesized above, the difference between the true
+While this stochastic representation may have the correct expectation,
+we would like to characterize the probability that it is ``close'' to
+its mean. As we hypothesized above, the difference between the true
 probability and that represented by the population should shrink as
-the number of spikes grows. We quantify this with the following
-theorem, which provides an upper bound on the number of spikes
-required to guarantee that the represented probability differs from
-the true probability by more than~$\epsilon$. We measure this
-difference with the total variation distance between the
-distributions,
+the number of spikes grows. We quantify this with an upper bound on
+the number of spikes required to guarantee that the represented
+probability differs from the true probability by more
+than~$\epsilon$. We measure this difference with the total variation
+distance between the distributions,
 \begin{align*}
   \dtv(\widehat{\bpi}_t, \bpi) &= 
-  \max_{\ell} |\widehat{\pi}_{t,k} - \pi_{k}|.
+  \frac{1}{2} \sum_k |\widehat{\pi}_{t,k} - \pi_{k}|.
 \end{align*}
+
+In order to derive a bound on the number of spikes, we appeal to 
+Lemma 3 of \citet{devroye1983equivalence}, restated here for convenience.
+
+\begin{lemma}[Multinomial Convergence \citep{devroye1983equivalence}]
+  \label{lem:devroye}
+  Let~$\bx \sim \distMultinomial(N, \bpi)$ be a multinomial
+  distributed vector in~$\naturals^K$ with normalized probability
+  vector~$\bpi \in [0,1]^K$.  For all~$\epsilon \in (0,1)$ and all~$K$
+  satisfying~$\tfrac{K}{N} \leq \tfrac{\epsilon^2}{20}$, we have,
+  \begin{align*}
+    \Pr \left( \frac{1}{N} \sum_{k=1}^K \big| x_k - \bbE[x_k] \big|
+    > \epsilon \right)
+    &\leq 3 \exp \left\{-\frac{N \epsilon^2}{25} \right\}.
+  \end{align*}
+\end{lemma}
+
+This immediately implies the following corollary.
+\begin{corollary}
+  \label{cor:mult_dtv}
+    Let~$\bx \sim \distMultinomial(N, \bpi)$ be a multinomial
+    distributed vector in~$\naturals^K$ with normalized probability
+    vector~$\bpi \in [0,1]^K$, and then let~$\widehat{\bpi} =
+    \tfrac{1}{N} \bx$.  For all~$\varepsilon \in (0,\tfrac{1}{2})$ and all~$K$
+    satisfying~$\tfrac{K}{N} \leq \tfrac{\varepsilon^2}{5}$, we have,
+  \begin{align*}
+    \Pr \left( \dtv(\widehat{\bpi}, \bpi) > \varepsilon \right)
+    &\leq 3 \exp \left\{-\frac{4 N \varepsilon^2}{25} \right\}.
+  \end{align*}
+  % TODO Delete this
+  %Let~$u = \epsilon/2$ such that~$\epsilon^2 = 4u^2$. Then,
+  %\begin{align*}
+  %  \Pr \left( \dtv(\widehat{\bpi}, \bpi) > u \right)
+  %  &\leq 3 \exp \left\{-\frac{4 N u^2 }{25} \right\}.
+  %\end{align*}
+
+\end{corollary}
+
+\begin{proof}
+  Since~$\widehat{\pi}_k = \tfrac{x_k}{N}$ and~$\tfrac{1}{N} \bbE[x_k] = \pi_k$,
+  \begin{align*}
+    \frac{1}{N} \sum_{k=1}^K \big| x_k - \bbE[x_k] \big|
+    &= \sum_{k=1}^K \big| \widehat{\pi}_k - \pi_k \big|
+    = 2\dtv (\widehat{\bpi}, \bpi).
+  \end{align*}
+  The statement follows from Lemma~\ref{lem:devroye} by
+  substituting~$\varepsilon = 2 \epsilon$.
+\end{proof}
+
+With this, we prove the following theorem.
 
 \begin{theorem}
 \label{thm:fixed_count}
 Given a fixed probability vector~$\bpi$, firing
 rates~$\lambda_{t,n} = \lambdamax \pi_{k_n}$ over the integration
-time window, a fixed error level~$\epsilon < 1$, and a desired
-confidence~$\delta < 1$, there exists a minimum number of spikes~$S^*$
-such that if~$S_t \geq S^*$, the conditional probability of error is
-bounded
-by~$\Pr(\dtv(\widehat{\bpi}_t, \bpi) > \epsilon \given S_t) <
-\delta$.  Furthermore, this minimum number of spikes is at most,
+time window, a fixed error level~$\epsilon < \tfrac{1}{2}$, and a desired
+confidence~$\delta < 1$, the conditional probability of error is
+at most~$\delta$ if,
 \begin{align*}
-S^* &\leq \frac{1}{2\epsilon^2} \ln \frac{2K}{\delta},  
+  S_t \geq \frac{5}{\epsilon^2}
+  \max \left(K, \, \frac{5}{4}\ln \frac{3}{\delta} \right).
 \end{align*}
 \end{theorem}
 
 \begin{proof}
-First, consider the probability that a particular entry differs from its mean by more than~$\epsilon$.
-\begin{align*}
-  &\Pr(|\widehat{\pi}_k - \pi_k |  > \epsilon \given S_t) \\
-  &\qquad= \Pr(\widehat{\pi}_k - \pi_k  > \epsilon \given S_t) + 
-  \Pr(\widehat{\pi}_k - \pi_k  < -\epsilon \given S_t) \\
-  &\qquad= \Pr \left(S_{t, k} > S_t \pi_{ k} \left(1+\frac{\epsilon}{\pi_{ k}} \right) \, \bigg| \, S_t \right) 
-  +\Pr \left(S_{t, k} < S_t \pi_{ k} \left(1-\frac{\epsilon}{\pi_{ k}} \right) \, \bigg| \, S_t\right) \\
-  &\qquad= \Pr \left(S_{t, k} > \bbE[S_{t,k} \given S_t] \left(1+\frac{\epsilon}{\pi_{ k}} \right) \right) 
-   +\Pr \left(S_{t, k} < \bbE[S_{t,k} \given S_t] \left(1-\frac{\epsilon}{\pi_{ k}} \right) \right)
-\end{align*}
-As in Lemma~\ref{lem:consistency}, we have used the fact
-that~$S_{t, k} \given S_t \sim \distBinomial(S_t, \pi_{ k})$
-and hence has expectation~$S_t \pi_{ k}$. 
-The probability of this binomial random variable exceeding its mean 
-by a multiplicative constant is a decreasing function of the 
-number of spikes,~$S_t$. This implies that there exists a minimum 
-number of trials~$S^*$ such that for~$S_t \geq S^*$, this probability 
-of error is bounded above by~$\delta$, hence proving the first part 
-of the theorem.
-
-Now suppose~$S_t=S^*$.  We use a Chernoff bound to upper bound the
-probability that the binomial random variable,~$S_{t,k}$, deviates
-from its mean by more than a multiplicative factor. Leveraging the
-fact that~$\pi_{k} \leq 1$, we have,
-\begin{align*}
-  \Pr \left(S_{t,k} > \bbE[S_{t,k} \given S^*] \left(1+\frac{\epsilon}{\pi_{k}} \right) \right) 
-  &\leq \exp \left \{-2S^* \epsilon^2 \right \}, \\
-  \Pr \left(S_{t,k} < \bbE[S_{t,k} \given S^*] \left(1-\frac{\epsilon}{\pi_{k}} \right) \right) 
-  &\leq \exp \left \{-2S^* \epsilon^2 \right \},
-\end{align*}
-which together imply,
-\begin{align*}
-  \Pr(|\widehat{\pi}_{t,k} - \pi_{k} |  > \epsilon \given S^*) 
-  &\leq 2 \exp \left \{-2S^* \epsilon^2 \right \}.
-\end{align*}
-We bound the maximum deviation of any entry in~$\widehat{\bpi}$ with a union bound,
-\begin{align*}
-  \Pr(\dtv(\widehat{\bpi}_t, \bpi) > \epsilon \given S^*) 
-  & \leq 2K \exp \left\{-2S^* \epsilon^2 \right\}.
-\end{align*}
-Setting this probability equal to~$\delta$ yields the desired bound on~$S^*$,
-\begin{align*}
-  S^* &\leq \frac{1}{2\epsilon^2} \ln \frac{2K}{\delta}.
-\end{align*}
+  For a given population spike count,~$S_t$, the vector $\bx_t =
+  \left[ S_{t,1}, \ldots, S_{t,K} \right]$ follows a multinomial
+  distribution,~$\bx_t \sim \distMultinomial(S_t, \bpi)$.
+  Moreover,~$\widehat{\bpi}_t = \frac{\bx_t}{S_t}$.  From
+  Corollary~\ref{cor:mult_dtv}, if~$S_t \geq \frac{5K}{\epsilon^2}$,
+  the probability of the total variation distance exceeding~$\epsilon$
+  is bounded by,
+  \begin{align*}
+    \Pr(\dtv(\widehat{\bpi}_t, \bpi) > \epsilon)
+    \leq 3 \exp \left\{ -\frac{4S_t \epsilon^2}{25} \right\}.
+  \end{align*}
+  Setting this probability equal to~$\delta$ yields an upper bound on the
+  number of spikes necessary to ensure the desired error,
+  \begin{align*}
+    S^* \leq \frac{25}{4\epsilon^2} \ln \frac{3}{\delta}.
+  \end{align*}
+  Thus, the probability of total variation distance greater than~$\epsilon$
+  is bounded by~$\delta$ if,
+  \begin{align*}
+    S_t \geq \frac{5}{\epsilon^2}
+    \max \left(K, \, \frac{5}{4}\ln \frac{3}{\delta} \right).
+  \end{align*}
 
 \end{proof}
 
 
-This theorem provides an upper bound on the minimum number of spikes necessary to 
-guarantee that the total variation distance between the true and estimated 
-probability vectors is less than~$\epsilon$ with probability~$1-\delta$. 
-Notably, the relevant quantity is the number of spikes~$S_t$, rather than 
-the number of neurons. Thus, there is some flexibility in how the probability 
-is estimated: a small population of neurons could be measured over many time bins,
-or a large population could be measured over a single time bin. Moreover, the 
-population gain,~$\lambdamax$, could be varied to adjust the number of spikes 
-per time bin. 
+This theorem provides an upper bound on the minimum number of spikes
+necessary to guarantee that the total variation distance between the
+true and estimated probability vectors is less than~$\epsilon$ with
+probability~$1-\delta$.  Notably, the relevant quantity is the number
+of spikes~$S_t$, rather than the number of neurons. Thus, there is
+some flexibility in how the probability is estimated: a small
+population of neurons could be measured over many time bins, or a
+large population could be measured over a single time bin. Moreover,
+the population gain,~$\lambdamax$, could be varied to adjust the
+number of spikes per time bin.
 
 In practice, the number of spikes cannot be set directly. It, is a
 Poisson random variable whose mean, from Eq.~\ref{eq:S_t_rate},
-is~$\bbE[S_t] = \lambdamax T_I R$: the expected number of spikes per neuron times the number of neurons per
-outcome. This leads to the following theorem, which specifies a upper bound 
-on the gain and number of neurons required to guarantee that the 
-total variation distance is less than~$\epsilon$ with probability~$1-\delta$.
+is~$\bbE[S_t] = \lambdamax T_I R$: the expected number of spikes per
+neuron times the number of neurons per outcome. This leads to the
+following theorem, which specifies a upper bound on the gain and
+number of neurons required to guarantee that the total variation
+distance is less than~$\epsilon$ with probability~$1-\delta$.
 
 \begin{theorem}
   \label{thm:rate_bounds}
@@ -570,12 +597,17 @@ total variation distance is less than~$\epsilon$ with probability~$1-\delta$.
   \begin{align*}
     \Pr(\dtv(\widehat{\bpi}_t, \bpi) > \epsilon) 
     &= \sum_{m=0}^\infty \Pr(S_t=m) \Pr(\dtv(\widehat{\bpi}_t, \bpi) > \epsilon \given S_t=m) \\
-    &\leq \sum_{m=0}^\infty  \Pr(S_t=m) \times 2K \exp \left \{-2m\epsilon^2 \right\} \\
-    &= 2K \bbE_{S_t} \left[ \exp \left \{ -2S_t \epsilon^2 \right \} \right] \\
-    &= 2K \exp \left \{\mu^* (e^{-2\epsilon^2}-1) \right\},
+    %&\leq \sum_{m=0}^{\lceil{5K/\epsilon^2} \rceil} \Pr(S_t=m)
+    &\leq \Pr(S_t < \lceil{5K/\epsilon^2} \rceil)
+    + \sum_{m=0}^\infty \Pr(S_t=m) \times 3 \exp \left\{ - \frac{4S_t \epsilon^2}{25} \right\}\\
+    &\leq \Pr(S_t < \lceil{5K/\epsilon^2} \rceil) + 3\bbE_{S_t}
+    \left[ \exp \left\{ - \frac{4S_t \epsilon^2}{25} \right\} \right] \\
+    &\leq \Pr(S_t < \lceil{5K/\epsilon^2} \rceil)
+    + 3 \exp \left \{ \mu^* \left( e^{-4\epsilon^2/25} -1 \right) \right\},
   \end{align*}
   where the last line follows from moment generating function of~${S_t \sim \distPoisson(\mu^*)}$.
-  Setting this equal to~$\delta$ and solving for~$\mu^*$ yields the stated bound.
+
+  \TODO{Now bound the cumulative distribution of a Poisson...}
 \end{proof}
 
 % This bound states that for a fixed gain factor, the number of neurons
