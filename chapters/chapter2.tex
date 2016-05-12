@@ -810,13 +810,13 @@ efficient types of Gibbs updates outlined below:
   assignment.  This would be an example of ``poor mixing.'' To be
   precise, let~$\widetilde{p}_\ell$ be the distribution over states of
   the chain after running~$\ell$ iterations (starting from a given
-  initial state).  A Markov chain is said to mix poorly if the number
-  of steps before the total variation distance between
-  the~$\ell$-step distribution,~$\widetile{p}_\ell$, and the true
-  posterior distribution,~$p$, is less than~$\epsilon$ grows exponentially.
-  One way to improve mixing, at least empirically, is to perform 
-  joint updates of many variables simultaneously, leveraging model-specific
-  structure.
+  initial state).  A Markov chain is said to mix poorly if it takes
+  exponentially many steps before the total variation distance between
+  the~$\ell$-step distribution,~$\widetilde{p}_\ell$, and the true
+  posterior distribution,~$p$, shrinks to less than~$\epsilon$.  
+  One way to improve mixing, at least empirically, is
+  to perform joint updates of many variables simultaneously,
+  leveraging model-specific structure.
 
   Consider a Gibbs step that simulatneously updates the entire
   state sequence of an HMM.  The conditional distribution of~$\bz$ is

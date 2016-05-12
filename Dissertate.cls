@@ -238,7 +238,7 @@
 	\newpage
 	\thispagestyle{empty}
 	\vspace*{\fill}
-	\scshape \noindent \small \copyright \small 2016\hspace{3pt}-- \theauthor \\
+	\scshape \noindent \small \copyright \small 2016\hspace{3pt} \theauthor \\
 	\noindent all rights reserved.
 	\vspace*{\fill}
 	\newpage
