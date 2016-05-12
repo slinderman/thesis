@@ -19,12 +19,13 @@ Bayesian inference.
 This chapter is organized as follows.  First, in
 Section~\ref{sec:bayesian_brain} we briefly review the ``Bayesian
 brain'' hypothesis, the various lines of evidence supporting this
-hypothesis, and some of the suggestions of how neurons could represent
+hypothesis. While not strictly required by the Bayesian brain hypothesis,
+we review some of the hypothesized means by which neurons could represent
 probability distributions and carry out Bayesian calculations.  Then,
 in Section~\ref{sec:representation} we present a distributed representation
 scheme, and in Section~\ref{sec:complexity} we provide a novel
 analysis of its complexity in the spirit of
-\citet{valiant1994circuits}. This which provides important constraints
+\citet{valiant1994circuits}. This provides important constraints
 on biological plausibility of this scheme and the number of neurons we
 must observe in order to test this theory.
 Section~\ref{sec:inference} adapts existing theories to show how
@@ -49,7 +50,7 @@ Bayesian theories of neural computation address a fundamental
 question: how do organisms reason, act, and make decisions given only
 limited, noisy information about the world around them?  Bayes' rule
 tells us how an optimal agent should combine noisy information with
-prior knowledge to make inferences and decisions under uncertainty.
+prior knowledge to make posterior inferences.
 That the brain may employ or approximate Bayesian methods is an idea
 that dates back as far as \citet{helmholtz1925treatise}.  At the
 cognitive level, Bayesian models have proven extraordinarily useful
@@ -69,25 +70,25 @@ behavior suggests that the brain may be performing, or at least
 approximating, Bayesian computations.
 
 Further buttressing the Bayesian brain hypothesis, some experiments
-have shown Bayes-optimal behavior along with simultaneous neural responses
-that are strongly correlated with relevant probabilistic quantities.
-For example, \citet{Yang2007} trained monkeys to make an eye movement
-to either the left or the right based on an observed set of shapes.
-Each shape contributed an additive ``weight'' to the log probability
-that reward would be given for leftward movements rather than
-rightward, so the optimal strategy (once the weights were
+have shown Bayes-optimal behavior along with simultaneous neural
+responses that are strongly correlated with relevant probabilistic
+quantities.  For example, \citet{Yang2007} trained monkeys to make an
+eye movement to either the left or the right based on an observed set
+of shapes.  Each shape contributed an additive ``weight'' to the log
+probability that reward would be given for leftward movements rather
+than rightward, so the optimal strategy (once the weights were
 learned) was to sum the weights, compute the log probability of left
-versus right, and choose the direction most likely to yield a
-reward.  In effect, the monkeys had to perform inference in a simple
-mixture model. The monkeys learned to perform this task optimally, and
+versus right, and choose the direction most likely to yield a reward.
+In effect, the monkeys had to perform inference in a simple mixture
+model. The monkeys learned to perform this task optimally, and
 \citet{Yang2007} found that the firing rates of neurons in parietal
 cortex were proportional to the log likelihood ratio of left versus
-right. While it is possible that the monkeys simply learned a
-discriminative mapping from shapes to decisions, subsequent work
-showed that when the paradigm was extended to allow the monkey to
-opt-out of making a decision and obtain a smaller but guaranteed
-reward, the monkey chose to opt out only when the probability of
-left versus right was below a threshold \citep{Kiani2009}.
+right. Subsequent work showed that when the paradigm was extended to
+allow the monkey to opt-out of making a decision and obtain a smaller
+but guaranteed reward, the monkey chose to opt out only when the
+probability of left versus right was below a threshold. This impliest that
+the brain has access to not only the most likely direction, but also
+its uncertainty \citep{Kiani2009}.
 
 Further evidence of neural probabilistic inference has been found in
 other simple tasks. In a time interval reproduction task, non-human
@@ -115,7 +116,8 @@ successive questions:
 \begin{enumerate}
 \item How are probabilities are represented, and how are the conditional
   probability distributions that constitute the probabilistic model
-  encoded?
+  encoded? Are these distributions represented in a parametric manner?
+  How are the parameters instantiated in a neural system?
 \item Given a representation, how do neural dynamics compute the
   desired posterior distribution? In other words, what is the
   algorithm of probabilistic inference, and how is it reified in a
@@ -134,13 +136,15 @@ neural firing rates are proportional to probability~\citep{Hinton1983,
 the probability, like its log~\citep{Rao2004, beck2007exact, Rao2007,
   litvak2009cortical}. Others have suggested that probability
 distributions are encoded implicitly by the stochasticity of neurons
-\citep{Zemel1998, Sahani2003, Ma2006}. Still others have contended that
-neurons employ a predictive coding scheme to convey probabilistic
-information~\citep{Rao1999, Deneve2008a, Huang2011}.  An interesting
-alternative deserving of more attention is that distributions may be
-implicitly encoded in the number of neurons representing a particular
-value or, similarly, in the width of neural tuning
-curves~\citep{Shi2009, Ganguli2010}. 
+\citep{Zemel1998, Sahani2003, Ma2006}. Still others have contended
+that neurons employ a predictive coding scheme to convey probabilistic
+information~\citep{Rao1999, Deneve2008a, Huang2011}. According to the
+predictive coding hypothesis, neurons only communicate spikes when
+their internal state cannot otherwise be inferred by their downstream
+neighbors. Finally, an interesting variant of rate coding suggests
+that distributions may be implicitly encoded in the number of neurons
+representing a particular value or, similarly, in the width of neural
+tuning curves~\citep{Shi2009, Ganguli2010}.
 
 % Exact, Belief Propagation, Variational inference, importance sampling,
 % MCMC, particle filtering
@@ -293,7 +297,8 @@ a particular value fire twice as many spikes as neurons representing a
 competing value, then the first value is twice as likely. We introduce
 the notion of an \emph{integration time},~$T_I$, over which spikes are
 counted to estimate the probability distribution. With this notation,
-the empirical distribution,~$\widehat{\bpi}_t^{(j)}$, is defined by,
+the empirical distribution encoded by a population at a particular instant
+in time,~$\widehat{\bpi}_t^{(j)}$, is defined by,
 \begin{align*}
   \widehat{\pi}_{t,k}^{(j)} &=
   \frac{\sum_{\Delta = 1}^{T_I} \sum_{n=1}^N \bbI[j_n=j, k_n=k] \, s_{t-\Delta,n}}
@@ -303,14 +308,12 @@ The numerator counts spikes from neurons representing the particular value,~$z_j
 the denominator counts all spikes from neurons representing~$z_j$.
 
 
-We assume these neurons are stochastic, each endowed
-with an instantaneous firing rate,~$\lambda_{t,n}$, which gives rise to an
-instantaneous spike count,~$s_{t,n}$ according to a Poisson distribution,
-${
-s_{t,n} \sim \distPoisson(\lambda_{t,n}).
-}$
-Thus, while the firing rate may encode one distribution, the distribution
-that is read out from a finite number of spikes will differ. 
+We assume these neurons are stochastic, each endowed with an
+instantaneous firing rate,~$\lambda_{t,n}$, which gives rise to an
+instantaneous spike count,~$s_{t,n}$ according to a Poisson
+distribution, ${ s_{t,n} \sim \distPoisson(\lambda_{t,n}).  }$ Thus,
+while the firing rate may encode one distribution, the distribution
+that is read out from a finite number of spikes will differ.
 
 To summarize, the direct distributed representation entails the following
 assumption:
@@ -328,19 +331,21 @@ assumption:
 \section{Complexity of the Direct Distributed Representation}
 \label{sec:complexity}
 
-In pioneering work, \citet{valiant1994circuits} suggested that
-the tools of computational learning theory, which provide
-rigorous computational limits on statistical learning, may
-apply equally well to learning in biological systems. All
-that is needed is a model of biological computation and a
-precisely stated learning algorithm. If the resources
-required by this algorithm (e.g. number of neurons or spikes)
-grow exponentially quickly with the size of learning problem,
-then it is highly unlikely that the algorithm is employed
-by the brain. In other words, biology is bound by the same
-limits of computational tractability as our silicon devices,
-but the natural measure of complexity may be spikes and
-synapses rather than FLOPs and bytes.
+In pioneering work, \citet{valiant1994circuits} suggested that the
+tools of computational learning theory, which provide rigorous
+computational limits on statistical learning, may apply equally well
+to learning in biological systems. All that is needed is a model of
+biological computation and a precisely stated learning
+algorithm.\footnote{ Of course, the difficulty lies in specifying such
+  a model and algorithm! While this is surely a challenge, there is no
+  substitute for a formal declaration of assumptions.}  However, if
+the resources required by this algorithm (e.g. number of neurons or
+spikes) grow exponentially quickly with the size of learning problem,
+then it is highly unlikely that the algorithm is employed by the
+brain. In other words, biology is bound by the same limits of
+computational tractability as our silicon devices, but the natural
+measure of complexity may be spikes and synapses rather than FLOPs and
+bytes.
 
 \citet{valiant1994circuits} laid the groundwork for a model of neural
 computation that emphasizes a few key features: distributed
@@ -388,10 +393,11 @@ time, the probability distribution that is represented by the
 population will be a random variable.  First, we will show that this
 representation is unbiased. That is, if the firing rates,~$\lambda_{t,
   n}$, are proportional to the probability,~$\pi_{k_n}^{(j_n)}$, then
-the decoded probability,~$\widehat{\bpi}_{t}^{(j)}$, will have the
-correct expectation.  Since we will be focusing on the representation
-of a single random variable $z_j$, we drop the superscripts~${}^{(j)}$
-and ${}^{(j_n)}$ for the remainder of this section.
+the empirical probability distribution,~$\widehat{\bpi}_{t}^{(j)}$,
+will equal~$\bpi^{(j)}$ in expectation.  Since we will be focusing on
+the representation of a single random variable $z_j$, we drop the
+superscripts~${}^{(j)}$ and ${}^{(j_n)}$ for the remainder of this
+section.
 
 \begin{lemma}
 \label{lem:consistency}
@@ -400,7 +406,7 @@ distribution over the integration time window then the probability
 distribution represented by the population will have expectation equal
 to the given probability distribution.  That is,
 if~$\lambda_{t, n}=\lambdamax \pi_{k_n}$,
-then~$\bbE[\widehat{\pi}_{t,k}] = \pi_{k}$.
+then~$\bbE[\widehat{\bpi}_{t}] = \bpi$.
 \end{lemma}
 
 \begin{proof}
@@ -414,11 +420,11 @@ then~$\bbE[\widehat{\pi}_{t,k}] = \pi_{k}$.
   \end{align*}
   Iterating expectations, we have,
   \begin{align*}
-    \bbE[\widehat{\pi}_{t,k}] &=
-    \bbE \left[ \frac{S_{t, k}}{S_{t}} \right]
-    = \bbE \left[
-      \bbE \left[
-        \frac{S_{t,k}}{S_t} \, \bigg|\, S_{t}  
+    \bbE[\widehat{\bpi}_{t}] &=
+    \bbE \left[ \frac{1}{S_{t}} \left(S_{t, 1}, \ldots, S_{t,K} \right) \right]
+    = \bbE_{S_t} \left[
+      \bbE_{\left(S_{t, 1}, \ldots, S_{t,K} \right)} \left[
+        \frac{1}{S_t} \left(S_{t, 1}, \ldots, S_{t,K} \right) \, \bigg|\, S_{t}  
       \right] \right].
   \end{align*}
   Since~$s_{t, n}$ are independent Poisson random variables, their partial
@@ -435,25 +441,25 @@ then~$\bbE[\widehat{\pi}_{t,k}] = \pi_{k}$.
   \begin{align*}
     S_{t} = \sum_{k} S_{t,k} &\sim \distPoisson(\lambdamax \, T_I \, R).
   \end{align*}
-  Moreover, by the Poisson superposition principle, their conditional
-  distribution is binomial,
+  Moreover, by the Poisson superposition principle, the vector~$\left(S_{t, 1}, \ldots, S_{t,K} \right)$ is multinomial distributed given~$S_t$,
   \begin{align*}
-    S_{t,k} \given S_t &\sim
-    \distBinomial \left( S_t, \frac{\lambdamax \, T_I \, R \, \pi_{k}}{\lambdamax \, T_I \, R} \right)
-    =\distBinomial(S_t, \pi_{k}),
+    \left(S_{t, 1}, \ldots, S_{t,K} \right) \given S_t &\sim
+    \distMultinomial \left( S_t, \left(\frac{\lambdamax \, T_I \, R \, \pi_{1}}{\lambdamax \, T_I \, R}, \ldots, \frac{\lambdamax \, T_I \, R \, \pi_{K}}{\lambdamax \, T_I \, R} \right)  \right) \\
+    &=\distMultinomial(S_t, \bpi),
   \end{align*}
-  with expectation~$\pi_{k} \, S_t$.
+  with expectation~$\bpi S_t$.
   Plugging this into the iterated expectation above, 
   \begin{align*}
-    \bbE[\widehat{\pi}_{t,k}]
-    &= \bbE \left[
-      \bbE \left[
-        \frac{S_{t,k}}{S_t} \, \bigg|\, S_t  \right] \right] \\
-    &= \bbE \left[ 
-      \frac{\pi_{k} S_t}{S_t} \right]\\
-    &= \pi_{k}.
+    \bbE[\widehat{\bpi}_{t}]
+    &= \bbE_{S_t} \left[
+      \bbE_{\left(S_{t, 1}, \ldots, S_{t,K} \right)} \left[
+        \frac{1}{S_t} \left(S_{t, 1}, \ldots, S_{t,K} \right) \, \bigg|\, S_{t}  
+      \right] \right] \\
+    &= \bbE_{S_t} \left[ 
+      \frac{\bpi S_t}{S_t} \right]\\
+    &= \bpi.
   \end{align*}
-  Thus, this procedure is unbiased.
+  Thus, this stochastic encoding is unbiased.
 \end{proof}
 
 While this stochastic representation may have the correct expectation, we
@@ -462,15 +468,14 @@ mean. As we hypothesized above, the difference between the true
 probability and that represented by the population should shrink as
 the number of spikes grows. We measure this
 difference with the ~$\ell_\infty$ norm of the difference between two
-probability vectors, which we will abbreviate as,
+probability vectors,
 \begin{align*}
-  \dinf(\widehat{\bpi}_t, \bpi) =
   ||\widehat{\bpi}_t - \bpi||_\infty &= 
   \max_{k} |\widehat{\pi}_{t,k} - \pi_{k}|.
 \end{align*}
-While somewhat unorthodox, this metric is related to the total
-variation distance by a constant. The following theorem provides an
-upper bound on the number of spikes required to guarantee that the
+While somewhat unorthodox, this metric is similar in spirit to the
+total variation distance. The following theorem provides an upper
+bound on the number of spikes required to guarantee that the
 represented probability differs from the true probability by more
 than~$\epsilon$.
 
@@ -482,7 +487,7 @@ time window, a fixed error level~$\epsilon < 1$, and a desired
 confidence~$\delta < 1$, there exists a minimum number of spikes~$S^*$
 such that if~$S_t \geq S^*$, the conditional probability of error is
 bounded
-by~$\Pr(\dinf(\widehat{\bpi}_t, \bpi) > \epsilon \given S_t) <
+by~$\Pr(||\widehat{\bpi}_t - \bpi||_\infty > \epsilon \given S_t) <
 \delta$.  Furthermore, this minimum number of spikes is at most,
 \begin{align*}
 S^* &\leq \frac{1}{2\epsilon^2} \ln \frac{2K}{\delta},  
@@ -527,7 +532,7 @@ which together imply,
 \end{align*}
 We bound the maximum deviation of any entry in~$\widehat{\bpi}$ with a union bound,
 \begin{align*}
-  \Pr(\dinf(\widehat{\bpi}_t, \bpi) > \epsilon \given S^*) 
+  \Pr(||\widehat{\bpi}_t - \bpi||_\infty > \epsilon \given S^*) 
   & \leq 2K \exp \left\{-2S^* \epsilon^2 \right\}.
 \end{align*}
 Setting this probability equal to~$\delta$ yields the desired bound on~$S^*$,
@@ -562,7 +567,7 @@ $\ell_\infty$-distance is less than~$\epsilon$ with probability~$1-\delta$.
   rates~$\lambda_{t,n} = \lambdamax \pi_{k_n}$, a fixed error
   level~$\epsilon < 1$, and a desired confidence~$\delta < 1$, the
   probability of error is bounded
-  by~$\Pr(\dinf(\widehat{\bpi}_t, \bpi) > \epsilon) < \delta$
+  by~$\Pr(||\widehat{\bpi}_t - \bpi||_\infty > \epsilon) < \delta$
   if~$\lambdamax T_I R \geq \mu^*$, where~$\mu^*$ is at most,
   \begin{align*}
     \mu^* &\leq \frac{1}{1-e^{-2\epsilon^2}} \ln \frac{2K}{\delta}.  
@@ -572,8 +577,8 @@ $\ell_\infty$-distance is less than~$\epsilon$ with probability~$1-\delta$.
 \begin{proof}
   We have, 
   \begin{align*}
-    \Pr(\dinf(\widehat{\bpi}_t, \bpi) > \epsilon) 
-    &= \sum_{m=0}^\infty \Pr(S_t=m) \Pr(\dinf(\widehat{\bpi}_t, \bpi) > \epsilon \given S_t=m) \\
+    \Pr(||\widehat{\bpi}_t - \bpi||_\infty > \epsilon) 
+    &= \sum_{m=0}^\infty \Pr(S_t=m) \Pr(||\widehat{\bpi}_t- \bpi||_\infty > \epsilon \given S_t=m) \\
     &\leq \sum_{m=0}^\infty  \Pr(S_t=m) \times 2K \exp \left \{-2m\epsilon^2 \right\} \\
     &= 2K \bbE_{S_t} \left[ \exp \left \{ -2S_t \epsilon^2 \right \} \right] \\
     &= 2K \exp \left \{\mu^* (e^{-2\epsilon^2}-1) \right\},
@@ -610,7 +615,7 @@ corollary.
   integration time window, a fixed error level~$\epsilon < 1$, and a
   desired confidence~$\delta < 1$, and~$\rho R$ observed neurons for
   each of the~$K$ values, the probability of error is bounded
-  by~$\Pr(\dinf(\widehat{\bpi}_t, \bpi) > \epsilon) < \delta$ if
+  by~$\Pr(||\widehat{\bpi}_t- \bpi||_\infty > \epsilon) < \delta$ if
   \begin{align*}
     (\lambdamax T_I) (\rho R) \geq \mu^*,
   \end{align*} 
