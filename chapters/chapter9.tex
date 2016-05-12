@@ -460,16 +460,19 @@ While this stochastic representation may have the correct expectation, we
 would like to characterize the probability that it is ``close'' to its
 mean. As we hypothesized above, the difference between the true
 probability and that represented by the population should shrink as
-the number of spikes grows. We quantify this with the following
-theorem, which provides an upper bound on the number of spikes
-required to guarantee that the represented probability differs from
-the true probability by more than~$\epsilon$. We measure this
-difference with the total variation distance between the
-distributions,
+the number of spikes grows. We measure this
+difference with the ~$\ell_\infty$ norm of the difference between two
+probability vectors, which we will abbreviate as,
 \begin{align*}
-  \dtv(\widehat{\bpi}_t, \bpi) &= 
-  \max_{\ell} |\widehat{\pi}_{t,k} - \pi_{k}|.
+  \dinf(\widehat{\bpi}_t, \bpi) =
+  ||\widehat{\bpi}_t - \bpi||_\infty &= 
+  \max_{k} |\widehat{\pi}_{t,k} - \pi_{k}|.
 \end{align*}
+While somewhat unorthodox, this metric is related to the total
+variation distance by a constant. The following theorem provides an
+upper bound on the number of spikes required to guarantee that the
+represented probability differs from the true probability by more
+than~$\epsilon$.
 
 \begin{theorem}
 \label{thm:fixed_count}
@@ -479,7 +482,7 @@ time window, a fixed error level~$\epsilon < 1$, and a desired
 confidence~$\delta < 1$, there exists a minimum number of spikes~$S^*$
 such that if~$S_t \geq S^*$, the conditional probability of error is
 bounded
-by~$\Pr(\dtv(\widehat{\bpi}_t, \bpi) > \epsilon \given S_t) <
+by~$\Pr(\dinf(\widehat{\bpi}_t, \bpi) > \epsilon \given S_t) <
 \delta$.  Furthermore, this minimum number of spikes is at most,
 \begin{align*}
 S^* &\leq \frac{1}{2\epsilon^2} \ln \frac{2K}{\delta},  
@@ -524,7 +527,7 @@ which together imply,
 \end{align*}
 We bound the maximum deviation of any entry in~$\widehat{\bpi}$ with a union bound,
 \begin{align*}
-  \Pr(\dtv(\widehat{\bpi}_t, \bpi) > \epsilon \given S^*) 
+  \Pr(\dinf(\widehat{\bpi}_t, \bpi) > \epsilon \given S^*) 
   & \leq 2K \exp \left\{-2S^* \epsilon^2 \right\}.
 \end{align*}
 Setting this probability equal to~$\delta$ yields the desired bound on~$S^*$,
@@ -535,22 +538,23 @@ Setting this probability equal to~$\delta$ yields the desired bound on~$S^*$,
 \end{proof}
 
 
-This theorem provides an upper bound on the minimum number of spikes necessary to 
-guarantee that the total variation distance between the true and estimated 
-probability vectors is less than~$\epsilon$ with probability~$1-\delta$. 
-Notably, the relevant quantity is the number of spikes~$S_t$, rather than 
-the number of neurons. Thus, there is some flexibility in how the probability 
-is estimated: a small population of neurons could be measured over many time bins,
-or a large population could be measured over a single time bin. Moreover, the 
-population gain,~$\lambdamax$, could be varied to adjust the number of spikes 
-per time bin. 
+This theorem provides an upper bound on the minimum number of spikes
+necessary to guarantee that the~$\ell_\infty$-distance between the
+true and estimated probability vectors is less than~$\epsilon$ with
+probability~$1-\delta$.  Notably, the relevant quantity is the number
+of spikes~$S_t$, rather than the number of neurons. Thus, there is
+some flexibility in how the probability is estimated: a small
+population of neurons could be measured over many time bins, or a
+large population could be measured over a single time bin. Moreover,
+the population gain,~$\lambdamax$, could be varied to adjust the
+number of spikes per time bin.
 
 In practice, the number of spikes cannot be set directly. It, is a
 Poisson random variable whose mean, from Eq.~\ref{eq:S_t_rate},
 is~$\bbE[S_t] = \lambdamax T_I R$: the expected number of spikes per neuron times the number of neurons per
 outcome. This leads to the following theorem, which specifies a upper bound 
 on the gain and number of neurons required to guarantee that the 
-total variation distance is less than~$\epsilon$ with probability~$1-\delta$.
+$\ell_\infty$-distance is less than~$\epsilon$ with probability~$1-\delta$.
 
 \begin{theorem}
   \label{thm:rate_bounds}
@@ -558,7 +562,7 @@ total variation distance is less than~$\epsilon$ with probability~$1-\delta$.
   rates~$\lambda_{t,n} = \lambdamax \pi_{k_n}$, a fixed error
   level~$\epsilon < 1$, and a desired confidence~$\delta < 1$, the
   probability of error is bounded
-  by~$\Pr(\dtv(\widehat{\bpi}_t, \bpi) > \epsilon) < \delta$
+  by~$\Pr(\dinf(\widehat{\bpi}_t, \bpi) > \epsilon) < \delta$
   if~$\lambdamax T_I R \geq \mu^*$, where~$\mu^*$ is at most,
   \begin{align*}
     \mu^* &\leq \frac{1}{1-e^{-2\epsilon^2}} \ln \frac{2K}{\delta}.  
@@ -568,8 +572,8 @@ total variation distance is less than~$\epsilon$ with probability~$1-\delta$.
 \begin{proof}
   We have, 
   \begin{align*}
-    \Pr(\dtv(\widehat{\bpi}_t, \bpi) > \epsilon) 
-    &= \sum_{m=0}^\infty \Pr(S_t=m) \Pr(\dtv(\widehat{\bpi}_t, \bpi) > \epsilon \given S_t=m) \\
+    \Pr(\dinf(\widehat{\bpi}_t, \bpi) > \epsilon) 
+    &= \sum_{m=0}^\infty \Pr(S_t=m) \Pr(\dinf(\widehat{\bpi}_t, \bpi) > \epsilon \given S_t=m) \\
     &\leq \sum_{m=0}^\infty  \Pr(S_t=m) \times 2K \exp \left \{-2m\epsilon^2 \right\} \\
     &= 2K \bbE_{S_t} \left[ \exp \left \{ -2S_t \epsilon^2 \right \} \right] \\
     &= 2K \exp \left \{\mu^* (e^{-2\epsilon^2}-1) \right\},
@@ -606,7 +610,7 @@ corollary.
   integration time window, a fixed error level~$\epsilon < 1$, and a
   desired confidence~$\delta < 1$, and~$\rho R$ observed neurons for
   each of the~$K$ values, the probability of error is bounded
-  by~$\Pr(\dtv(\widehat{\bpi}_t, \bpi) > \epsilon) < \delta$ if
+  by~$\Pr(\dinf(\widehat{\bpi}_t, \bpi) > \epsilon) < \delta$ if
   \begin{align*}
     (\lambdamax T_I) (\rho R) \geq \mu^*,
   \end{align*} 
@@ -651,10 +655,10 @@ that will achieve a desired error level and confidence.
  \end{subfigure}
  \vspace{-.3in}
  \caption[Theoretical bounds on expected spike count and physiological parameters]
- { Theoretical relationship between between total variation distance, expected spike
+ { Theoretical relationship between between $\ell_\infty$-distance, expected spike
    count, and physiological parameters. 
    \textbf{(a)} Theoretical 
-   upper bound on the 95th percentile of the total variation distance,~$\epsilon$, 
+   upper bound on the 95th percentile of the $\ell_\infty$-distance,~$\epsilon$, 
    as a function of the expected spike count,~$\mu = (\rho R) (\lambdamax T_I)$,
    for increasing values of~$K$. 
    \textbf{(b)} The expected spike count is the product of the effective number 
@@ -667,14 +671,14 @@ that will achieve a desired error level and confidence.
 
 Figure~\ref{fig:theoretical_complexity} plots these theoretical 
 bounds. Fig.~\ref{fig:error_vs_expected_spike_count} shows the theoretical
-upper bound on the 95th percentile of the total variation distance as a
+upper bound on the 95th percentile of the $\ell_\infty$-distance as a
 function of the expected spike count for a range of distribution sizes,~$K$.
 Fig.~\ref{fig:mu_vs_R_T} illustrates the trade-offs between effective 
 number of neurons and expected number of spikes per neuron necessary 
 to achieve a desired expected spike count.
 
 
-% Figure: empirical and theoretical total variation distance
+% Figure: empirical and theoretical $\ell_\infty$-distance
 \begin{figure}[t!]
   \centering
   \begin{subfigure}[b]{2.75in}
@@ -718,8 +722,8 @@ to achieve a desired expected spike count.
    \label{fig:error_vs_rho_K10}
  \end{subfigure}
  \vspace{-.3in}
- \caption[Empirical and theoretical total variation distance]
- {Empirical and theoretical total variation distance under a variety 
+ \caption[Empirical and theoretical $\ell_\infty$-distance]
+ {Empirical and theoretical $\ell_\infty$-distance under a variety 
    of parameter regimes. Whiskers show the empirical~5th 
    and~95th percentiles. Yellow line shows the theoretical
    upper bound on the 95th percentile. 
@@ -738,8 +742,7 @@ For each regime, we present results for discrete distributions
 over~$K=2$ values (left column) and~$K=10$ values (right column). We 
 sample~$1000$ discrete distributions from a Dirichlet 
 prior,~${\bpi \sim \distDirichlet(\bone_K)}$, and then we encode each true 
-distribution with Poisson spiking neurons and measure the total 
-variation distance between the true and encoded distributions. 
+distribution with Poisson spiking neurons and measure the $\ell_\infty$-distance between the true and encoded distributions. 
 
 In the top row, we consider the case where the total population 
 spike count is set explicitly, as in Theorem~\ref{thm:fixed_count}.
@@ -768,7 +771,7 @@ Corollary~\ref{cor:sparse_bounds} provides a reasonable
 approximation for this parameter regime.
 
 These complexity-theoretic bounds relate the number of spikes to the 
-total variation distance between the true and estimated distributions.
+distance between the true and estimated distributions.
 From the number of spikes, we can deduce constraints on the representation
 size, integration time, and connection probability, for realistic gain levels.
 While the theoretical bounds do not exactly match the empirical error 
