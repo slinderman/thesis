@@ -105,7 +105,7 @@ lines with circular endpoints. Above, the vector of observed spike
 counts, ${\bs = \big[s_1, \ldots, s_T \big]}$, and the vector of
 latent states,~${\bz = \big[z_1, \ldots, z_T \big]}$, are shown.  We
 will use this notation throughout the thesis: bold symbols like~$\bs$
-will denote arrays of random variables; lowercase bold symbols will
+will denote arrays of variables; lowercase bold symbols will
 typically denote vectors.
 
 The generative procedure defines the \emph{likelihood} of any given
@@ -159,10 +159,8 @@ Putting this all together, we can now write down the \emph{joint
 product of the likelihood and the prior distributions:
 \begin{align}
   \label{eq:full_joint}
-  p(\bs, \bz, \bpi, \blambda \given \alpha, \beta, \gamma) 
-  &= p(\bs, \bz \given \bpi, \blambda) \,
-  p(\bpi \given \gamma) \, 
-     p(\blambda \given \alpha, \beta).
+  p(\bs, \bz, \bpi, \blambda) 
+  &= p(\bs, \bz \given \bpi, \blambda) \, p(\bpi) \, p(\blambda).
 \end{align}
 
 When constructing a probabilistic model, we express these prior
@@ -256,7 +254,7 @@ as~$\boldeta$.
 \subsection{Representations of Spike Trains}
 % Notation for sets of spike times or spike count matrices
 One of the first decisions we must make is how to
-represent our data. In this thesis we will focus solely on modeling
+represent our data. In this thesis we will focus on modeling
 spike trains, which are sequences of discrete events in time. These
 spike trains typically come from spike sorting algorithms applied to
 extracellular recordings from multi-electrode arrays
@@ -508,10 +506,10 @@ model the rate as a function of previous spike counts. For example, consider
 an autoregressive model with linear dynamics,
 \begin{align}
   \label{eq:ar_model}
-  \lambda_{t,n} &= \sum_{m=1}^N \sum_{d=1}^D w_{m \to n}^{(d)} \cdot s_{t-d, m}.
+  \lambda_{t,n} &= \sum_{n'=1}^N \sum_{d=1}^D w_{n' \to n}^{(d)} \cdot s_{t-d, n'}.
 \end{align}
-The weight,~$w_{m \to n}^{(d)}$, specifies the influence that spikes
-on neuron~$m$ have on the rate of neuron~$n$ at an offset of~$d$ time bins
+The weight,~$w_{n' \to n}^{(d)}$, specifies the influence that spikes
+on neuron~$n'$ have on the rate of neuron~$n$ at an offset of~$d$ time bins
 in the future. 
 Unlike the HMM, which has an
 autoregressive model for latent states, here the
@@ -528,8 +526,10 @@ point process. Chapter~\ref{chap:three} will study these models
 in great detail, and Chapter~\ref{chap:four} will extend the Hawkes
 process inference algorithms to their discrete time counterparts.
 
-Since the firing rates must be nonnegative, the weights must be as
-well.  That is,~$w_{m \to n}^{(d)} \in \reals_+$.  This implicitly
+One complication of this formulation is that negative weights could
+lead to negative firing rates, which would invalidate the assumptions
+of the model. The easiest way to address this issue is to require 
+nonnegative weights,~$w_{n' \to n}^{(d)} \in \reals_+$.  This implicitly
 instantiates the hypothesis that interactions between spikes on one
 neuron and the rate of another is always excitatory~---~a spike can
 never decrease the future firing rate.  While this is not the most
@@ -545,7 +545,7 @@ In order to capture both excitatory and inhibitory autoregressive weights,
 we need to introduce a nonlinear function that ensures a nonnegative firing 
 rate. Specifically, assume that,
 \begin{align*}
-  \psi_{t,n} &= \sum_{m=1}^N \sum_{d=1}^D w_{m \to n}^{(d)} \cdot s_{t-d,m}, \\
+  \psi_{t,n} &= \sum_{n'=1}^N \sum_{d=1}^D w_{n' \to n}^{(d)} \cdot s_{t-d,n'}, \\
   \lambda_{t,n} &= g \left( \psi_{t,n} \right).
 \end{align*}
 The nonlinear function~${g(\cdot): \reals \to \reals_+}$ maps a real
@@ -573,7 +573,7 @@ discrete variable~${z_t \in \{1, \ldots, K\}}$ is replaced by a
 discrete probability distribution~${\bpi_t \in [0,1]^K}$. The rate
 is then a nonnegative combination,
 \begin{align*}
-  \lambda_{t,n} &= \sum_{k=1}^K \pi_{t,k} \cdot \lambda_{k,n}
+  \lambda_{t,n} &= \sum_{k=1}^K \pi_{t,k} \cdot \lambda_{k,n}.
 \end{align*}
 This is naturally interpreted as a \emph{mixed membership model} in
 which the rates at each time bin derive from a mixture of discrete
@@ -587,7 +587,7 @@ we can retain the linear form and introduce an elementwise nonlinearity
 to ensure nonnegative firing rates:
 \begin{align*}
   p(\bx) &= \prod_{t=1}^T \distNormal(\bx_t \given \bzero, \bSigma), \\
-  \psi_{t,n} &= \sum_{k=1}^K x_{t,k} \cdot c_{k,n}, \\
+  \psi_{t,n} &= \sum_{k=1}^K x_{t,k} \cdot c_{k,n},  \\
   \lambda_{t,n} &= g(\psi_{t,n}).
 \end{align*}
 Here,~$c_{k,n}$ is an entry in the real valued matrix~$\bC \in
@@ -654,11 +654,11 @@ distribution to the joint distribution of our probabilistic model,
 Unfortunately, the denominator in Eq.~\ref{eq:bayes_rule} involves an 
 integral that is intractable for 
 all but the simplest models. Instead, we must resort to approximate 
-algorithms like Markov Chain Monte Carlo (MCMC) and mean field variational 
+algorithms like Markov chain Monte Carlo (MCMC) and mean field variational 
 inference. We will briefly describe each of these in turn.
 
 \subsection{Markov Chain Monte Carlo}
-Markov Chain Monte Carlo (MCMC) algorithms are a workhorse of modern
+Markov chain Monte Carlo (MCMC) algorithms are a central component of modern
 machine learning, and many texts are devoted to the subject
 \citep[e.g.][]{geyer1992practical, gilks2005markov, robert2013monte}.
 The fundamental idea is to generate a collection of samples from the
@@ -807,11 +807,20 @@ efficient types of Gibbs updates outlined below:
   state~$z_t$ may essentially be deterministic. Thus, even if there is
   genuine uncertainty over the state sequence as a whole, this simple
   transition operator may get stuck in a single state sequence
-  assignment.  This is an example of ``poor mixing.''
+  assignment.  This would be an example of ``poor mixing.'' To be
+  precise, let~$\widetilde{p}_\ell$ be the distribution over states of
+  the chain after running~$\ell$ iterations (starting from a given
+  initial state).  A Markov chain is said to mix poorly if the number
+  of steps before the total variation distance between
+  the~$\ell$-step distribution,~$\widetile{p}_\ell$, and the true
+  posterior distribution,~$p$, is less than~$\epsilon$ grows exponentially.
+  One way to improve mixing, at least empirically, is to perform 
+  joint updates of many variables simultaneously, leveraging model-specific
+  structure.
 
-  Instead, we could try to update the entire state sequence at once. 
-  The conditional distribution of~$\bz$ is proportional to the joint 
-  distribution,
+  Consider a Gibbs step that simulatneously updates the entire
+  state sequence of an HMM.  The conditional distribution of~$\bz$ is
+  proportional to the joint distribution,
   \begin{align*}
     p(\bz \given \bs, \btheta) 
     &\propto p(z_1 \given \btheta) \, p(\bs_1 \given z_1, \btheta)
@@ -1013,7 +1022,7 @@ we can then compute the predictive likelihood,
 Notice that this is an expectation with respect to the \emph{posterior}
 distribution of~$\btheta$ given the training data, and a \emph{marginal}
 distribution in that it involves an integration over the latent variables
-associated with the test data. As usual, this integral is typically
+associated with the test data. This integral is typically
 intractable, but we can construct a Monte Carlo estimate given 
 samples from the approximate posterior,
 \begin{align*}

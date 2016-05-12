@@ -1,7 +1,7 @@
 \chapter{Discrete-Time Linear Autoregressive Poisson Models}
 \label{chap:four}
 
-This short chapter builds on the network Hawkes model introduced in
+This chapter builds on the network Hawkes model introduced in
 the Chapter~\ref{chap:three}. We introduce linear autoregressive
 Poisson models --- the discrete time analogue of the Hawkes process
 --- and we derive efficient Gibbs sampling and stochastic variational
@@ -20,13 +20,13 @@ addresses issues of computational complexity. The complexity of our
 Hawkes process inference algorithm scaled, in the worst case,
 quadratically with the number of spikes, since we had to sample a
 ``parent'' for each spike.  By designing block parallel Gibbs updates,
-we were able to obtain linear complexity. However, when the firing
-rates are high, this is still the bottleneck of our algorithm. Here,
-we reduce this complexity to be independent of the number of spikes by
-adopting a discrete time approach.  Moreover, we derive efficient
-\emph{stochastic} variational inference algorithms
-\citep{Hoffman-2013} that work with subsets of time bins in each
-iteration and thereby scale to massive datasets.
+we were able to obtain linear complexity in the number of
+spikes. However, when the firing rates are high, this is still the
+bottleneck of our algorithm. Here, we reduce this complexity to be
+independent of the number of spikes by adopting a discrete time
+approach.  Moreover, we derive efficient \emph{stochastic} variational
+inference algorithms \citep{Hoffman-2013} that work with subsets of
+time bins in each iteration and thereby scale to massive datasets.
 
 
 \section{Probabilistic Model}
@@ -37,7 +37,7 @@ variable,~$\omega_m$, grows with the number of events which
 occurred before time~$s_{m}$. For datasets with high rates of
 activity, this can quickly become the limiting factor of the inference
 algorithm.  At the same time, it is often reasonable to assume that
-events do not interact on time scales faster that~$\Delta t$. This
+events do not interact on time scales shorter than~$\Delta t$. This
 motivates a discrete time formulation in which we group events into bins
 of width~$\Delta t$ and ignore potential interactions between events
 in the same bin. Then the rate becomes,
@@ -79,7 +79,13 @@ combination of normalized basis functions,~$\bphi_b$,
 We enforce the latter constraint with a Dirichlet
 prior~${\btheta_{n \to n'} \sim \distDirichlet(\bgamma)}$.
 The basis functions are typically taken to be normalized Gaussian bumps or
-rectified cosine functions spaced over the interval~${1,\ldots,D}$.
+rectified cosine functions spaced over the interval~${1,\ldots,D}$. For example,
+in the following experiments we used,
+\begin{align*}
+  \widetilde{\phi}_b[d] &= \exp \left \{-\frac{1}{2\sigma^2} (d-\mu_b)^2 \right\}, \\
+  \phi_b[d] &= \frac{\widetilde{\phi}_b[d] }{\Delta t \sum_{d'=1}^D \widetilde{\phi}_b[d']},
+\end{align*}
+with means,~$\mu_b$, evenly spaced on~$[1,D]$, and~$\sigma=\tfrac{D}{B-1}$.
 
 Plugging this impulse response model
 into~Eq.~\ref{eq:disc_hawkes_rate} yields,
@@ -95,7 +101,7 @@ into~Eq.~\ref{eq:disc_hawkes_rate} yields,
 \end{align*}
 where
 \begin{align*}
-  \widehat{s}_{t,n,b} &\triangleq \left(\bs_n \ast \bphi_b\right)[t],
+  \widehat{s}_{t,n,b} &\triangleq \left(\bs_n \ast \bphi_b\right)[t]
 \end{align*}
 is the discrete convolution of the~$n$-th spike train with
 the~$b$-th basis function evaluated at the~$t$-th time bin.
@@ -172,9 +178,9 @@ and the auxiliary parent variables, the conditional distribution is,
   \widetilde{\nu}^{(n,n')} &= \nu_{n \to n'} +  \sum_{t=1}^T s_{t,n}.
 \end{align*}
 As in the previous chapter, in order to resample~$\bA$, we iterate over
-each entry and sample from the marginal distribution after integrating
+each entry and sample from the conditional distribution after integrating
 out the parents. We assume the parameters of the network prior can be
-sampled efficiently --- a reasonable assumption for many random network
+sampled efficiently --- a reasonable assumption for many exchangeable random network
 models.
 
 The continuous time representation introduces a latent ``parent''
@@ -203,7 +209,7 @@ a constant penalty whereas the continuous formulation quickly grows
 with the event rate. For low rates, the continuous formulation can be
 advantageous, but the discrete model is vastly superior in many
 realistic settings. For example, in Chapter~\ref{chap:three} we worked with
-trades on the S\&P100, which occur tens or hundreds of times per
+trades on the S\&P$100$, which occur tens or hundreds of times per
 second for each stock. Since the complexity of our continuous time algorithm grew
 with the number of events, we had to downsample the data to consider only
 the times when stock prices changed significantly. However, we
@@ -326,7 +332,7 @@ and likewise for the ``spike'' factor,
   \widetilde{\kappa}^{(k,k')}_0
   &= \kappa_0 + \sum_{t=1}^T \sum_{b=1}^B \mathbb{E}_{\bomega}\left[\omega_{t,n'}^{(n,b)}\right] \\
   \widetilde{\nu}^{(n,n')}_0
-  &= \nu_0 + \sum_{t=1}^T s_{t,n}\,,
+  &= \nu_0 + \sum_{t=1}^T s_{t,n}\,.
 \end{align*}
 
 % Adjacency matrix
@@ -347,7 +353,7 @@ network model can be derived, and provide access to the necessary
 expectations,~$\mathbb{E}[\ln \rho_{n \to n'}]$,
 $\mathbb{E}[\ln(1-\rho_{n \to n'})]$,~$\mathbb{E}[\nu_{n \to n'}]$ and~$\mathbb{E}[\ln \nu_{n \to n'}]$.
 
-The time bin are conditionally independent given
+The spike counts in each time bin are conditionally independent given
 the network weights and the adjacency matrix --- a common pattern
 exploited by stochastic variational inference (SVI) algorithms
 \citep{Hoffman-2013}.  These methods optimize the variational objective

@@ -244,14 +244,14 @@ To do so, we marginalize over the previous latent state,~$\bx_{t-1}$,
 \end{align*}
 where
 \begin{align*}
-  \bbm_{t|t-1} &\triangleq \bA_t \bbm_{t-1} + \bb_t \\
+  \bbm_{t|t-1} &\triangleq \bA_t \bbm_{t-1} + \bb_t, \\
   \bV_{t|t-1} &\triangleq \bA_t \bV_{t-1}\bA_t^\trans + \bSigma_t.
 \end{align*}
 Then, we \emph{condition} on the current observations,~$\bs_t$, to get the
 parameters of the filtered distribution,
 \begin{align}
   \nonumber
-  \bbm_t &= \bbm_{t|t-1} + \bK_t (\bs_t - \bC \bbm_{t|t-1}) \\
+  \bbm_t &= \bbm_{t|t-1} + \bK_t (\bs_t - \bC \bbm_{t|t-1}), \\
   \label{eq:kalman_filter}
   \bV_t &= (\bI - \bK_t \bC) \bV_{t|t-1},
 \end{align}

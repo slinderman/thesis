@@ -171,7 +171,7 @@ sample from the DP via the ``stick-breaking construction''
 weights,~$\bbeta$,
 \begin{eqnarray}                                   
 \widetilde{\beta}_{k}\sim \distBeta(1,\gamma), \;\;\; 
-\beta_{k}=\widetilde{\beta}_{k}\prod_{j=1}^{k-1}\Big(1-\widetilde{\beta}_{j}\Big)
+\beta_{k}=\widetilde{\beta}_{k}\prod_{j=1}^{k-1}\Big(1-\widetilde{\beta}_{j}\Big),
 \label{stick1}
 \end{eqnarray}
 where~$\beta_1 = \widetilde{\beta}_1$,~$\sum_{k=1}^\infty \beta_{k}=1$.
@@ -229,8 +229,8 @@ approximation in which the DP prior is approximated with a symmetric
 Dirichlet prior. Specifically, we let
 \begin{align}
 \label{eq:hdphmm_trans}
-\gamma &\sim \distGamma(a_\gamma, 1) \\
-\nonumber \alpha_0 &\sim \distGamma(a_{\alpha_0}, 1) \\
+\gamma &\sim \distGamma(a_\gamma, 1), \\
+\nonumber \alpha_0 &\sim \distGamma(a_{\alpha_0}, 1), \\
 \nonumber \bbeta \given \gamma &\sim \distDirichlet(\gamma/K_{\mathsf{max}}, \ldots, \gamma/K_{\mathsf{max}}), \\
 \nonumber \bpi^{(0)} \given \alpha_0, \bbeta &\sim \distDirichlet(\alpha_0 \beta_1, \ldots, \alpha_0 \beta_{K_{\mathsf{max}}}), \\
 \nonumber \bpi^{(k)} \given \alpha_0, \bbeta &\sim \distDirichlet(\alpha_0 \beta_1, \ldots, \alpha_0 \beta_{K_{\mathsf{max}}}).
@@ -324,7 +324,7 @@ previous latent state,~$z_{t-1}$,
 \end{align*}
 where
 \begin{align*}
-  m_{t|t-1, k} &\propto \sum_{j=1}^K p(z_t=k \given z_{t-1}=j, \btheta) \cdot m_{t-1,j}
+  m_{t|t-1, k} &\propto \sum_{j=1}^K p(z_t=k \given z_{t-1}=j, \btheta) \cdot m_{t-1,j}.
 \end{align*}
 Then, we \emph{condition} on the current observations,~$\bs_t$, to get the
 parameters of the filtered distribution,
