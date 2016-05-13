@@ -973,8 +973,8 @@ distribution is still a Poisson process:
   &\propto \PP \big(\{s_m: c_m=n'\} \, \big| \, \lambda_{n'}(t \given \mcH_t)\big)
   \times p(a_{n \to n'} \given \bz_n, \bz_{n'}, \bvartheta) \\
   &= \exp \left \{ -\int_0^T \lambda_{n'}(t \given \mcH_t) \, \mathrm{d}t \right\}
-  \prod_{m=1}^M \left[ \lambda_{n'}(s_m \given \mcH_t)^{\bbI[c_m=n']} \right]
-  p(a_{n \to n'}  \given \bz_n, \bz_{n'}, \bvartheta),
+  \prod_{m=1}^M \left[ \lambda_{n'}(s_m \given \mcH_t)^{\bbI[c_m=n']} \right]\\
+  &\qquad \times p(a_{n \to n'}  \given \bz_n, \bz_{n'}, \bvartheta),
 \end{align*}
 where~$\lambda_{n'}(t \given \mcH_t)$ depends on~$\bA$,~$\bW$, and~$\btheta$
 through~\eqref{eq:hawkes_rate}.
